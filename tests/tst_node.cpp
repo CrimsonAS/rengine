@@ -2,9 +2,9 @@
 #include <assert.h>
 #include <iostream>
 
-#include "node.h"
+#include "rengine.h"
 
-using namespace Rendgine::SceneGraph;
+using namespace rengine;
 using namespace std;
 
 template <typename T> bool tst_node_cast_helper()

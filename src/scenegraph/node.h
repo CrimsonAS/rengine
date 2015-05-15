@@ -1,11 +1,9 @@
 #pragma once
 
 #include <assert.h>
-
 #include <vector>
 
-namespace Rendgine {
-namespace SceneGraph {
+namespace rengine {
 
 class Node {
 public:
@@ -143,5 +141,4 @@ private:
     float m_opacity;
 };
 
-} // end namespace SceneGraph
-} // end namespace Rendgine
+} // end namespace rengine
