@@ -7,11 +7,11 @@ namespace rengine {
 class Window
 {
 public:
-    virtual ~Window();
+    virtual ~Window() {}
 
-    void hide();
-    void show();
-    vec2 size() const;
+    virtual void hide() = 0;
+    virtual void show() = 0;
+    virtual vec2 size() const = 0;
 };
 
 }

@@ -10,7 +10,7 @@ class System
 {
 public:
     static System *get();
-    virtual void processEvents() = 0;
+    virtual void run() = 0;
     virtual Window *createWindow() = 0;
     virtual Renderer *createRenderer(Window *window) = 0;
 };
