@@ -1,9 +1,6 @@
 #pragma once
 
-#include "renderer.h"
-
-namespace Rengine {
-namespace SceneGraph {
+namespace rengine {
 
 class OpenGLRenderer : public Renderer
 {
@@ -11,11 +8,10 @@ public:
     OpenGLRenderer();
 
     void setSceneRoot(Node *root) { m_sceneRoot = root; }
-    void render();
+    bool render();
 
 private:
     Node *m_sceneRoot;
 };
 
-}
 }

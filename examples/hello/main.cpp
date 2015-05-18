@@ -13,8 +13,12 @@ int main(int argc, char **argv)
     Node *root = new Node();
     // add a few notes...
 
-    renderer->setSceneRoot(root);
-    renderer->render();
+    if (renderer) {
+        renderer->setSceneRoot(root);
+        renderer->render();
+    } else {
+        printf("System::createRenderer() returned 0, don't expect too much...\n");
+    }
 
     window->show();
 

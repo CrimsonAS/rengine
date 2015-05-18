@@ -32,7 +32,7 @@ public:
     /*!
         Returns the texture id of the surface
      */
-    virtual int textureId() const = 0;
+    virtual GLuint textureId() const = 0;
 
     /*!
         Returns the native buffer handle for this surface.

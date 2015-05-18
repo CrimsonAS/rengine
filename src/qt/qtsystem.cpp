@@ -69,6 +69,5 @@ Window *QtSystem::createWindow()
 
 Renderer *QtSystem::createRenderer(Window *window)
 {
-    printf("returning qtsystem's renderer...\n");
-    return 0;
+    return new OpenGLRenderer();
 }

@@ -9,6 +9,7 @@ class Node {
 public:
     enum Type {
         BasicNodeType = 0,
+        SurfaceNodeType,
         OpacityNodeType
     };
 
@@ -125,6 +126,8 @@ private:
     Type m_type : 4;
 };
 
+
+
 class OpacityNode : public Node {
 public:
     enum { StaticType = OpacityNodeType };
@@ -139,6 +142,43 @@ public:
 
 private:
     float m_opacity;
+};
+
+
+
+class SurfaceNode : public Node {
+public:
+    enum { StaticType = SurfaceNodeType };
+    SurfaceNode()
+        : Node(SurfaceNodeType)
+        , m_surface(0)
+    {
+    }
+
+    Surface *surface() const { return m_surface; }
+    void setSurface(Surface *surface) { m_surface = surface; }
+
+    float x() const { return m_pos.x; }
+    float y() const { return m_pos.y; }
+    vec2 position() const { return m_pos; }
+    void setPosition(float x, float y) { setPosition(vec2(x, y)); }
+    void setPosition(const vec2 &pos) { m_pos = pos; }
+
+    float width() const { return m_size.x; }
+    float height() const { return m_size.y; }
+    vec2 size() const { return m_size; }
+    void setSize(float w, float h) { setSize(vec2(w, h)); }
+    void setSize(const vec2 &size) { m_size = size; }
+
+    void setGeometry(float x, float y, float w, float h) {
+        setPosition(x, y);
+        setSize(w, h);
+    }
+
+private:
+    vec2 m_pos;
+    vec2 m_size;
+    Surface *m_surface;
 };
 
 } // end namespace rengine

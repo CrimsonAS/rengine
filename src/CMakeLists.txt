@@ -9,6 +9,7 @@ file(MAKE_DIRECTORY ../lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
 add_library(rengine STATIC
     qt/qtsystem.cpp
+    scenegraph/openglrenderer.cpp
 )
 
 target_link_libraries(rengine Qt5::Gui)
