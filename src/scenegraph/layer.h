@@ -3,12 +3,12 @@
 namespace rengine
 {
 
-typedef void * NativeBufferHandle;
+typedef void* BufferHandle;
 
-class Surface {
+class Layer {
 public:
 
-    enum SurfaceFormat {
+    enum Format {
         AlphaFormatMask = 0x1000,
         RGBA_32 = 1 | AlphaFormatMask,
         RGBx_32 = 2,
@@ -22,7 +22,7 @@ public:
     /*!
         Returns the format of this surface.
      */
-    virtual SurfaceFormat format() const = 0;
+    virtual Format format() const = 0;
 
     /*!
         Returns true if the surface has alpha
@@ -37,7 +37,7 @@ public:
     /*!
         Returns the native buffer handle for this surface.
      */
-    virtual NativeBufferHandle nativeBufferHandle() const { return 0; }
+    virtual BufferHandle bufferHandle() const { return 0; }
 
 };
 

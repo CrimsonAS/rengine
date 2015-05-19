@@ -4,10 +4,10 @@
 
 namespace rengine {
 
-class Window
+class Surface
 {
 public:
-    virtual ~Window() {}
+    virtual ~Surface() {}
 
     virtual void hide() = 0;
     virtual void show() = 0;

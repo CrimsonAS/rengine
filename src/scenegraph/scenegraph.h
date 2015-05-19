@@ -6,18 +6,20 @@ namespace rengine {
     class OpacityNode;
     class SurfaceNode;
 
+    class OpenGLContext;
+
     class Renderer;
     class OpenGLRenderer;
 
-    class Surface;
-
-    class OpenGLSurface;
+    class Layer;
+    class OpenGLTextureLayer;
 
 };
 
 #include "opengl.h"
 #include "node.h"
+#include "openglcontext.h"
 #include "renderer.h"
 #include "openglrenderer.h"
-#include "surface.h"
-#include "openglsurface.h"
+#include "layer.h"
+#include "opengltexturelayer.h"

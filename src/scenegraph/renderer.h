@@ -14,6 +14,8 @@ public:
      */
     virtual void setSceneRoot(Node *root) = 0;
 
+    virtual void setTargetSurface(Surface *surface) = 0;
+
     /*!
         Renders the scene graph specified using setSceneRoot().
 

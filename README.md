@@ -13,6 +13,15 @@ Optional dependences include:
  - Wayland: For the wayland based front end
 
 
+TODO
+----
+
+Mostly a list of things to keep in mind for my own sake
+ - Rename Surface -> Layer
+ - Rename SurfaceNode -> LayerNode
+ - Rename Window -> Surface
+
+
 OVERVIEW OF THE DEPENDENCIES BETWEEN SOURCE DIRECTORIES
 -------------------------------------------------------
 

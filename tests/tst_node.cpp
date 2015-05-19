@@ -20,7 +20,7 @@ template <typename T> bool tst_node_cast_helper()
 void tst_node_cast()
 {
     assert(tst_node_cast_helper<OpacityNode>());
-    assert(tst_node_cast_helper<SurfaceNode>());
+    assert(tst_node_cast_helper<LayerNode>());
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
@@ -85,17 +85,17 @@ void tst_node_addRemoveParent()
 }
 
 
-void tst_surfacenode_geometry()
+void tst_layernode_geometry()
 {
-    SurfaceNode surfaceNode;
+    LayerNode layerNode;
 
-    surfaceNode.setGeometry(1, 2, 3, 4);
-    assert(surfaceNode.x() == 1);
-    assert(surfaceNode.y() == 2);
-    assert(surfaceNode.width() == 3);
-    assert(surfaceNode.height() == 4);
-    assert(surfaceNode.position() == vec2(1, 2));
-    assert(surfaceNode.size() == vec2(3, 4));
+    layerNode.setGeometry(1, 2, 3, 4);
+    assert(layerNode.x() == 1);
+    assert(layerNode.y() == 2);
+    assert(layerNode.width() == 3);
+    assert(layerNode.height() == 4);
+    assert(layerNode.position() == vec2(1, 2));
+    assert(layerNode.size() == vec2(3, 4));
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
@@ -105,7 +105,7 @@ int main(int, char **)
 {
     tst_node_cast();
     tst_node_addRemoveParent();
-    tst_surfacenode_geometry();
+    tst_layernode_geometry();
 
     return 0;
 }

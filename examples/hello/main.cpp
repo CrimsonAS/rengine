@@ -6,29 +6,35 @@ int main(int argc, char **argv)
 {
     System *system = System::get();
 
-    Window *window = system->createWindow();
-    Renderer *renderer = system->createRenderer(window);
+    Surface *surface = system->createSurface();
+    surface->show();
+
+    Renderer *renderer = system->createRenderer();
 
     // build a simple scene graph...
     Node *root = new Node();
-    // add a few notes...
+    // add a few nodes...
 
     if (renderer) {
+        renderer->setTargetSurface(surface);
         renderer->setSceneRoot(root);
-        renderer->render();
     } else {
         printf("System::createRenderer() returned 0, don't expect too much...\n");
+        return 0;
     }
 
-    window->show();
+    // system->run();
 
-    system->run();
+    int frames = 190;
+    while (--frames) {
+        system->processEvents();
+        renderer->render();
 
-    // while (true) {
         // tick animations
         // process events
         // update scene
         // draw and present scene
-    // }
+    }
 
+    return 0;
 }

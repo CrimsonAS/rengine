@@ -9,7 +9,7 @@ class Node {
 public:
     enum Type {
         BasicNodeType = 0,
-        SurfaceNodeType,
+        LayerNodeType,
         OpacityNodeType
     };
 
@@ -146,17 +146,17 @@ private:
 
 
 
-class SurfaceNode : public Node {
+class LayerNode : public Node {
 public:
-    enum { StaticType = SurfaceNodeType };
-    SurfaceNode()
-        : Node(SurfaceNodeType)
-        , m_surface(0)
+    enum { StaticType = LayerNodeType };
+    LayerNode()
+        : Node(LayerNodeType)
+        , m_layer(0)
     {
     }
 
-    Surface *surface() const { return m_surface; }
-    void setSurface(Surface *surface) { m_surface = surface; }
+    Layer *layer() const { return m_layer; }
+    void setLayer(Layer *layer) { m_layer = layer; }
 
     float x() const { return m_pos.x; }
     float y() const { return m_pos.y; }
@@ -178,7 +178,7 @@ public:
 private:
     vec2 m_pos;
     vec2 m_size;
-    Surface *m_surface;
+    Layer *m_layer;
 };
 
 } // end namespace rengine

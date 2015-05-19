@@ -2,15 +2,15 @@
 
 namespace rengine {
 
-class OpenGLSurface : public Surface
+class OpenGLTextureLayer : public Layer
 {
-    OpenGLSurface()
+    OpenGLTextureLayer()
         : m_id(0)
         , m_format(RGBA_32)
     {
     }
 
-    ~OpenGLSurface()
+    ~OpenGLTextureLayer()
     {
         glDeleteTextures(1, &m_id);
     }
@@ -23,7 +23,7 @@ class OpenGLSurface : public Surface
     /*!
         Returns the format of this surface.
      */
-    SurfaceFormat format() const { return m_format; }
+    Format format() const { return m_format; }
 
     /*!
         Returns the texture id of the surface
@@ -44,7 +44,7 @@ class OpenGLSurface : public Surface
 
 private:
     GLuint m_id;
-    SurfaceFormat m_format;
+    Format m_format;
     vec2 m_size;
 
 };

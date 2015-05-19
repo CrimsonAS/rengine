@@ -10,9 +10,12 @@ class System
 {
 public:
     static System *get();
+
     virtual void run() = 0;
-    virtual Window *createWindow() = 0;
-    virtual Renderer *createRenderer(Window *window) = 0;
+    virtual void processEvents() = 0;
+    virtual Surface *createSurface() = 0;
+    virtual Renderer *createRenderer() = 0;
+    virtual OpenGLContext *createOpenGLContext() = 0;
 };
 
 }

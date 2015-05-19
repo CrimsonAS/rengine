@@ -2,6 +2,7 @@
 
 #include <QGuiApplication>
 #include <QWindow>
+#include <QOpenGLContext>
 
 using namespace rengine;
 
@@ -17,28 +18,30 @@ public:
     }
 
     void run();
-    Window *createWindow();
-    Renderer *createRenderer(Window *window);
+    void processEvents();
+    Surface *createSurface();
+    Renderer *createRenderer();
+    OpenGLContext *createOpenGLContext();
 
     QGuiApplication app;
 };
 
 
 
-class QtWindow : public Window
+class QtSurface : public Surface
 {
 public:
-    QtWindow() {
+    QtSurface() {
         window.resize(800, 480);
+        window.setSurfaceType(QWindow::OpenGLSurface);
+        window.create();
     }
 
     void show() {
-        printf("showing qt window...\n");
         window.show();
     }
 
     void hide() {
-        printf("hiding qt window...\n");
         window.hide();
     }
 
@@ -51,10 +54,38 @@ public:
 
 
 
+class QtOpenGLContext : public OpenGLContext
+{
+public:
+    QtOpenGLContext()
+    {
+        context.create();
+    }
+
+    bool makeCurrent(Surface *s) {
+        return context.makeCurrent(&static_cast<QtSurface *>(s)->window);
+    }
+
+    bool swapBuffers(Surface *s) {
+        context.swapBuffers(&static_cast<QtSurface *>(s)->window);
+        return true;
+    }
+
+    QOpenGLContext context;
+};
+
+
+
 System *System::get()
 {
     static QtSystem singleton;
     return &singleton;
+}
+
+void QtSystem::processEvents()
+{
+    QCoreApplication::processEvents();
+    QCoreApplication::sendPostedEvents(0, QEvent::DeferredDelete);
 }
 
 void QtSystem::run()
@@ -62,12 +93,20 @@ void QtSystem::run()
     app.exec();
 }
 
-Window *QtSystem::createWindow()
+Surface *QtSystem::createSurface()
 {
-    return new QtWindow();
+    return new QtSurface();
 }
 
-Renderer *QtSystem::createRenderer(Window *window)
+Renderer *QtSystem::createRenderer()
 {
-    return new OpenGLRenderer();
+    OpenGLRenderer *r = new OpenGLRenderer();
+    OpenGLContext *gl = createOpenGLContext();
+    r->setOpenGLContext(gl);
+    return r;
+}
+
+OpenGLContext *QtSystem::createOpenGLContext()
+{
+    return new QtOpenGLContext();
 }
