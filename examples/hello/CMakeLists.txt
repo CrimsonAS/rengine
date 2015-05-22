@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 project(HelloRengine)
-include_directories(../../include)
+include_directories(
+    ../../include
+    ../../3rdparty
+)
 
 find_package(Qt5Gui)
 find_package(OpenGL)

@@ -1,9 +1,27 @@
 #include "rengine.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 using namespace rengine;
+
+// class Application
+// {
+//     virtual void initialize() = 0;
+//     virtual void render() = 0;
+// };
 
 int main(int argc, char **argv)
 {
+    {
+        int w, h, n;
+        unsigned char *data = stbi_load("walker.png", &w, &h, &n, 4);
+        printf("read image: %dx%d, %d components, topleft=%2x%2x%2x\n",
+               w, h, n,
+               data[0], data[1], data[2]);
+    }
+
+
     System *system = System::get();
 
     Surface *surface = system->createSurface();

@@ -10,6 +10,7 @@ public:
     enum Type {
         BasicNodeType = 0,
         LayerNodeType,
+        TransformNodeType,
         OpacityNodeType
     };
 
@@ -144,6 +145,25 @@ private:
     float m_opacity;
 };
 
+
+
+class TransformNode : public Node
+{
+public:
+    enum { StaticType = TransformNodeType };
+
+    TransformNode()
+        : Node(TransformNodeType)
+    {
+    }
+
+    void moveTo(const vec2 &t) { m_translation = t; }
+    void moveBy(const vec2 &t) { m_translation += t; }
+    vec2 translation() const { return m_translation; }
+
+private:
+    vec2 m_translation; // ### Replace with mat3/mat4 once it is implemented..
+};
 
 
 class LayerNode : public Node {
