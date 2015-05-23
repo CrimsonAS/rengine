@@ -2,13 +2,15 @@
 
 #include <assert.h>
 #include <cmath>
+#include <iostream>
 #include "rengine.h"
 
 using namespace rengine;
+using namespace std;
 
 namespace renginetest
 {
-    inline bool fuzzy_equals(float a, float b) { return std::abs(a - b) < 0.0001f; }
+    inline bool fuzzy_equals(float a, float b) { return abs(a - b) < 0.0001f; }
 
     inline bool fuzzy_equals(const vec2 &a, const vec2 &b) {
         return fuzzy_equals(a.x, b.x)
@@ -43,6 +45,6 @@ namespace renginetest
             cout << "Not fuzzy equal '" << a << "' vs '" << b << "'" << endl;   \
             assert((a) == (b));                                                     \
         }
-
-
 }
+
+using namespace renginetest;

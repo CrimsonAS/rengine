@@ -157,12 +157,11 @@ public:
     {
     }
 
-    void moveTo(const vec2 &t) { m_translation = t; }
-    void moveBy(const vec2 &t) { m_translation += t; }
-    vec2 translation() const { return m_translation; }
+    void setMatrix(const mat4 &m) { m_matrix = m; }
+    const mat4 &matrix() const { return m_matrix; }
 
 private:
-    vec2 m_translation; // ### Replace with mat3/mat4 once it is implemented..
+    mat4 m_matrix; // ### Replace with mat3/mat4 once it is implemented..
 };
 
 
@@ -178,11 +177,12 @@ public:
     Layer *layer() const { return m_layer; }
     void setLayer(Layer *layer) { m_layer = layer; }
 
-    float x() const { return m_pos.x; }
-    float y() const { return m_pos.y; }
-    vec2 position() const { return m_pos; }
-    void setPosition(float x, float y) { setPosition(vec2(x, y)); }
-    void setPosition(const vec2 &pos) { m_pos = pos; }
+    // Superflous, no? We get this from the matrix in a parent transform node after all..
+    // float x() const { return m_pos.x; }
+    // float y() const { return m_pos.y; }
+    // vec2 position() const { return m_pos; }
+    // void setPosition(float x, float y) { setPosition(vec2(x, y)); }
+    // void setPosition(const vec2 &pos) { m_pos = pos; }
 
     float width() const { return m_size.x; }
     float height() const { return m_size.y; }
@@ -190,13 +190,13 @@ public:
     void setSize(float w, float h) { setSize(vec2(w, h)); }
     void setSize(const vec2 &size) { m_size = size; }
 
-    void setGeometry(float x, float y, float w, float h) {
-        setPosition(x, y);
-        setSize(w, h);
-    }
+    // void setGeometry(float x, float y, float w, float h) {
+    //     setPosition(x, y);
+    //     setSize(w, h);
+    // }
 
 private:
-    vec2 m_pos;
+    // vec2 m_pos;
     vec2 m_size;
     Layer *m_layer;
 };
