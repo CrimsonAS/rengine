@@ -6,3 +6,7 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 
 add_executable(tst_node tst_node.cpp)
 add_executable(tst_mathtypes tst_mathtypes.cpp)
+
+enable_testing()
+add_test(tst_node tst_node)
+add_test(tst_mathtypes tst_mathtypes)

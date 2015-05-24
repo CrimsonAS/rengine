@@ -1,3 +1,32 @@
+/*
+    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+    The views and conclusions contained in the software and documentation are those
+    of the authors and should not be interpreted as representing official policies,
+    either expressed or implied, of the FreeBSD Project.
+*/
+
 #include "rengine.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -5,54 +34,70 @@
 
 using namespace rengine;
 
-// class Application
-// {
-//     virtual void initialize() = 0;
-//     virtual void render() = 0;
-// };
+// Candidate for some util/.. thing, perhaps?
+class SurfaceWithRenderer : public SurfaceInterface
+{
+public:
+
+    SurfaceWithRenderer()
+        : m_renderer(0)
+    {
+    }
+
+    virtual Node *buildSceneGraph() = 0;
+
+    void onRender() {
+        if (!m_renderer) {
+            m_renderer = System::get()->createRenderer();
+            m_renderer->setTargetSurface(surface());
+            m_renderer->initialize();
+            m_renderer->setSceneRoot(buildSceneGraph());
+        }
+
+        m_renderer->render();
+    }
+
+    Renderer *renderer() const { return m_renderer; }
+
+private:
+    Renderer *m_renderer;
+};
+
+
+class Window : public SurfaceWithRenderer
+{
+public:
+    Window()
+    {
+    }
+
+    Node *buildSceneGraph() {
+        // read the image...
+        int w, h, n;
+        unsigned char *data = stbi_load("../examples/images/walker.png", &w, &h, &n, 4);
+        assert(data);
+        printf("read image: %dx%d, %d components\n",
+               w, h, n);
+        assert(data);
+
+        Layer *layer = renderer()->createLayerFromImageData(vec2(w,h), Layer::RGBA_32, data);
+
+        LayerNode *ln = new LayerNode();
+        ln->setSize(layer->size());
+        ln->setLayer(layer);
+        return ln;
+    }
+};
 
 int main(int argc, char **argv)
 {
-    {
-        int w, h, n;
-        unsigned char *data = stbi_load("walker.png", &w, &h, &n, 4);
-        printf("read image: %dx%d, %d components, topleft=%2x%2x%2x\n",
-               w, h, n,
-               data[0], data[1], data[2]);
-    }
-
-
     System *system = System::get();
 
-    Surface *surface = system->createSurface();
+    Window window;
+    Surface *surface = system->createSurface(&window);
     surface->show();
 
-    Renderer *renderer = system->createRenderer();
-
-    // build a simple scene graph...
-    Node *root = new Node();
-    // add a few nodes...
-
-    if (renderer) {
-        renderer->setTargetSurface(surface);
-        renderer->setSceneRoot(root);
-    } else {
-        printf("System::createRenderer() returned 0, don't expect too much...\n");
-        return 0;
-    }
-
-    // system->run();
-
-    int frames = 190;
-    while (--frames) {
-        system->processEvents();
-        renderer->render();
-
-        // tick animations
-        // process events
-        // update scene
-        // draw and present scene
-    }
+    system->run();
 
     return 0;
 }
