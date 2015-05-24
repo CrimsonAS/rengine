@@ -48,7 +48,7 @@ public:
 
     void onRender() {
         if (!m_renderer) {
-            m_renderer = System::get()->createRenderer();
+            m_renderer = Backend::get()->createRenderer();
             m_renderer->setTargetSurface(surface());
             m_renderer->initialize();
             m_renderer->setSceneRoot(buildSceneGraph());
@@ -105,13 +105,13 @@ public:
 
 int main(int argc, char **argv)
 {
-    System *system = System::get();
+    Backend *backend = Backend::get();
 
     Window window;
-    Surface *surface = system->createSurface(&window);
+    Surface *surface = backend->createSurface(&window);
     surface->show();
 
-    system->run();
+    backend->run();
 
     return 0;
 }

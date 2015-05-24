@@ -27,7 +27,7 @@
     either expressed or implied, of the FreeBSD Project.
 */
 
-#include "../system.h"
+#include "../rengine.h"
 
 #include <stdio.h>
 
@@ -179,7 +179,7 @@ void OpenGLRenderer::render(Node *n)
     for (auto it : n->children())
         render(it);
 
-    if (TransformNode *tn = Node::from<TransformNode>(n))
+    if (Node::from<TransformNode>(n))
         m_matrixStack.pop();
 
 }

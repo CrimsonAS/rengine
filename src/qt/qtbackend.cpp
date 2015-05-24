@@ -27,7 +27,7 @@
     either expressed or implied, of the FreeBSD Project.
 */
 
-#include "../system.h"
+#include "../backend.h"
 
 #include <QGuiApplication>
 #include <QWindow>
@@ -35,7 +35,7 @@
 
 using namespace rengine;
 
-class QtSystem;
+class QtBackend;
 class QtSurface;
 class QtWindow;
 class QtOpenGLContext;
@@ -43,10 +43,10 @@ class QtOpenGLContext;
 static int argc = 1;
 static const char *argv[] = { "fake_rengine_app" };
 
-class QtSystem : public System
+class QtBackend : public Backend
 {
 public:
-    QtSystem()
+    QtBackend()
         : app(argc, (char **) argv)
     {
     }
@@ -122,31 +122,31 @@ public:
 
 
 
-System *System::get()
+Backend *Backend::get()
 {
-    static QtSystem singleton;
+    static QtBackend singleton;
     return &singleton;
 }
 
-void QtSystem::processEvents()
+void QtBackend::processEvents()
 {
     QCoreApplication::processEvents();
     QCoreApplication::sendPostedEvents(0, QEvent::DeferredDelete);
 }
 
-void QtSystem::run()
+void QtBackend::run()
 {
     app.exec();
 }
 
-Surface *QtSystem::createSurface(SurfaceInterface *iface)
+Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
     QtSurface *s = new QtSurface(iface);
     return s;
 }
 
-Renderer *QtSystem::createRenderer()
+Renderer *QtBackend::createRenderer()
 {
     OpenGLRenderer *r = new OpenGLRenderer();
     OpenGLContext *gl = createOpenGLContext();
@@ -154,7 +154,7 @@ Renderer *QtSystem::createRenderer()
     return r;
 }
 
-OpenGLContext *QtSystem::createOpenGLContext()
+OpenGLContext *QtBackend::createOpenGLContext()
 {
     return new QtOpenGLContext();
 }
