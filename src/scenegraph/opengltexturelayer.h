@@ -70,6 +70,7 @@ public:
         } else {
             glBindTexture(GL_TEXTURE_2D, m_id);
         }
+        m_size = vec2(width, height);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     }
 

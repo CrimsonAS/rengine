@@ -88,7 +88,10 @@ public:
 
     void show() { window.show(); }
     void hide() { window.hide(); }
-    vec2 size() const { return vec2(window.width(), window.height()); }
+    vec2 size() const {
+        int dpr = window.devicePixelRatio();
+        return vec2(window.width() * dpr, window.height() * dpr);
+    }
     void requestRender() { window.requestUpdate(); }
 
     QtWindow window;

@@ -81,11 +81,25 @@ public:
         assert(data);
 
         Layer *layer = renderer()->createLayerFromImageData(vec2(w,h), Layer::RGBA_32, data);
+        STBI_FREE(data);
 
-        LayerNode *ln = new LayerNode();
-        ln->setSize(layer->size());
-        ln->setLayer(layer);
-        return ln;
+        Node *root = new Node();
+        int count = 10;
+
+        for (int i=0; i<count; ++i) {
+            LayerNode *layerNode = new LayerNode();
+            layerNode->setLayer(layer);
+            layerNode->setSize(layer->size());
+
+            float s = 1 + i * 0.1;
+            TransformNode *xnode = new TransformNode();
+            xnode->setMatrix(mat4::translate2D(200 + i * 100, 100 + i * 10)
+                             * mat4::scale2D(s, s)
+                             * mat4::rotate2D(i * 0.05));
+            xnode->append(layerNode);
+            root->append(xnode);
+        }
+        return root;
     }
 };
 

@@ -37,6 +37,11 @@ namespace rengine {
 class Renderer
 {
 public:
+    Renderer()
+    : m_fillColor(0, 0, 0, 1)
+    {
+    }
+
     virtual ~Renderer() {}
 
     /*!
@@ -67,6 +72,12 @@ public:
         Returns true if successful; false if rendering failed...
      */
     virtual bool render() = 0;
+
+    void setFillColor(const vec4 &c) { m_fillColor = c; }
+    const vec4 &fillColor() const { return m_fillColor; }
+
+private:
+    vec4 m_fillColor;
 };
 
 }

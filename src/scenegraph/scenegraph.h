@@ -43,12 +43,15 @@ namespace rengine {
     class Layer;
     class OpenGLTextureLayer;
 
+    class OpenGLShaderProgram;
+
 };
 
 #include "opengl.h"
 #include "node.h"
 #include "openglcontext.h"
 #include "renderer.h"
+#include "openglshaderprogram.h"
 #include "openglrenderer.h"
 #include "layer.h"
 #include "opengltexturelayer.h"

@@ -29,6 +29,10 @@
 
 #pragma once
 
+#include "openglshaderprogram.h"
+
+#include <stack>
+
 namespace rengine {
 
 class OpenGLRenderer : public Renderer
@@ -44,14 +48,26 @@ public:
 
     void setTargetSurface(Surface *surface) { m_surface = surface; }
 
-    void initialize() { m_gl->makeCurrent(m_surface); }
+    void initialize();
 
     bool render();
 
 private:
+    void render(Node *n);
+
     Node *m_sceneRoot;
     Surface *m_surface;
     OpenGLContext *m_gl;
+
+    struct LayerProgram : public OpenGLShaderProgram {
+        int matrix;
+    } prog_layer;
+    struct SolidProgram : public OpenGLShaderProgram {
+        int matrix;
+        int color;
+    } prog_solid;
+
+    std::stack<mat4> m_matrixStack;
 };
 
 }

@@ -34,7 +34,7 @@
     selfcontained, no-hassle-to-deploy suite of strictly needed math things.
     It isn't complete or perhaps not fully optimal either (due to no sse and such),
     but it is all inline, comes at no deployment cost and the file can be included
-    in any project by simply dumping the file in there.
+    in any project by simply dumping a single header file in there.
  */
 
 #pragma once
@@ -49,12 +49,8 @@ struct vec2 {
     vec2(float x, float y) : x(x), y(y) { }
     vec2(float v = 0.0f) : x(v), y(v) { }
 
-    vec2 operator+(const vec2 &o) const {
-        vec2 r = o;
-        r.x += x;
-        r.y += y;
-        return r;
-    }
+    vec2 operator*(float v) const { return vec2(x*v, y*v); }
+    vec2 operator+(const vec2 &o) const { return vec2(x+o.x, y+o.y); }
     vec2 &operator+=(const vec2 &o) {
         x += o.x;
         y += o.y;
@@ -78,13 +74,8 @@ struct vec3 {
     vec3(float x, float y, float z) : x(x), y(y), z(z) { }
     vec3(float v = 0.0f) : x(v), y(v), z(v) { }
 
-    vec3 operator+(const vec3 &o) const {
-        vec3 r = o;
-        r.x += x;
-        r.y += y;
-        r.z += z;
-        return r;
-    }
+    vec3 operator*(float v) const { return vec3(x*v, y*v, z*v); }
+    vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }
     vec3 &operator+=(const vec3 &o) {
         x += o.x;
         y += o.y;
@@ -111,14 +102,8 @@ struct vec4 {
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) { }
     vec4(float v = 0.0f) : x(v), y(v), z(v), w(v) { }
 
-    vec4 operator+(const vec4 &o) const {
-        vec4 r = o;
-        r.x += x;
-        r.y += y;
-        r.z += z;
-        r.w += w;
-        return r;
-    }
+    vec4 operator*(float v) const { return vec4(x*v, y*v, z*v, w*v); }
+    vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
     vec4 &operator+=(const vec4 &o) {
         x += o.x;
         y += o.y;
