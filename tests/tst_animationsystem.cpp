@@ -46,16 +46,14 @@ public:
 
             if (iteration >= m_iterations) {
                 // finish the animation at its end value..
-                cout << " ------ apply and stop (tick; all-done)" << endl;
                 apply_helper(m_duration, direction);
-                setRunning(false);
+                stop();
                 return;
             } else {
                 if (m_currentIteration != iteration) {
                     iterationChanged(iteration, direction);
                     m_currentIteration = iteration;
                 }
-                cout << " ------ apply and stop (tick; loop-change)" << endl;
                 apply_helper(timeInThisIteration, direction);
             }
         } else {
@@ -85,6 +83,10 @@ public:
         has changed loops. The iteration is bounded to 0 <= iteration <= iterations;
      */
     virtual void iterationChanged(int iteration, ActiveDirection activeDirection) { }
+
+    virtual void stop() {
+        setRunning(false);
+    }
 
      double duration() const { return m_duration; }
      void setDuration(double dur) {
@@ -158,6 +160,13 @@ public:
         updateDuration();
     }
 
+    void stop() {
+        for (auto a : m_children)
+            if (a->isRunning())
+                a->stop();
+        Animation::stop();
+    }
+
 protected:
     virtual void updateDuration() = 0;
     vector<Animation *> m_children;
@@ -174,7 +183,6 @@ public:
     }
 
     void iterationChanged(int iteration, ActiveDirection activeDirection) {
-        cout << "iteration change=" << iteration << endl;
         if (activeDirection == Forwards) {
             for (int i = m_current; i<m_children.size(); ++i)
                 applyAndStop(m_children.at(i), Forwards);
@@ -187,17 +195,13 @@ public:
 
     void apply(double time, ActiveDirection activeDirection) {
 
-        cout << "sequential: time=" << time << "; direction=" << activeDirection << endl;
-
         int current = -1;
 
         double start = 0;
         for (int i=0; i<m_children.size(); ++i) {
             Animation *a = m_children.at(i);
             double end = start + a->iterations() * a->duration();
-            cout << " - checking range[ " << start << " -> " << end << " ]" << endl;
             if (time >= start && time < end) {
-                cout << " ---> match" << endl;
                 current = i;
                 break;
             }
@@ -205,15 +209,11 @@ public:
         }
 
         // We're out of bounds, so pick the last one and let the system advance...
-        if (current == -1 && time >= start) {
-            cout << " ---> no matches...";
+        if (current == -1 && time >= start)
             current = m_children.size() - 1;
-        }
-
         assert(current >= 0);
 
         if (m_current != current) {
-            cout << " - updating current: " << m_current << "; " << current << endl;
             if (m_current >= 0) {
                 // We need to 'finish' all the animations in between the old
                 // one and the new one, so they end on their expected target
@@ -234,7 +234,6 @@ public:
             a->setRunning(true);
         }
 
-        cout << " - calling tick for m_current=" << m_current << "; localtime=" << time - start << endl;
         m_children.at(m_current)->tick(time - start, activeDirection);
     }
 
@@ -248,7 +247,6 @@ protected:
 
 private:
     static void applyAndStop(Animation *a, ActiveDirection activeDirection) {
-        cout << " ------ apply and stop" << endl;
         if (!a->isRunning())
             a->setRunning(true);
         a->apply(activeDirection == Forwards ? a->duration() : 0, activeDirection);
@@ -264,11 +262,9 @@ class ValueTrackerAnimation : public Animation
 {
 public:
     void apply(double t, ActiveDirection adir) {
-        cout << " - apply: " << t << " - " << adir << endl;
         appliedTimes.push_back(t);
     }
     void iterationChanged(int it, ActiveDirection adir) {
-        cout << " --- iteration changed: " << it << endl;
         itertionsChanged.push_back(it);
     }
 
@@ -320,7 +316,6 @@ void tst_animationsystem_runsingle()
         int ii = i % 10;
         if ((i / 10) % 2 == 1)
             ii = 10 - ii;
-        cout << i << ": expecting: " << ii << endl;
         check_equal(anim.appliedTimes.at(i), ii);
     }
     cout << __FUNCTION__ << ": direction(Alternate): ok" << endl;
@@ -353,48 +348,61 @@ public:
 
     void apply(double time, ActiveDirection dir) {
         text->push_back(ch);
-        cout << "      applied='" << *text << "'" << endl;
     }
 
     string *text;
     char ch;
-
 };
+
+void tst_animationsystem_sequential_run(const char *name,
+                                        int iterations,
+                                        Animation::Direction direction,
+                                        const string &result)
+{
+    string s;
+
+    CharAddAnimation *anim_a = new CharAddAnimation(&s, 'a');
+    CharAddAnimation *anim_b = new CharAddAnimation(&s, 'b');
+    CharAddAnimation *anim_c = new CharAddAnimation(&s, 'c');
+
+    SequentialAnimation sequential;
+    sequential.append(anim_a);
+    sequential.append(anim_b);
+    sequential.append(anim_c);
+
+    double t = 0;
+    sequential.setIterations(iterations);
+    sequential.setDirection(direction);
+    sequential.setRunning(true);
+    while (sequential.isRunning()) {
+        sequential.tick(t);
+        t += 1.0;
+    }
+    check_equal(s, result);
+    assert(!anim_a->isRunning());
+    assert(!anim_b->isRunning());
+    assert(!anim_c->isRunning());
+
+    cout << __FUNCTION__ << ": " << name << ": ok" << endl;
+}
 
 void tst_animationsystem_sequential()
 {
-    string s;
-    CharAddAnimation anim_a(&s, 'a');
-    CharAddAnimation anim_b(&s, 'b');
-    CharAddAnimation anim_c(&s, 'c');
+    tst_animationsystem_sequential_run("single", 1, Animation::Normal, "aabbcc");
+    tst_animationsystem_sequential_run("dual", 2, Animation::Normal, "aabbccaabbcc");
+    tst_animationsystem_sequential_run("triple", 3, Animation::Normal, "aabbccaabbccaabbcc");
 
-    SequentialAnimation sequential;
-    sequential.append(&anim_a);
-    sequential.append(&anim_b);
-    sequential.append(&anim_c);
+    tst_animationsystem_sequential_run("single-rev", 1, Animation::Reverse, "ccbbaa");
+    tst_animationsystem_sequential_run("dual-rev", 2, Animation::Reverse, "ccbbaaccbbaa");
+    tst_animationsystem_sequential_run("triple-rev", 3, Animation::Reverse, "ccbbaaccbbaa");
 
-    double t = 0;
-    sequential.setIterations(1);
-    sequential.setRunning(true);
-    while (sequential.isRunning()) {
-        sequential.tick(t);
-        t += 1.0;
-    }
-    check_equal(s, "aabbcc");
+    // tst_animationsystem_sequential_run("single-alt", 1, Animation::Alternate, "ccbbaa");
+    // tst_animationsystem_sequential_run("dual-alt", 2, Animation::Alternate, "aabbccccbbaa");
+    // tst_animationsystem_sequential_run("triple-alt", 3, Animation::Alternate, "aabbccccbbaaaabbcc");
 
-    t = 0;
-    sequential.setIterations(2);
-    sequential.setRunning(true);
-    while (sequential.isRunning()) {
-        sequential.tick(t);
-        t += 1.0;
-    }
-    check_equal(s, "aabbccaabbccc");
-
-    /* Tests to include:
-       - run loop multiple times
-       - run sequential in reverse
-     */
+    // tst_animationsystem_sequential_run("single-altrev", 1, Animation::AlternateReverse, "ccbbaa");
+    // tst_animationsystem_sequential_run("dual-altrev", 2, Animation::AlternateReverse, "ccbbaaaabbcc");
+    // tst_animationsystem_sequential_run("triple-altrev", 3, Animation::AlternateReverse, "ccbbaaaabbccccbbaa");
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
