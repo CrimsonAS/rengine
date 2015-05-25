@@ -37,6 +37,9 @@ public:
     }
 
     void tick(double time, ActiveDirection direction = Forwards) {
+        cout << "tick: time=" << int(time * 10000)/10000.0
+             << "; direction=" << (direction == Forwards ? "Forward" : "Backward")
+             << endl;
         assert(isRunning());
         assert(time >= 0);
 
@@ -46,11 +49,13 @@ public:
 
             if (iteration >= m_iterations) {
                 // finish the animation at its end value..
+                cout << " - reached end, stopping" << endl;
                 apply_helper(m_duration, direction);
                 stop();
                 return;
             } else {
                 if (m_currentIteration != iteration) {
+                    cout << " - new iteration: " << m_currentIteration << "->" << iteration << endl;
                     iterationChanged(iteration, direction);
                     m_currentIteration = iteration;
                 }
@@ -194,6 +199,9 @@ public:
     }
 
     void apply(double time, ActiveDirection activeDirection) {
+        cout << " - sequential::apply: time=" << int(time * 10000) / 10000
+             << "; " << (activeDirection == Forwards ? "Forwards" : "Backwards")
+             << endl;
 
         int current = -1;
 
@@ -209,8 +217,10 @@ public:
         }
 
         // We're out of bounds, so pick the last one and let the system advance...
-        if (current == -1 && time >= start)
+        if (current == -1 && time >= start) {
+            cout << "   - out of bounds, using last" << endl;
             current = m_children.size() - 1;
+        }
         assert(current >= 0);
 
         if (m_current != current) {

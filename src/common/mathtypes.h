@@ -104,6 +104,7 @@ struct vec4 {
 
     vec4 operator*(float v) const { return vec4(x*v, y*v, z*v, w*v); }
     vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
+    vec4 operator-(const vec4 &o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
     vec4 &operator+=(const vec4 &o) {
         x += o.x;
         y += o.y;
