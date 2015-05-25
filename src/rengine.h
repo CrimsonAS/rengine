@@ -32,4 +32,5 @@
 #include "common/common.h"
 #include "windowsystem/windowsystem.h"
 #include "scenegraph/scenegraph.h"
+#include "animationsystem/animationsystem.h"
 #include "backend.h"

@@ -17,9 +17,6 @@ TODO
 ----
 
 Mostly a list of things to keep in mind for my own sake
- - Rename Surface -> Layer
- - Rename SurfaceNode -> LayerNode
- - Rename Window -> Surface
 
 
 OVERVIEW OF THE DEPENDENCIES BETWEEN SOURCE DIRECTORIES
@@ -30,23 +27,26 @@ include/rengine.h
 
 src/common
     -> Utility classes used throughout
-    -> no dependencies
+    -> no dependencies, can be used stand alone
 
 src/scenegraph
     -> The scene graph and default OpenGL renderer
     -> depends on src/common
 
-src/animation
+src/animationsystem
     -> The animation system
+    -> no dependences, can be used stand alone
+
+src/animationtypes
     -> depends on src/common
-    -> depends on src/scenegraph?
+    -> depends on src/scenegraph
 
 src/windowsystem
     -> The windowsystem/display/screen interfaces
     -> depends on src/common
 
 src/qt
-    -> Implementation of a Qt system
+    -> Implementation of a Qt backend
 
 src/sailfish
     -> Implementation of a Sailfish system (to come...)
@@ -56,6 +56,13 @@ src
     -> depends on src/common
     -> depends on src/scenegraph
     -> depends on src/windowsystem
+    -> depends on src/animationsystem
+    -> depends on src/animationtypes
 
 3rdparty
-    -> Contains bundled other libraries, used by apps and examples
+    -> stb_image.h -> for easy image loading
+
+tests
+    -> tst_node
+    -> tst_mathtypes
+    -> tst_animationsystem
