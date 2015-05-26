@@ -33,12 +33,39 @@
 
 RENGINE_BEGIN_NAMESPACE
 
+/*!
+    The default timing function used together with Animation.
+
+    Implements a linear timing function.
+ */
 class LinearTimingFunction
 {
 public:
     double operator()(double t) { return t; }
 };
 
+/*!
+
+    Defines an animation, greatly inspored by the HTML/CSS animation
+    primitives.
+
+    The animation contains a few built-in properties, such as iterations,
+    direction and duration which are specified through normal functions.
+
+    The values the animation operates on is specified by the keyFrames objects
+    which contians information about the keyframes. The animation is
+    progressed by calling the tick() function and by incrementing its time.
+    The result of a call to tick() is that the animation object will
+    interpolate between the values in the keyframes object and call back
+    through the KeyFrameValue's ApplyFunctor so the appliction can pick up the
+    value.
+
+    An easing curve can be applied between each keyframe so that animations
+    accellerates and decellerates according to application design. This is
+    done by specifying a TimingFunction template argument. The default is a
+    linear curve.
+
+ */
 template <typename Target,
           typename TimingFunction = LinearTimingFunction>
 class Animation
@@ -63,33 +90,90 @@ public:
 
     inline void tick(double time);
 
+    /*!
+        Returns the target for this animation. The target is
+        passed to the KeyFrameValues's apply functor.
+
+        It is an error to change the target once the animation is running.
+
+        By default, the target is 0.
+     */
     Target *target() const { return m_target; }
-    void setTarget(Target *t) { m_target = t; }
-
-     double duration() const { return m_duration; }
-     void setDuration(double dur) {
-         assert(!isRunning());
-         m_duration = dur;
-     }
-
-     int iterations() { return m_iterations; }
-     void setIterations(int iterations) {
-         assert(!isRunning());
-         m_iterations = iterations;
+    void setTarget(Target *t) {
+        assert(!isRunning());
+        m_target = t;
     }
 
-     Direction direction() const { return (Direction) m_direction; }
-     void setDirection(Direction d) { m_direction = d; }
+    /*!
+        Contains the length of each iteration in seconds.
 
-     bool isRunning() const { return m_running; }
-     void setRunning(bool r) { m_running = r; }
+        The total running time of the animation will be iterations() *
+        duration().
 
-     KeyFrames<Target> *keyFrames() const { return m_keyFrames; }
-     void setKeyFrames(KeyFrames<Target> *kf) {
-         m_keyFrames = kf;
-     }
+        It is an error to change the duration once the animation is running.
 
-     TimingFunction *timingFunction() { return m_timingFunction; }
+        By default, the duration is 1 second.
+     */
+    double duration() const { return m_duration; }
+    void setDuration(double dur) {
+        assert(!isRunning());
+        m_duration = dur;
+    }
+
+    /*!
+        Contains the number of iterations this animation should run before
+        stopping, where -1 signifies an infinite amount of iterations.
+
+        The total running time of the animation will be iterations() *
+        duration().
+
+        It is an error to change the number of iterations once the animation
+        is running.
+
+        by default, the number of iterations is 1.
+     */
+    int iterations() { return m_iterations; }
+    void setIterations(int iterations) {
+        assert(!isRunning());
+        m_iterations = iterations;
+    }
+
+    /*!
+        Sets the direciton the animation should be running. The tick()
+        function should be increment normally from 0 to iterations() *
+        duration() regardless of type of direction.
+
+        It is an error to change the direction once the animation is running.
+
+        By default, the direction is Normal.
+     */
+
+    Direction direction() const { return (Direction) m_direction; }
+    void setDirection(Direction d) {
+        assert(!isRunning());
+        m_direction = d;
+    }
+
+    bool isRunning() const { return m_running; }
+    void setRunning(bool r) { m_running = r; }
+
+    /*!
+        Specifies the keyframes to use for this animation.
+
+        It is an error to change the keyframes once the animation is running.
+
+        The Animation does not take ownership over the KeyFrames object.
+     */
+    KeyFrames<Target> *keyFrames() const { return m_keyFrames; }
+    void setKeyFrames(KeyFrames<Target> *kf) {
+        assert(!isRunning());
+        m_keyFrames = kf;
+    }
+
+    /*!
+        Returns a pointer to the timimg function used by this animation.
+     */
+    TimingFunction *timingFunction() { return m_timingFunction; }
 
 private:
     KeyFrames<Target> *m_keyFrames;
@@ -102,6 +186,10 @@ private:
     unsigned m_direction : 2;
 };
 
+/*!
+    Abstract base class for specifying keyframe values; in code use
+    KeyFrameValues<ValueType, Target, ApplyFunctor>.
+ */
 template <typename Target>
 class KeyFrameValuesBase
 {
@@ -110,7 +198,11 @@ public:
     virtual int size() const = 0;
 };
 
-template <typename Value, typename Target, typename ApplyFunctor>
+/*!
+
+ */
+
+template <typename ValueType, typename Target, typename ApplyFunctor>
 class KeyFrameValues : public KeyFrameValuesBase<Target>
 {
 public:
@@ -121,26 +213,92 @@ public:
         assert(i1 < values.size());
         assert(t >= 0);
         assert(t <= 1);
-        const Value &v0 = values.at(i0);
-        const Value &v1 = values.at(i1);
+        const ValueType &v0 = values.at(i0);
+        const ValueType &v1 = values.at(i1);
         applyFunctor(v0 + (v1 - v0) * t, target);
     }
 
-    void append(const Value &v) { values.push_back(v); }
+    /*!
 
-    KeyFrameValues<Value, Target, ApplyFunctor> &operator<<(const Value &v) { append(v); return *this; }
+        Add \a value to this keyframevalues set
+
+     */
+    void append(const ValueType &value) { values.push_back(value); }
+
+    /*!
+
+        Convenience overload to append() which allows for appending
+        multiple values in one go.
+
+     */
+    KeyFrameValues<ValueType, Target, ApplyFunctor> &operator<<(const ValueType &v) { append(v); return *this; }
 
     int size() const { return values.size(); }
 
 private:
     ApplyFunctor applyFunctor;
-    std::vector<Value> values;
+    std::vector<ValueType> values;
 };
+
+/*!
+
+    The keyframe object defines a set of values at specific points in time.
+    The Animation class uses this as input and interpolates between these
+    values over time so that what comes out is a smooth animation between key
+    points in time.
+
+    Times are relative, ranging from 0 to 1. It is required that one first
+    defines the number of times, then adds values to be interpolated. The
+    number of entries in the values and the times must be identical.
+
+    Here is an example on how to define a KeyFrames object.
+
+    \code
+    struct MyThing {
+        ...
+        void setWidth(double width);
+        int width() const;
+    }
+
+    struct MyThing_setWidth {
+        void operator()(double v, MtThing *target) { target->width = v; }
+    };
+
+    ...
+
+    MyThing thing;
+
+    KeyFrames<MyThing> keyFrames;
+    keyFrames.addTime(0);
+    keyFrames.addTime(1);
+
+    KeyFrameValues<double, MyThing, MyThing_setWidth> widths;
+    widths << 100 << 0;
+    keyFrames.addValues(&widths);
+
+    Animation animation;
+    animation.setKeyFrames(&keyFrames);
+    animation.setTarget(&thing);
+    animation.tick(0.5); // will call MyThing_setWidth() with 50 and thing;
+    \endcode
+
+  */
 
 template <typename Target>
 class KeyFrames
 {
 public:
+
+    /*!
+
+        Add another keyframe to the keyframes.
+
+        Times must be between 0 and 1 and must be specified in sorted order.
+
+        Once values have been added, it is an error to try add more key frame
+        times.
+
+     */
     void addTime(double t) {
         assert(t >= 0); // sanity check range
         assert(t <= 1);
@@ -150,6 +308,17 @@ public:
         m_times.push_back(t);
     }
 
+    /*
+
+        Add a set of values to the keyframes.
+
+        The values must have the same number of entries as the number of times
+        added to this keyframes and a set of key frame times must have been
+        defined before the first set of values can be added.
+
+        The keyframes object does not take ownership of the values.
+
+     */
     void addValues(KeyFrameValuesBase<Target> *v) {
         assert(m_times.size() > 0);
         assert(v->size() == m_times.size()); // these must line up...
@@ -226,6 +395,5 @@ void Animation<TimingFunction, Target>::tick(double time)
     if (stop)
         setRunning(false);
 }
-
 
 RENGINE_END_NAMESPACE

@@ -29,8 +29,6 @@
 
 #pragma once
 
-#include "openglshaderprogram.h"
-
 #include <stack>
 
 namespace rengine {

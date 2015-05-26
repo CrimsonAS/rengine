@@ -29,10 +29,7 @@
 
 #pragma once
 
-#include "node.h"
-#include "layer.h"
-
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class Renderer
 {
@@ -80,4 +77,4 @@ private:
     vec4 m_fillColor;
 };
 
-}
+RENGINE_END_NAMESPACE

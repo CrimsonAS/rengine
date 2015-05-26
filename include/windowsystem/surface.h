@@ -29,8 +29,6 @@
 
 #pragma once
 
-#include "../common/mathtypes.h"
-
 namespace rengine {
 
 class Surface
