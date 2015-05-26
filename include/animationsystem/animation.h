@@ -27,6 +27,15 @@
     either expressed or implied, of the FreeBSD Project.
 */
 
+/*!
+
+    This file is fully self-contained and can be deployed in other projects
+    with minimal additional dependencies. Just define RENGINE_BEGIN_NAMESPACE
+    and RENGINE_END_NAMESPACE before including it, and you should be good.
+
+ */
+
+
 #pragma once
 
 #include <vector>

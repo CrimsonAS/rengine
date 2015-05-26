@@ -29,7 +29,7 @@
 
 #pragma once
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class OpenGLTextureLayer : public Layer
 {
@@ -81,4 +81,4 @@ private:
 
 };
 
-}
+RENGINE_END_NAMESPACE

@@ -33,7 +33,7 @@
 #include <QWindow>
 #include <QOpenGLContext>
 
-using namespace rengine;
+RENGINE_USE_NAMESPACE;
 
 class QtBackend;
 class QtSurface;

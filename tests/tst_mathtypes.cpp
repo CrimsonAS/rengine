@@ -32,10 +32,6 @@
 #include "rengine.h"
 #include "test.h"
 
-using namespace rengine;
-using namespace std;
-using namespace renginetest;
-
 void tst_vec2()
 {
     vec2 a(1, 2);

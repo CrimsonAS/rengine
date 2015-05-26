@@ -29,8 +29,7 @@
 
 #pragma once
 
-namespace rengine
-{
+RENGINE_BEGIN_NAMESPACE
 
 typedef void* BufferHandle;
 
@@ -70,4 +69,4 @@ public:
 
 };
 
-}
+RENGINE_END_NAMESPACE

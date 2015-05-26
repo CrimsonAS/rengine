@@ -32,7 +32,7 @@
 #include <assert.h>
 #include <vector>
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class Node {
 public:
@@ -230,4 +230,4 @@ private:
     Layer *m_layer;
 };
 
-} // end namespace rengine
+RENGINE_END_NAMESPACE

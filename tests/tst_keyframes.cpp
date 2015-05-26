@@ -32,9 +32,6 @@
 
 #include <vector>
 
-using namespace rengine;
-using namespace std;
-
 struct Thing
 {
     double width;

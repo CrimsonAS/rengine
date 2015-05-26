@@ -34,11 +34,9 @@
 #include <iostream>
 #include "rengine.h"
 
-using namespace rengine;
 using namespace std;
 
-namespace renginetest
-{
+RENGINE_BEGIN_NAMESPACE
     inline bool fuzzy_equals(float a, float b) { return abs(a - b) < 0.0001f; }
 
     inline bool fuzzy_equals(const vec2 &a, const vec2 &b) {
@@ -74,6 +72,6 @@ namespace renginetest
             cout << "Not fuzzy equal '" << a << "' vs '" << b << "'" << endl;   \
             assert((a) == (b));                                                     \
         }
-}
+RENGINE_END_NAMESPACE
+RENGINE_USE_NAMESPACE
 
-using namespace renginetest;

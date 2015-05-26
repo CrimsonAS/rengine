@@ -29,7 +29,7 @@
 
 #pragma once
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class Surface
 {
@@ -92,4 +92,4 @@ inline void Surface::setSurfaceToInterface(SurfaceInterface *iface) {
     iface->m_surface = this;
 }
 
-}
+RENGINE_END_NAMESPACE

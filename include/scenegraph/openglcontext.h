@@ -29,8 +29,7 @@
 
 #pragma once
 
-namespace rengine
-{
+RENGINE_BEGIN_NAMESPACE
 
 class OpenGLContext
 {
@@ -39,4 +38,4 @@ public:
     virtual bool swapBuffers(Surface *surface) = 0;
 };
 
-}
+RENGINE_END_NAMESPACE

@@ -31,7 +31,7 @@
 
 #include <stack>
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class OpenGLRenderer : public Renderer
 {
@@ -68,4 +68,4 @@ private:
     std::stack<mat4> m_matrixStack;
 };
 
-}
+RENGINE_END_NAMESPACE

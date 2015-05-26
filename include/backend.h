@@ -29,7 +29,7 @@
 
 #pragma once
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 class Backend
 {
@@ -42,4 +42,4 @@ public:
     virtual OpenGLContext *createOpenGLContext() = 0;
 };
 
-}
+RENGINE_END_NAMESPACE
