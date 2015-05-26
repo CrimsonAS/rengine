@@ -13,6 +13,9 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 file(MAKE_DIRECTORY lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
+file(MAKE_DIRECTORY bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+
 #
 # librengine.a
 #
@@ -21,7 +24,6 @@ add_library(rengine STATIC
     src/scenegraph/openglrenderer.cpp
 )
 target_link_libraries(rengine Qt5::Gui)
-
 
 
 #

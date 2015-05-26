@@ -51,6 +51,7 @@ struct vec2 {
 
     vec2 operator*(float v) const { return vec2(x*v, y*v); }
     vec2 operator+(const vec2 &o) const { return vec2(x+o.x, y+o.y); }
+    vec2 operator-(const vec2 &o) const { return vec2(x-o.x, y-o.y); }
     vec2 &operator+=(const vec2 &o) {
         x += o.x;
         y += o.y;
@@ -76,6 +77,7 @@ struct vec3 {
 
     vec3 operator*(float v) const { return vec3(x*v, y*v, z*v); }
     vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }
+    vec3 operator-(const vec3 &o) const { return vec3(x-o.x, y-o.y, z+o.z); }
     vec3 &operator+=(const vec3 &o) {
         x += o.x;
         y += o.y;

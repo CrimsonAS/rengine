@@ -99,7 +99,6 @@ void OpenGLRenderer::initialize()
         vector<const char *> attrs;
         attrs.push_back("aV");
         attrs.push_back("aT");
-        cout << "building layer shader: " << attrs.size() << endl;
         prog_layer.initialize(vsh_es_layer, fsh_es_layer, attrs);
         prog_layer.matrix = prog_layer.resolve("m");
     }
