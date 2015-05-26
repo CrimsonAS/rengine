@@ -29,8 +29,12 @@
 
 #pragma once
 
-#define RENGINE_BEGIN_NAMESPACE namespace rengine {
-#define RENGINE_END_NAMESPACE }
+namespace rengine
+{
+    // template <typename Target> class KeyFrameValuesBase;
+    // template <typename Target,
+    template <typename Target> class KeyFrames;
+    // template <typename T> class KeyFrameValues;
+}
 
-#include "mathtypes.h"
-
+#include "animation.h"
