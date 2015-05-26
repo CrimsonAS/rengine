@@ -29,8 +29,5 @@
 
 #pragma once
 
-#define RENGINE_BEGIN_NAMESPACE namespace rengine {
-#define RENGINE_END_NAMESPACE }
-
 #include "mathtypes.h"
 

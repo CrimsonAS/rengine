@@ -30,8 +30,16 @@
 #pragma once
 
 namespace rengine {
-    class Surface;
-    class SurfaceInterface;
-}
 
-#include "surface.h"
+class Backend
+{
+public:
+    static Backend *get();
+
+    virtual void run() = 0;
+    virtual Surface *createSurface(SurfaceInterface *) = 0;
+    virtual Renderer *createRenderer() = 0;
+    virtual OpenGLContext *createOpenGLContext() = 0;
+};
+
+}

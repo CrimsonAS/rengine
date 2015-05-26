@@ -42,7 +42,7 @@
 #include <math.h>
 #include <ostream>
 
-namespace rengine {
+RENGINE_BEGIN_NAMESPACE
 
 struct vec2 {
 
@@ -330,4 +330,4 @@ inline std::ostream &operator<<(std::ostream &o, const mat4 &m) {
     return o;
 }
 
-}
+RENGINE_END_NAMESPACE

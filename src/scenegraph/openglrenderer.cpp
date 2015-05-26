@@ -27,7 +27,7 @@
     either expressed or implied, of the FreeBSD Project.
 */
 
-#include "../rengine.h"
+#include "rengine.h"
 
 #include <stdio.h>
 
