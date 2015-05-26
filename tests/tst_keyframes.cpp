@@ -41,17 +41,25 @@ struct Thing
     double height;
 };
 
-class KeyFrameValues_Width : public KeyFrameValues<double, Thing>
-{
-public:
-    void apply(const double &v, Thing *target) { cout << "width: " << v << endl; }
+struct Thing_setWidth {
+    void operator()(double v, Thing *target) { target->width = v; cout << "width=" << target->width << endl; }
 };
 
-class KeyFrameValues_Height : public KeyFrameValues<double, Thing>
-{
-public:
-    void apply(const double &v, Thing *target) { cout << "height: " << v << endl; }
+struct Thing_setHeight {
+    void operator()(double v, Thing *target) { target->heihgt = v; cout << "height=" << target->height << endl; }
 };
+
+// class KeyFrameValues_Width : public KeyFrameValues<double, Thing>
+// {
+// public:
+//     void apply(const double &v, Thing *target) { cout << "width: " << v << endl; }
+// };
+
+// class KeyFrameValues_Height : public KeyFrameValues<double, Thing>
+// {
+// public:
+//     void apply(const double &v, Thing *target) { cout << "height: " << v << endl; }
+// };
 
 void tst_keyframes_basic()
 {
@@ -67,13 +75,17 @@ void tst_keyframes_basic()
     keyFrames.addTime(0.6);
     keyFrames.addTime(1.0);
 
-    KeyFrameValues_Width widths;
+    KeyFrameValues<double, Thing, Thing_setWidth> widths;
     widths << 100 << 200 << 300;
     keyFrames.addValues(&widths);
 
-    KeyFrameValues_Height heights;
-    heights << 10 << 20 << 30;
-    keyFrames.addValues(&heights);
+    // KeyFrameValues_Width widths;
+    // widths << 100 << 200 << 300;
+    // keyFrames.addValues(&widths);
+
+    // KeyFrameValues_Height heights;
+    // heights << 10 << 20 << 30;
+    // keyFrames.addValues(&heights);
 
     animation.setKeyFrames(&keyFrames);
 

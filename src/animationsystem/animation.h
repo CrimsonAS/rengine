@@ -110,7 +110,7 @@ public:
     virtual int size() const = 0;
 };
 
-template <typename Value, typename Target>
+template <typename Value, typename Target, typename ApplyFunctor>
 class KeyFrameValues : public KeyFrameValuesBase<Target>
 {
 public:
@@ -123,18 +123,17 @@ public:
         assert(t <= 1);
         const Value &v0 = values.at(i0);
         const Value &v1 = values.at(i1);
-        apply(v0 + (v1 - v0) * t, target);
+        applyFunctor(v0 + (v1 - v0) * t, target);
     }
-
-    virtual void apply(const Value &value, Target *target) = 0;
 
     void append(const Value &v) { values.push_back(v); }
 
-    KeyFrameValues<Value, Target> &operator<<(const Value &v) { append(v); return *this; }
+    KeyFrameValues<Value, Target, ApplyFunctor> &operator<<(const Value &v) { append(v); return *this; }
 
     int size() const { return values.size(); }
 
 private:
+    ApplyFunctor applyFunctor;
     std::vector<Value> values;
 };
 
