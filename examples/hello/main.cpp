@@ -103,23 +103,21 @@ public:
         TransformNode *xnode = new TransformNode();
         xnode->setMatrix(mat4::translate2D(200, 100));
 
-        LayerNode *layerNode = new LayerNode();
-        layerNode->setLayer(layer);
-        layerNode->setSize(layer->size());
+        m_layerNode = new LayerNode();
+        m_layerNode->setLayer(layer);
+        m_layerNode->setSize(layer->size());
 
-        m_bounceAnimation.setTarget(layerNode);
         m_bounceAnimation.setIterations(-1);
         m_bounceAnimation.setDuration(1);
 
         m_keyFrames.times() << 0 << 1;
         m_keyFrames.addValues<vec2, LayerNode_setSize>() << vec2(w*2, h) << vec2(w, h*2);
 
-        m_bounceAnimation.setDirection(Animation<LayerNode>::Alternate);
-        m_bounceAnimation.setKeyFrames(&m_keyFrames);
+        m_bounceAnimation.setDirection(Animation::Alternate);
         m_bounceAnimation.setRunning(true);
 
         root->append(xnode);
-        xnode->append(layerNode);
+        xnode->append(m_layerNode);
 
         return root;
     }
@@ -128,7 +126,7 @@ public:
     {
         SurfaceWithRenderer::onRender();
         static double time = 0;
-        m_bounceAnimation.tick(time);
+        m_bounceAnimation.tick(time, m_layerNode, &m_keyFrames);
         time += 0.0166;
         static int counter = 10 * 60;
         if (counter-- >= 0)
@@ -137,8 +135,9 @@ public:
             exit(0);
     }
 
-    Animation<LayerNode> m_bounceAnimation;
+    Animation m_bounceAnimation;
     KeyFrames<LayerNode> m_keyFrames;
+    LayerNode *m_layerNode;
 };
 
 int main(int argc, char **argv)

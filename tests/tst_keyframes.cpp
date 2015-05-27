@@ -45,21 +45,18 @@ void tst_keyframes_basic()
 {
     Thing t;
 
-    Animation<Thing> animation;
+    Animation animation;
     animation.setDuration(10);
     animation.setIterations(1);
-    animation.setTarget(&t);
 
     KeyFrames<Thing> keyFrames;
     keyFrames.times() << 0.0 << 0.6 << 1.0;
     keyFrames.addValues<double, Thing_setWidth>() << 100 << 200 << 300;
     keyFrames.addValues<double, Thing_setHeight>() << 11 << 22 << 33;
 
-    animation.setKeyFrames(&keyFrames);
-
     animation.setRunning(true);
     for (int i=0; i<=animation.duration() * animation.iterations(); ++i) {
-        animation.tick(i);
+        animation.tick(i, &t, &keyFrames);
     }
     assert(!animation.isRunning());
 

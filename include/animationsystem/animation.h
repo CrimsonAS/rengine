@@ -50,7 +50,7 @@ RENGINE_BEGIN_NAMESPACE
 class LinearTimingFunction
 {
 public:
-    double operator()(double t) { return t; }
+    double operator()(double t) const { return t; }
 };
 
 /*!
@@ -75,8 +75,6 @@ public:
     linear curve.
 
  */
-template <typename Target,
-          typename TimingFunction = LinearTimingFunction>
 class Animation
 {
 public:
@@ -88,30 +86,22 @@ public:
     };
 
     Animation()
-      : m_keyFrames(0)
-      , m_target(0)
-      , m_iterations(1)
+      : m_iterations(1)
       , m_duration(1)
       , m_running(false)
       , m_direction(Normal)
     {
     }
 
-    inline void tick(double time);
+    template <typename Target, typename TimingFunction>
+    inline void tick(double time, Target *target, const KeyFrames<Target> *keyFrames, const TimingFunction &func);
 
-    /*!
-        Returns the target for this animation. The target is
-        passed to the KeyFrameValues's apply functor.
-
-        It is an error to change the target once the animation is running.
-
-        By default, the target is 0.
-     */
-    Target *target() const { return m_target; }
-    void setTarget(Target *t) {
-        assert(!isRunning());
-        m_target = t;
+    template <typename Target>
+    void tick(double time, Target *target, const KeyFrames<Target> *keyFrames) {
+        LinearTimingFunction func;
+        tick(time, target, keyFrames, func);
     }
+
 
     /*!
         Contains the length of each iteration in seconds.
@@ -166,25 +156,7 @@ public:
     bool isRunning() const { return m_running; }
     void setRunning(bool r) { m_running = r; }
 
-    /*!
-        Specifies the keyframes to use for this animation.
-
-        It is an error to change the keyframes once the animation is running.
-
-        The Animation does not take ownership over the KeyFrames object.
-     */
-    KeyFrames<Target> *keyFrames() const { return m_keyFrames; }
-    void setKeyFrames(KeyFrames<Target> *kf);
-
-    /*!
-        Returns a pointer to the timimg function used by this animation.
-     */
-    TimingFunction *timingFunction() { return m_timingFunction; }
-
 private:
-    KeyFrames<Target> *m_keyFrames;
-    Target *m_target;
-    TimingFunction m_timingFunction;
     int m_iterations;
     double m_duration;
 
@@ -342,10 +314,12 @@ private:
 
 template <typename Target,
           typename TimingFunction>
-void Animation<Target, TimingFunction>::tick(double time)
+void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFrames, const TimingFunction &func)
 {
     assert(isRunning());
-    assert(m_keyFrames); // no animations without 'em.
+    assert(keyFrames); // no animations without 'em.
+    for (auto i : keyFrames->values())
+        assert(keyFrames->immutableTimes().size() == i->size());
 
     // cout << "tick: time=" << time << endl;
     bool stop = false;
@@ -371,7 +345,7 @@ void Animation<Target, TimingFunction>::tick(double time)
     // Find the two indices to interpolate between
     int i0 = 0;
     int i1 = 1;
-    const std::vector<double> &kft = m_keyFrames->immutableTimes();
+    const std::vector<double> &kft = keyFrames->immutableTimes();
     // we're before the thing starts...
     if (kft.front() > scaledTime) {
         i0 = i1 = 0;
@@ -392,26 +366,15 @@ void Animation<Target, TimingFunction>::tick(double time)
     double t0 = kft.at(i0);
     double t1 = kft.at(i1);
     double t = (i0 < i1) ? (scaledTime - t0) / (t1 - t0) : t1;
-    double et = m_timingFunction(t);
+    double et = func(t);
 
     // cout << " - time: [ " << t0 << " -> " << t1 << " ] t=" << t << "; eased=" << et << "; st=" << scaledTime << endl;
 
-    for (auto v : m_keyFrames->values())
-        v->interpolate(i0, i1, et, m_target);
+    for (auto v : keyFrames->values())
+        v->interpolate(i0, i1, et, target);
 
     if (stop)
         setRunning(false);
-}
-
-
-template <typename Target,
-          typename TimingFunction>
-void Animation<Target, TimingFunction>::setKeyFrames(KeyFrames<Target> *kf)
-{
-    assert(!isRunning());
-    for (auto i : kf->values())
-        assert(kf->immutableTimes().size() == i->size());
-    m_keyFrames = kf;
 }
 
 RENGINE_END_NAMESPACE
