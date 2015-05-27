@@ -174,10 +174,7 @@ public:
         The Animation does not take ownership over the KeyFrames object.
      */
     KeyFrames<Target> *keyFrames() const { return m_keyFrames; }
-    void setKeyFrames(KeyFrames<Target> *kf) {
-        assert(!isRunning());
-        m_keyFrames = kf;
-    }
+    void setKeyFrames(KeyFrames<Target> *kf);
 
     /*!
         Returns a pointer to the timimg function used by this animation.
@@ -203,13 +200,10 @@ template <typename Target>
 class KeyFrameValuesBase
 {
 public:
+    virtual ~KeyFrameValuesBase() {}
     virtual void interpolate(int i0, int i1, double v, Target *target) = 0;
     virtual int size() const = 0;
 };
-
-/*!
-
- */
 
 template <typename ValueType, typename Target, typename ApplyFunctor>
 class KeyFrameValues : public KeyFrameValuesBase<Target>
@@ -228,17 +222,13 @@ public:
     }
 
     /*!
-
         Add \a value to this keyframevalues set
-
      */
     void append(const ValueType &value) { values.push_back(value); }
 
     /*!
-
         Convenience overload to append() which allows for appending
         multiple values in one go.
-
      */
     KeyFrameValues<ValueType, Target, ApplyFunctor> &operator<<(const ValueType &v) { append(v); return *this; }
 
@@ -297,54 +287,62 @@ template <typename Target>
 class KeyFrames
 {
 public:
+    ~KeyFrames() {
+        for (auto i : m_values) delete i;
+    }
+
+    class Times : public std::vector<double> {
+    public:
+        Times &operator<<(double t) {
+            assert(t >= 0); // sanity check range
+            assert(t <= 1);
+            assert(std::find(begin(), end(), t) == end()); // no diplicates
+            assert(empty() || back() < t); // ensure sorting
+            push_back(t);
+            return *this;
+        }
+    };
 
     /*!
+        Used to define the times for this keyframes object..
 
-        Add another keyframe to the keyframes.
-
-        Times must be between 0 and 1 and must be specified in sorted order.
+        Times must be between 0 and 1 and must be in sorted order.
 
         Once values have been added, it is an error to try add more key frame
         times.
-
      */
-    void addTime(double t) {
-        assert(t >= 0); // sanity check range
-        assert(t <= 1);
-        assert(std::find(m_times.begin(), m_times.end(), t) == m_times.end()); // no diplicates
-        assert(m_times.empty() || m_times.back() < t); // ensure sorting
+    Times &times() {
         assert(m_values.empty()); // no changes after adding values
-        m_times.push_back(t);
+        return m_times;
     }
 
     /*
-
         Add a set of values to the keyframes.
 
         The values must have the same number of entries as the number of times
         added to this keyframes and a set of key frame times must have been
         defined before the first set of values can be added.
 
-        The keyframes object does not take ownership of the values.
-
      */
-    void addValues(KeyFrameValuesBase<Target> *v) {
+    template <typename Value, typename Callback>
+    KeyFrameValues<Value, Target, Callback> &addValues() {
         assert(m_times.size() > 0);
-        assert(v->size() == m_times.size()); // these must line up...
+        KeyFrameValues<Value, Target, Callback> *v = new KeyFrameValues<Value, Target, Callback>();
         m_values.push_back(v);
+        return *v;
     }
 
-    const std::vector<double> &times() const { return m_times; }
+    const Times &immutableTimes() const { return m_times; }
     const std::vector<KeyFrameValuesBase<Target> *> &values() const { return m_values; }
 
 private:
-    std::vector<double> m_times;
+    Times m_times;
     std::vector<KeyFrameValuesBase<Target> *> m_values;
 };
 
-template <typename TimingFunction,
-          typename Target>
-void Animation<TimingFunction, Target>::tick(double time)
+template <typename Target,
+          typename TimingFunction>
+void Animation<Target, TimingFunction>::tick(double time)
 {
     assert(isRunning());
     assert(m_keyFrames); // no animations without 'em.
@@ -373,7 +371,7 @@ void Animation<TimingFunction, Target>::tick(double time)
     // Find the two indices to interpolate between
     int i0 = 0;
     int i1 = 1;
-    const std::vector<double> &kft = m_keyFrames->times();
+    const std::vector<double> &kft = m_keyFrames->immutableTimes();
     // we're before the thing starts...
     if (kft.front() > scaledTime) {
         i0 = i1 = 0;
@@ -403,6 +401,17 @@ void Animation<TimingFunction, Target>::tick(double time)
 
     if (stop)
         setRunning(false);
+}
+
+
+template <typename Target,
+          typename TimingFunction>
+void Animation<Target, TimingFunction>::setKeyFrames(KeyFrames<Target> *kf)
+{
+    assert(!isRunning());
+    for (auto i : kf->values())
+        assert(kf->immutableTimes().size() == i->size());
+    m_keyFrames = kf;
 }
 
 RENGINE_END_NAMESPACE

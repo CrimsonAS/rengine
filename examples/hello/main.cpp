@@ -100,26 +100,27 @@ public:
 
         Node *root = new Node();
 
+        TransformNode *xnode = new TransformNode();
+        xnode->setMatrix(mat4::translate2D(200, 100));
+
         LayerNode *layerNode = new LayerNode();
         layerNode->setLayer(layer);
         layerNode->setSize(layer->size());
 
         m_bounceAnimation.setTarget(layerNode);
         m_bounceAnimation.setIterations(-1);
-        m_bounceAnimation.setDuration(2);
+        m_bounceAnimation.setDuration(1);
 
-        m_keyFrames.addTime(0);
-        m_keyFrames.addTime(1/3.);
-        m_keyFrames.addTime(2/3.);
-        m_keyFrames.addTime(1);
+        m_keyFrames.times() << 0 << 1;
+        m_keyFrames.addValues<vec2, LayerNode_setSize>() << vec2(w*2, h) << vec2(w, h*2);
 
-        m_keyFrameValues << vec2(w*2, h*2) << vec2(w*4, h*2) << vec2(w*2, h*4) << vec2(w*2,h*2);
-        m_keyFrames.addValues(&m_keyFrameValues);
-
+        m_bounceAnimation.setDirection(Animation<LayerNode>::Alternate);
         m_bounceAnimation.setKeyFrames(&m_keyFrames);
         m_bounceAnimation.setRunning(true);
 
-        root->append(layerNode);
+        root->append(xnode);
+        xnode->append(layerNode);
+
         return root;
     }
 
@@ -136,9 +137,8 @@ public:
             exit(0);
     }
 
-    Animation<LayerNode, QuadTimingFunction> m_bounceAnimation;
+    Animation<LayerNode> m_bounceAnimation;
     KeyFrames<LayerNode> m_keyFrames;
-    KeyFrameValues<vec2, LayerNode, LayerNode_setSize> m_keyFrameValues;
 };
 
 int main(int argc, char **argv)

@@ -51,17 +51,9 @@ void tst_keyframes_basic()
     animation.setTarget(&t);
 
     KeyFrames<Thing> keyFrames;
-    keyFrames.addTime(0);
-    keyFrames.addTime(0.6);
-    keyFrames.addTime(1.0);
-
-    KeyFrameValues<double, Thing, Thing_setWidth> widths;
-    widths << 100 << 200 << 300;
-    keyFrames.addValues(&widths);
-
-    KeyFrameValues<double, Thing, Thing_setHeight> heights;
-    heights << 11 << 22 << 33;
-    keyFrames.addValues(&heights);
+    keyFrames.times() << 0.0 << 0.6 << 1.0;
+    keyFrames.addValues<double, Thing_setWidth>() << 100 << 200 << 300;
+    keyFrames.addValues<double, Thing_setHeight>() << 11 << 22 << 33;
 
     animation.setKeyFrames(&keyFrames);
 
