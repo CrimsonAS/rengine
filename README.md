@@ -1,21 +1,39 @@
 
-this is 'rengine' - a rendering engine
---------------------------------------
+a rendering engine
+------------------
 
-Rengine compiles to a single static library and has no dependencies other than
-OpenGL and the C++ standard library.
+rengine compiles to a single static library and has no dependencies other than
+OpenGL and the C++ standard library (C++11).
+
+Right now, it is all pretty lame, but I'm having fun..
+
+The idea is provide a simple scene graph and animation api that is capable of
+support HTML/CSS style layer composition. That means:
+ - CSS keyframe animations
+ - CSS filters (grayscale, blur, etc)
+ - only textures and solids
+ - "dumb" 3D support
+ - replacable backends to handle windowsystem/eventloop/input
+ - optional backend code to hardware compositor
+ - optional frontend to wayland to provide window surfaces as layers
+   - application protocol to create and run animations
+   - server-side pannables
+
+Right now this project is pretty lame. It ain't stable, not very functional,
+hard to use and very much work in progress, but I'm having fun :)
+
+Now go look at something else...
 
 Optional dependences include:
 
  - Qt: for the Qt based backend (currently a hard dependency and only working backend)
-
  - Wayland: For the wayland based front end (currently not implented)
 
 
 todo
 ----
 
-Mostly a list of things to keep in mind for my own sake
+lots and lots...
 
 
 overview of the dependencies between source directories
