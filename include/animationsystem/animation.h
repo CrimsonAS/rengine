@@ -78,6 +78,8 @@ public:
 class Animation
 {
 public:
+    virtual ~Animation() {}
+
     enum Direction { // uses 2-bit field
         Normal,
         Reverse,
@@ -92,6 +94,20 @@ public:
       , m_direction(Normal)
     {
     }
+
+    /*!
+
+        This function is provided as means for a subclass to store target,
+        keyframes and timing function in a non-template way, making it
+        possible to store animations in lists, vectors and similar.
+
+        This function is used by AnimationClosure and AnimationManager for
+        instance.
+
+        Calling the default implementation will result in an error.
+
+     */
+    virtual void tick(double time) { assert(false); };
 
     template <typename Target, typename TimingFunction>
     inline void tick(double time, Target *target, const KeyFrames<Target> *keyFrames, const TimingFunction &func);
