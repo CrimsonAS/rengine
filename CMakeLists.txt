@@ -13,9 +13,6 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 file(MAKE_DIRECTORY lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
-file(MAKE_DIRECTORY bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
-
 #
 # librengine.a
 #
@@ -33,6 +30,14 @@ add_executable(ex_hello examples/hello/main.cpp)
 add_dependencies(ex_hello rengine)
 target_link_libraries(ex_hello rengine)
 target_link_libraries(ex_hello ${OPENGL_LIBRARIES})
+
+#
+# examples/rectangles.cpp
+#
+add_executable(ex_rectangles examples/rectangles.cpp)
+add_dependencies(ex_rectangles rengine)
+target_link_libraries(ex_rectangles rengine)
+target_link_libraries(ex_rectangles ${OPENGL_LIBRARIES})
 
 #
 # tst_node

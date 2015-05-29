@@ -38,6 +38,7 @@ class Node {
 public:
     enum Type {
         BasicNodeType = 0,
+        RectangleNodeType,
         LayerNodeType,
         TransformNodeType,
         OpacityNodeType
@@ -194,11 +195,47 @@ private:
 };
 
 
-class LayerNode : public Node {
+class RectangleNode : public Node {
+public:
+    enum { StaticType = RectangleNodeType };
+
+    RectangleNode() : Node(RectangleNodeType) { }
+
+    float x() const { return m_pos.x; }
+    float y() const { return m_pos.y; }
+    const vec2 &position() const { return m_pos; }
+    void setPosition(float x, float y) { setPosition(vec2(x, y)); }
+    void setPosition(const vec2 &pos) { m_pos = pos; }
+
+    float width() const { return m_size.x; }
+    float height() const { return m_size.y; }
+    const vec2 &size() const { return m_size; }
+    void setSize(float w, float h) { setSize(vec2(w, h)); }
+    void setSize(const vec2 &size) { m_size = size; }
+
+    void setGeometry(float x, float y, float w, float h) {
+        setPosition(x, y);
+        setSize(w, h);
+    }
+
+    const vec4 &color() const { return m_color; }
+    void setColor(const vec4 &color) { m_color = color; }
+
+protected:
+    RectangleNode(Type type) : Node(type) { }
+
+private:
+    vec2 m_pos;
+    vec2 m_size;
+    vec4 m_color;
+};
+
+
+class LayerNode : public RectangleNode {
 public:
     enum { StaticType = LayerNodeType };
     LayerNode()
-        : Node(LayerNodeType)
+        : RectangleNode(LayerNodeType)
         , m_layer(0)
     {
     }
@@ -206,27 +243,7 @@ public:
     Layer *layer() const { return m_layer; }
     void setLayer(Layer *layer) { m_layer = layer; }
 
-    // Superflous, no? We get this from the matrix in a parent transform node after all..
-    // float x() const { return m_pos.x; }
-    // float y() const { return m_pos.y; }
-    // vec2 position() const { return m_pos; }
-    // void setPosition(float x, float y) { setPosition(vec2(x, y)); }
-    // void setPosition(const vec2 &pos) { m_pos = pos; }
-
-    float width() const { return m_size.x; }
-    float height() const { return m_size.y; }
-    vec2 size() const { return m_size; }
-    void setSize(float w, float h) { setSize(vec2(w, h)); }
-    void setSize(const vec2 &size) { m_size = size; }
-
-    // void setGeometry(float x, float y, float w, float h) {
-    //     setPosition(x, y);
-    //     setSize(w, h);
-    // }
-
 private:
-    // vec2 m_pos;
-    vec2 m_size;
     Layer *m_layer;
 };
 

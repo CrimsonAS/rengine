@@ -35,7 +35,9 @@ class Renderer
 {
 public:
     Renderer()
-    : m_fillColor(0, 0, 0, 1)
+        : m_sceneRoot(0)
+        , m_surface(0)
+        , m_fillColor(0, 0, 0, 1)
     {
     }
 
@@ -47,12 +49,11 @@ public:
      */
     virtual Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data) = 0;
 
-    /*!
-        Sets \a root as the scene root for this renderer
-     */
-    virtual void setSceneRoot(Node *root) = 0;
+    Node *sceneRoot() const { return m_sceneRoot; }
+    void setSceneRoot(Node *root) { m_sceneRoot = root; }
 
-    virtual void setTargetSurface(Surface *surface) = 0;
+    Surface *targetSurface() const { return m_surface; }
+    void setTargetSurface(Surface *surface) { m_surface = surface; }
 
     /*!
         The application should call this before the very first render pass.
@@ -74,6 +75,8 @@ public:
     const vec4 &fillColor() const { return m_fillColor; }
 
 private:
+    Node *m_sceneRoot;
+    Surface *m_surface;
     vec4 m_fillColor;
 };
 

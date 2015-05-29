@@ -42,6 +42,7 @@ void tst_node_cast()
     check_true(tst_node_cast_helper<OpacityNode>());
     check_true(tst_node_cast_helper<LayerNode>());
     check_true(tst_node_cast_helper<TransformNode>());
+    check_true(tst_node_cast_helper<RectangleNode>());
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
@@ -106,16 +107,17 @@ void tst_node_addRemoveParent()
 }
 
 
-void tst_layernode_geometry()
+void tst_rectanglenode_geometry()
 {
     LayerNode layerNode;
 
+    layerNode.setPosition(1, 2);
     layerNode.setSize(3, 4);
-    // check_equal(layerNode.x(), 1);
-    // check_equal(layerNode.y(), 2);
+    check_equal(layerNode.x(), 1);
+    check_equal(layerNode.y(), 2);
     check_equal(layerNode.width(), 3);
     check_equal(layerNode.height(), 4);
-    // check_equal(layerNode.position(), vec2(1, 2));
+    check_equal(layerNode.position(), vec2(1, 2));
     check_equal(layerNode.size(), vec2(3, 4));
 
     cout << __FUNCTION__ << ": ok" << endl;
@@ -126,7 +128,7 @@ int main(int, char **)
 {
     tst_node_cast();
     tst_node_addRemoveParent();
-    tst_layernode_geometry();
+    tst_rectanglenode_geometry();
 
     return 0;
 }

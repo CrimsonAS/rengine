@@ -142,34 +142,6 @@ private:
 
 
 // Candidate for some util/.. thing, perhaps?
-class SurfaceWithRenderer : public SurfaceInterface
-{
-public:
-
-    SurfaceWithRenderer()
-        : m_renderer(0)
-    {
-    }
-
-    virtual Node *buildSceneGraph() = 0;
-
-    void onRender() {
-        if (!m_renderer) {
-            m_renderer = Backend::get()->createRenderer();
-            m_renderer->setTargetSurface(surface());
-            m_renderer->initialize();
-            m_renderer->setSceneRoot(buildSceneGraph());
-        }
-
-        m_renderer->render();
-    }
-
-    Renderer *renderer() const { return m_renderer; }
-
-private:
-    Renderer *m_renderer;
-};
-
 struct LayerNode_setSize {
     void operator()(const vec2 &v, LayerNode *l) { l->setSize(v); }
 };
@@ -178,14 +150,17 @@ struct QuadTimingFunction {
     double operator()(double t) { return t * t; }
 };
 
-class Window : public SurfaceWithRenderer
+class Window : public StandardSurfaceInterface
 {
 public:
     Window()
     {
     }
 
-    Node *buildSceneGraph() {
+    Node *update(Node *oldRoot) {
+        if (oldRoot)
+            return oldRoot;
+
         // read the image...
         int w, h, n;
         unsigned char *data = stbi_load("../examples/images/walker.png", &w, &h, &n, 4);
@@ -228,7 +203,7 @@ public:
 
     void onRender()
     {
-        SurfaceWithRenderer::onRender();
+        StandardSurfaceInterface::onRender();
         static double time = 0;
         m_bounceAnimation.tick(time, m_layerNode, &m_keyFrames);
         time += 0.0166;
@@ -244,20 +219,17 @@ public:
     LayerNode *m_layerNode;
 };
 
-int main(int argc, char **argv)
-{
-    AnimationManager am;
-    am.stop();
+RENGINE_MAIN(Window)
 
-    return 1;
+// int main(int argc, char **argv)
+// {
+//     Backend *backend = Backend::get();
 
-    Backend *backend = Backend::get();
+//     Window window;
+//     Surface *surface = backend->createSurface(&window);
+//     surface->show();
 
-    Window window;
-    Surface *surface = backend->createSurface(&window);
-    surface->show();
+//     backend->run();
 
-    backend->run();
-
-    return 0;
-}
+//     return 0;
+// }

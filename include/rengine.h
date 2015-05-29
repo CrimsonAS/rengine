@@ -1,5 +1,6 @@
 #pragma once
 
+#define RENGINE_NAMESPACE_PREFIX rengine::
 #define RENGINE_BEGIN_NAMESPACE namespace rengine {
 #define RENGINE_END_NAMESPACE }
 #define RENGINE_USE_NAMESPACE using namespace rengine;
@@ -55,5 +56,9 @@ RENGINE_END_NAMESPACE
 #include "animationsystem/animation.h"
 
 #include "backend.h"
+
+#include "util/standardsurfaceinterface.h"
+#include "util/maindefine.h"
+
 
 

@@ -42,10 +42,6 @@ public:
 
     void setOpenGLContext(OpenGLContext *gl) { m_gl = gl; }
 
-    void setSceneRoot(Node *root) { m_sceneRoot = root; }
-
-    void setTargetSurface(Surface *surface) { m_surface = surface; }
-
     void initialize();
 
     bool render();
@@ -53,8 +49,6 @@ public:
 private:
     void render(Node *n);
 
-    Node *m_sceneRoot;
-    Surface *m_surface;
     OpenGLContext *m_gl;
 
     struct LayerProgram : public OpenGLShaderProgram {

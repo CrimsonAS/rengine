@@ -11,6 +11,8 @@ The idea is provide a simple scene graph and animation api that is capable of
 support HTML/CSS style layer composition. That means:
  - CSS keyframe animations
  - CSS filters (grayscale, blur, etc)
+ - (not the css parsing and logic itself, just the rendering and animation
+   primitives for it)
  - only textures and solids
  - "dumb" 3D support
  - replacable backends to handle windowsystem/eventloop/input
@@ -34,7 +36,15 @@ todo
 ----
 
 lots and lots...
-
+ - OpenGL renderer
+   - antialiased edges
+   - layer flattening under opacity and filter nodes
+   - filter nodes (maybe drop blur/dropshadow for now since they are expensive as hell)
+   - caching of non-changing flattened subtrees to improve performance
+ - add more properties to LayerNode
+   - x, y
+   - opacity
+   - border and rounded edges?
 
 overview of the dependencies between source directories
 -------------------------------------------------------
