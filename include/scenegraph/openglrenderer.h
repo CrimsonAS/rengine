@@ -43,6 +43,13 @@ public:
     bool render();
 
 private:
+    struct NodeToRender {
+        Node *node;
+        float vertices[8];
+        float z;
+        bool operator<(const NodeToRender &o) const { return z < o.z; }
+    };
+
     struct RenderState {
         RenderState()
             : farPlane(0)
@@ -54,6 +61,8 @@ private:
         void push(const mat4 &m) { matrices.push(matrices.top() * m); }
         void pop() { matrices.pop(); }
 
+        std::vector<NodeToRender> nodes;
+
         float farPlane;
     };
 
@@ -62,7 +71,8 @@ private:
     void drawTextureQuad(const float *v, GLuint texId);
     void activateShader(const OpenGLShaderProgram *shader);
     void projectQuad(const vec2 &a, const vec2 &b, float *v);
-    void render3D(Node *n);
+    void gatherNodes3D(Node *n);
+    void render3D();
     RenderState *state();
 
     OpenGLContext *m_gl;

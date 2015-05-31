@@ -242,7 +242,9 @@ void OpenGLRenderer::render(Node *n)
             state()->matrices.push(tn->matrix());
 
             for (auto child : n->children())
-                render3D(child);
+                gatherNodes3D(child);
+
+            render3D();
 
             m_states.pop_back();
 
@@ -261,28 +263,20 @@ void OpenGLRenderer::render(Node *n)
 }
 
 
-
-void OpenGLRenderer::render3D(Node *n)
+void OpenGLRenderer::gatherNodes3D(Node *n)
 {
     assert(m_states.size() > 1); // base state won't have projection, so we must have at least two...
     assert(state()->farPlane > 0); // pre-req for entering into 3D rendering in the first place.
 
-    if (LayerNode *ln = Node::from<LayerNode>(n)) {
-        float v[8];
-        const vec2 &p1 = ln->position();
-        const vec2 &p2 = ln->size() + ln->position();
-        projectQuad(p1, p2, v);
-        Layer *l = ln->layer();
-        assert(l);
-        assert(l->textureId());
-        drawTextureQuad(v, l->textureId());
-
-    } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
-        float v[8];
+    if (n->type() == Node::LayerNodeType || n->type() == Node::RectangleNodeType) {
+        RectangleNode *rn = static_cast<RectangleNode *>(n);
         const vec2 &p1 = rn->position();
         const vec2 &p2 = rn->size() + rn->position();
-        projectQuad(p1, p2, v);
-        drawColorQuad(v, rn->color());
+        NodeToRender ntr;
+        ntr.node = n;
+        ntr.z = (state()->matrices.top() * vec3((p1 + p2) / 2.0f)).z;
+        projectQuad(p1, p2, ntr.vertices);
+        state()->nodes.push_back(ntr);
 
     } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
         if (tn->projectionDepth() > 0) {
@@ -291,13 +285,31 @@ void OpenGLRenderer::render3D(Node *n)
 
         state()->push(tn->matrix());
         for (auto child : n->children())
-            render3D(child);
+            gatherNodes3D(child);
         state()->pop();
 
         return;
     }
 
     for (auto child : n->children())
-        render3D(child);
+        gatherNodes3D(child);
 
+}
+
+
+
+void OpenGLRenderer::render3D()
+{
+    sort(state()->nodes.begin(), state()->nodes.end());
+
+    for (const auto &n : state()->nodes) {
+        if (LayerNode *ln = Node::from<LayerNode>(n.node)) {
+            Layer *l = ln->layer();
+            assert(l);
+            assert(l->textureId());
+            drawTextureQuad(n.vertices, l->textureId());
+        } else if (RectangleNode *rn = Node::from<RectangleNode>(n.node)) {
+            drawColorQuad(n.vertices, rn->color());
+        }
+    }
 }
