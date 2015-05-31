@@ -54,6 +54,7 @@ RENGINE_END_NAMESPACE
 #include "scenegraph/opengltexturelayer.h"
 
 #include "animationsystem/animation.h"
+#include "animationsystem/animationappliers.h"
 
 #include "backend.h"
 

@@ -317,7 +317,7 @@ struct mat4 {
                     0, 0, 0, 1, Translation2D);
     }
 
-    static mat4 rotateZ(float radians) { return rotate2D(radians); }
+    static mat4 rotateAroundZ(float radians) { return rotate2D(radians); }
 
     static mat4 rotateAroundX(float radians) {
         float s = sin(radians);

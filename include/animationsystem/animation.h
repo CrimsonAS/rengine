@@ -39,6 +39,8 @@
 #pragma once
 
 #include <vector>
+#include <chrono>
+#include <list>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -392,5 +394,110 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
     if (stop)
         setRunning(false);
 }
+
+
+// ### TODO: do we need an AnimationClosure with for shared keyframes?
+
+template <typename Target, typename TimingFunction = LinearTimingFunction>
+class AnimationClosure : public Animation
+{
+public:
+    AnimationClosure(Target *t, const TimingFunction &func = TimingFunction())
+        : target(t)
+        , timingFunction(func)
+    {
+    }
+
+    void tick(double t) {
+        Animation::tick(t, target, &keyFrames, timingFunction);
+    }
+
+    Target *target;
+    KeyFrames<Target> keyFrames;
+    TimingFunction timingFunction;
+};
+
+typedef std::chrono::steady_clock clock;
+typedef std::chrono::steady_clock::time_point time_point;
+
+class AnimationManager
+{
+public:
+
+    /*!
+        Advances the clock forward based on current time.
+
+        The setup here is 'controlled' and we're guaranteed to tick in line
+        with vsync without any significant drift, so we don't bother with
+        predictive/fixed time increments for now. We can always add that
+        later...
+     */
+    void tick() {
+        clock::time_point now = clock::now();
+
+        // Start pending animations if we've passed beyond its starting point.
+        // ### TODO: these should probably be sorted so animations start in the right order
+        auto si = m_scheduledAnimations.begin();
+        while (si != m_scheduledAnimations.end()) {
+            assert(!si->animation->isRunning());
+            if (si->when < now) {
+                startAnimation(si->animation);
+                si = m_scheduledAnimations.erase(si);
+            } else {
+                ++si;
+            }
+        }
+
+        auto ri = m_runningAnimations.begin();
+        while (ri != m_runningAnimations.end()) {
+            assert(ri->animation->isRunning());
+            std::chrono::duration<double> animTime = now - ri->when;
+            ri->animation->tick(animTime.count());
+            if (!ri->animation->isRunning()) {
+                ri = m_runningAnimations.erase(ri);
+            } else {
+                ++ri;
+            }
+        }
+    }
+
+
+    void start() {
+        m_startTime = clock::now();
+        tick();
+    }
+
+    void stop() {
+    }
+
+    void startAnimation(Animation *animation) {
+        TimedAnimation anim;
+        anim.when = clock::now();
+        anim.animation = animation;
+        animation->setRunning(true);
+        m_runningAnimations.push_back(anim);
+    }
+
+    void scheduleAnimation(double delay, Animation *animation) {
+        TimedAnimation ta;
+        ta.when = clock::now() + std::chrono::milliseconds(int(delay * 1000));
+        ta.animation = animation;
+        m_scheduledAnimations.push_back(ta);
+    }
+
+    bool animationsRunning() const { return !m_runningAnimations.empty(); }
+    bool animationsScheduled() const { return !m_scheduledAnimations.empty(); }
+
+private:
+    struct TimedAnimation {
+        time_point when;
+        Animation *animation;
+    };
+    time_point m_startTime;
+
+    std::list<TimedAnimation> m_runningAnimations;
+    std::list<TimedAnimation> m_scheduledAnimations;
+};
+
 
 RENGINE_END_NAMESPACE

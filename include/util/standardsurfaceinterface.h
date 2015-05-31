@@ -13,20 +13,40 @@ public:
     virtual Node *update(Node *oldRoot) = 0;
 
     void onRender() {
+
+        // Initialize the renderer if this is the first time around
         if (!m_renderer) {
             m_renderer = Backend::get()->createRenderer();
             m_renderer->setTargetSurface(surface());
             m_renderer->initialize();
         }
 
+        // Create the scene graph; update if it already exists..
         m_renderer->setSceneRoot(update(m_renderer->sceneRoot()));
+
+        // Advance the animations just before rendering..
+        m_animationManager.tick();
+
+        // And then render the stuff
         m_renderer->render();
+
+        // Schedule a repaint again if there are animations running...
+
+        // ### TODO: Optimize waiting for scheduled animations. Rather than
+        // just keep on rendering, we should figure out how long we need to
+        // wait and schedule an update at that time.
+        if (m_animationManager.animationsRunning() || m_animationManager.animationsScheduled()) {
+            surface()->requestRender();
+        }
     }
 
     Renderer *renderer() const { return m_renderer; }
 
+    AnimationManager *animationManager() { return &m_animationManager; }
+
 private:
     Renderer *m_renderer;
+    AnimationManager m_animationManager;
 };
 
 RENGINE_END_NAMESPACE
