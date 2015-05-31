@@ -79,6 +79,8 @@ void main() {                                   \n\
 
 OpenGLRenderer::OpenGLRenderer()
     : m_gl(0)
+    , m_activeShader(0)
+    , m_currentTransformNode(0)
 {
     memset(&prog_layer, 0, sizeof(prog_layer));
     memset(&prog_solid, 0, sizeof(prog_solid));
@@ -128,6 +130,7 @@ bool OpenGLRenderer::render()
     glClearColor(c.x, c.y, c.z, c.w);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glDepthRange(-1000.0, 1000.0);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDepthMask(false);
@@ -136,71 +139,159 @@ bool OpenGLRenderer::render()
 
     mat4 proj = mat4::translate2D(-1.0, 1.0)
                 * mat4::scale2D(2.0f / surfaceSize.x, -2.0f / surfaceSize.y);
+    glUseProgram(prog_layer.id());
+    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
+    glUseProgram(prog_solid.id());
+    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
 
     assert(m_matrixStack.empty());
-    m_matrixStack.push(proj);
+    m_matrixStack.push(mat4());
 
     render(sceneRoot());
 
     m_matrixStack.pop();
     assert(m_matrixStack.empty());
 
-    glUseProgram(0);
+    activateShader(0);
 
     m_gl->swapBuffers(targetSurface());
 
     return true;
 }
 
+void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
+{
+    if (shader == m_activeShader)
+        return;
+
+    int oldCount = m_activeShader ? m_activeShader->attributeCount() : 0;
+    int newCount = 0;
+
+    if (shader) {
+        newCount = shader->attributeCount();
+        glUseProgram(shader->id());
+
+    } else {
+        glUseProgram(0);
+    }
+
+    // Enable new ones
+    for (int i=oldCount; i<newCount; ++i)
+        glEnableVertexAttribArray(i);
+    for (int i=oldCount-1; i>=newCount; --i)
+        glDisableVertexAttribArray(i);
+
+}
+
+/*!
+
+    Draws a quad using the 'solid' program. \a v is a vector of 8 floats,
+    composed of four interleaved x/y points. \a c is the color.
+
+ */
+void OpenGLRenderer::drawColorQuad(float *v, const vec4 &c)
+{
+    activateShader(&prog_solid);
+
+    glUniform4f(prog_solid.color, c.x, c.y, c.z, c.w);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, v);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+void OpenGLRenderer::drawTextureQuad(float *v, GLuint texId)
+{
+    activateShader(&prog_layer);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), v);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), v + 2);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+static inline vec2 project(const vec3 &v, float far)
+{
+    float zScale = (far - v.z) / far;
+    return vec2(v.x / zScale, v.y / zScale);
+}
+
 void OpenGLRenderer::render(Node *n)
 {
     if (LayerNode *ln = Node::from<LayerNode>(n)) {
-        const vec2 &p = ln->position();
-        const vec2 &s = ln->size() + p;
-        float data[] = { p.x, p.y, 0, 0,
-                         p.x, s.y, 0, 1,
-                         s.x, p.y, 1, 0,
-                         s.x, s.y, 1, 1 };
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glUseProgram(prog_layer.id());
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), &data[0]);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), &data[2]);
+        const vec2 &p1 = m_matrixStack.top() * ln->position();
+        const vec2 &p2 = m_matrixStack.top() * (ln->size() + ln->position());
+
+        float data[] = { p1.x, p1.y, 0, 0,
+                         p1.x, p2.y, 0, 1,
+                         p2.x, p1.y, 1, 0,
+                         p2.x, p2.y, 1, 1 };
 
         Layer *l = ln->layer();
         assert(l);
         assert(l->textureId());
+        drawTextureQuad(data, l->textureId());
 
-        glUniformMatrix4fv(prog_layer.matrix, 1, true, m_matrixStack.top().m);
-        glBindTexture(GL_TEXTURE_2D, l->textureId());
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDisableVertexAttribArray(0);
-        glDisableVertexAttribArray(1);
     } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
-        const vec2 &p = rn->position();
-        const vec2 &s = rn->size() + p;
-        float data[] = { p.x, p.y,
-                         p.x, s.y,
-                         s.x, p.y,
-                         s.x, s.y };
-        glEnableVertexAttribArray(0);
-        glUseProgram(prog_solid.id());
-        const vec4 &c = rn->color();
-        glUniform4f(prog_solid.color, c.x, c.y, c.z, c.w);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, &data[0]);
+        vec2 p1 = rn->position();
+        vec2 p2 = (rn->size() + rn->position());
 
-        glUniformMatrix4fv(prog_layer.matrix, 1, true, m_matrixStack.top().m);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDisableVertexAttribArray(0);
+        if (m_currentProjectionDepth > 0 && m_currentTransformNode) {
+            const mat4 &m = m_currentTransformNode->matrix();
+
+            vec3 tl = m * vec3(p1);
+            vec3 tr = m * vec3(p2.x, p1.y);
+            vec3 bl = m * vec3(p1.x, p2.y);
+            vec3 br = m * vec3(p2);
+
+            vec2 ptl = project(tl, m_currentProjectionDepth);
+            vec2 ptr = project(tr, m_currentProjectionDepth);
+            vec2 pbl = project(bl, m_currentProjectionDepth);
+            vec2 pbr = project(br, m_currentProjectionDepth);
+
+            ptl = m_matrixStack.top() * ptl;
+            ptr = m_matrixStack.top() * ptr;
+            pbl = m_matrixStack.top() * pbl;
+            pbr = m_matrixStack.top() * pbr;
+
+            float data[] = { ptl.x, ptl.y,
+                             pbl.x, pbl.y,
+                             ptr.x, ptr.y,
+                             pbr.x, pbr.y };
+            drawColorQuad(data, rn->color());
+
+        } else {
+            p1 = m_matrixStack.top() * p1;
+            p2 = m_matrixStack.top() * p2;
+            float data[] = { p1.x, p1.y,
+                             p1.x, p2.y,
+                             p2.x, p1.y,
+                             p2.x, p2.y };
+            drawColorQuad(data, rn->color());
+
+        }
 
     } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
-        m_matrixStack.push(m_matrixStack.top() * tn->matrix());
+        if (tn->projectionDepth() > 0) {
+            float oldProjDepth = m_currentProjectionDepth;
+            TransformNode *oldTn = m_currentTransformNode;
+            m_currentProjectionDepth = tn->projectionDepth();
+            m_currentTransformNode = tn;
+
+            for (auto it : n->children())
+                render(it);
+
+            m_currentTransformNode = oldTn;
+            m_currentProjectionDepth = oldProjDepth;
+        } else {
+            m_matrixStack.push(m_matrixStack.top() * tn->matrix());
+            for (auto it : n->children())
+                render(it);
+            m_matrixStack.pop();
+        }
+        return;
+
     }
 
     for (auto it : n->children())
         render(it);
-
-    if (Node::from<TransformNode>(n))
-        m_matrixStack.pop();
 
 }

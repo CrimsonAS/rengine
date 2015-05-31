@@ -37,17 +37,16 @@ class OpenGLRenderer : public Renderer
 {
 public:
     OpenGLRenderer();
-
     Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data);
-
     void setOpenGLContext(OpenGLContext *gl) { m_gl = gl; }
-
     void initialize();
-
     bool render();
 
 private:
     void render(Node *n);
+    void drawColorQuad(float *v, const vec4 &color);
+    void drawTextureQuad(float *v, GLuint texId);
+    void activateShader(const OpenGLShaderProgram *shader);
 
     OpenGLContext *m_gl;
 
@@ -60,6 +59,10 @@ private:
     } prog_solid;
 
     std::stack<mat4> m_matrixStack;
+
+    OpenGLShaderProgram *m_activeShader;
+    float m_currentProjectionDepth;
+    TransformNode *m_currentTransformNode;
 };
 
 RENGINE_END_NAMESPACE

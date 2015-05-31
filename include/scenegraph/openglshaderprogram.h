@@ -38,7 +38,8 @@ class OpenGLShaderProgram
 {
 public:
     OpenGLShaderProgram()
-    : m_id(0)
+        : m_id(0)
+        , m_attributeCount(0)
     {
     }
 
@@ -113,10 +114,15 @@ public:
         }
 
         assert(glGetError() == GL_NO_ERROR);
+
+        m_attributeCount = attrs.size();
     }
+
+    int attributeCount() const { return m_attributeCount; }
 
 private:
     GLuint m_id;
+    int m_attributeCount;
 };
 
 RENGINE_END_NAMESPACE

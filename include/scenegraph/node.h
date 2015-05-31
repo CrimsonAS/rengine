@@ -184,14 +184,20 @@ public:
 
     TransformNode()
         : Node(TransformNodeType)
+        , m_projectionDepth(0)
     {
     }
 
-    void setMatrix(const mat4 &m) { m_matrix = m; }
     const mat4 &matrix() const { return m_matrix; }
+    void setMatrix(const mat4 &m) { m_matrix = m; }
+
+    float projectionDepth() const { return m_projectionDepth; }
+    void setProjectionDepth(float d) { m_projectionDepth = d; }
 
 private:
     mat4 m_matrix; // ### Replace with mat3/mat4 once it is implemented..
+    float m_projectionDepth;
+
 };
 
 

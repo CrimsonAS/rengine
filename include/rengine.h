@@ -21,7 +21,7 @@ class SurfaceInterface;
 // 'scenegraph' subdir
 class Node;
 class OpacityNode;
-class SurfaceNode;
+class LayerNode;
 class TransformNode;
 class Renderer;
 class Layer;

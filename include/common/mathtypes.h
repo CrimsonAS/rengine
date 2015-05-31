@@ -50,6 +50,7 @@ struct vec2 {
     vec2(float v = 0.0f) : x(v), y(v) { }
 
     vec2 operator*(float v) const { return vec2(x*v, y*v); }
+    vec2 operator/(float v) const { return vec2(x/v, y/v); }
     vec2 operator+(const vec2 &o) const { return vec2(x+o.x, y+o.y); }
     vec2 operator-(const vec2 &o) const { return vec2(x-o.x, y-o.y); }
     vec2 &operator+=(const vec2 &o) {
@@ -72,10 +73,12 @@ struct vec2 {
 
 struct vec3 {
 
-    vec3(float x, float y, float z) : x(x), y(y), z(z) { }
+    vec3(float x, float y, float z = 0) : x(x), y(y), z(z) { }
     vec3(float v = 0.0f) : x(v), y(v), z(v) { }
+    vec3(const vec2 &v, float z = 0) : x(v.x), y(v.y), z(z) { }
 
     vec3 operator*(float v) const { return vec3(x*v, y*v, z*v); }
+    vec3 operator/(float v) const { return vec3(x/v, y/v, z/v); }
     vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }
     vec3 operator-(const vec3 &o) const { return vec3(x-o.x, y-o.y, z+o.z); }
     vec3 &operator+=(const vec3 &o) {
@@ -101,10 +104,13 @@ struct vec3 {
 
 struct vec4 {
 
-    vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) { }
+    vec4(float x, float y, float z=0, float w=0) : x(x), y(y), z(z), w(w) { }
     vec4(float v = 0.0f) : x(v), y(v), z(v), w(v) { }
+    vec4(const vec2 &v, float z = 0, float w = 0) : x(v.x), y(v.y), z(z), w(w) { }
+    vec4(const vec3 &v, float w = 0) : x(v.x), y(v.y), z(v.z), w(w) { }
 
     vec4 operator*(float v) const { return vec4(x*v, y*v, z*v, w*v); }
+    vec4 operator/(float v) const { return vec4(x/v, y/v, z/v, w/v); }
     vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
     vec4 operator-(const vec4 &o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
     vec4 &operator+=(const vec4 &o) {
@@ -282,6 +288,7 @@ struct mat4 {
                     0, 0, 0, 1, Translation2D);
     }
 
+
     static mat4 scale2D(float sx, float sy) {
         return mat4(sx,  0,  0, 0,
                      0, sy,  0, 0,
@@ -296,6 +303,40 @@ struct mat4 {
                     s,  c, 0, 0,
                     0,  0, 1, 0,
                     0,  0, 0, 1, Rotation2D);
+    }
+
+    static mat4 translate(float dx, float dy, float dz) {
+        return mat4(1, 0, 0, dx,
+                    0, 1, 0, dy,
+                    0, 0, 1, dz,
+                    0, 0, 0, 1, Translation2D);
+    }
+
+    static mat4 rotateZ(float radians) { return rotate2D(radians); }
+
+    static mat4 rotateAroundX(float radians) {
+        float s = sin(radians);
+        float c = cos(radians);
+        return mat4(1, 0,  0, 0,
+                    0, c, -s, 0,
+                    0, s,  c, 0,
+                    0, 0,  0, 1, Generic);
+    }
+
+    static mat4 rotateAroundY(float radians) {
+        float s = sin(radians);
+        float c = cos(radians);
+        return mat4( c, 0,  s, 0,
+                     0, 1,  0, 0,
+                    -s, 0,  c, 0,
+                     0, 0,  0, 1, Generic);
+    }
+
+    static mat4 scale(float sx, float sy, float sz) {
+        return mat4(sx,  0,  0, 0,
+                     0, sy,  0, 0,
+                     0,  0, sz, 0,
+                     0   ,   0, 1, Generic);
     }
 
     bool isIdentity() const { return type == Identity; }
