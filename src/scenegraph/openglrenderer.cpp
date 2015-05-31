@@ -80,7 +80,6 @@ void main() {                                   \n\
 OpenGLRenderer::OpenGLRenderer()
     : m_gl(0)
     , m_activeShader(0)
-    , m_currentTransformNode(0)
 {
     memset(&prog_layer, 0, sizeof(prog_layer));
     memset(&prog_solid, 0, sizeof(prog_solid));
@@ -117,6 +116,8 @@ void OpenGLRenderer::initialize()
 
 bool OpenGLRenderer::render()
 {
+    assert(m_states.empty());
+
     if (sceneRoot() == 0) {
         cout << __PRETTY_FUNCTION__ << " - no 'sceneRoot', surely this is not what you intended?" << endl;
         return false;
@@ -144,13 +145,13 @@ bool OpenGLRenderer::render()
     glUseProgram(prog_solid.id());
     glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
 
-    assert(m_matrixStack.empty());
-    m_matrixStack.push(mat4());
+    m_states.push_back(RenderState());
+    state()->matrices.push(proj);
 
     render(sceneRoot());
 
-    m_matrixStack.pop();
-    assert(m_matrixStack.empty());
+    m_states.pop_back();
+    assert(m_states.empty());
 
     activateShader(0);
 
@@ -189,7 +190,7 @@ void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
     composed of four interleaved x/y points. \a c is the color.
 
  */
-void OpenGLRenderer::drawColorQuad(float *v, const vec4 &c)
+void OpenGLRenderer::drawColorQuad(const float *v, const vec4 &c)
 {
     activateShader(&prog_solid);
 
@@ -198,32 +199,27 @@ void OpenGLRenderer::drawColorQuad(float *v, const vec4 &c)
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void OpenGLRenderer::drawTextureQuad(float *v, GLuint texId)
+void OpenGLRenderer::drawTextureQuad(const float *v, GLuint texId)
 {
     activateShader(&prog_layer);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), v);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), v + 2);
+    const float tv[] = { 0, 0, 0, 1, 1, 0, 1, 1 };
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, v);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tv);
     glBindTexture(GL_TEXTURE_2D, texId);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-static inline vec2 project(const vec3 &v, float far)
-{
-    float zScale = (far - v.z) / far;
-    return vec2(v.x / zScale, v.y / zScale);
 }
 
 void OpenGLRenderer::render(Node *n)
 {
     if (LayerNode *ln = Node::from<LayerNode>(n)) {
-        const vec2 &p1 = m_matrixStack.top() * ln->position();
-        const vec2 &p2 = m_matrixStack.top() * (ln->size() + ln->position());
-
-        float data[] = { p1.x, p1.y, 0, 0,
-                         p1.x, p2.y, 0, 1,
-                         p2.x, p1.y, 1, 0,
-                         p2.x, p2.y, 1, 1 };
+        const vec2 &p1 = state()->matrices.top() * ln->position();
+        const vec2 &p2 = state()->matrices.top() * (ln->size() + ln->position());
+        const float data[] = { p1.x, p1.y,
+                               p1.x, p2.y,
+                               p2.x, p1.y,
+                               p2.x, p2.y };
 
         Layer *l = ln->layer();
         assert(l);
@@ -231,61 +227,30 @@ void OpenGLRenderer::render(Node *n)
         drawTextureQuad(data, l->textureId());
 
     } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
-        vec2 p1 = rn->position();
-        vec2 p2 = (rn->size() + rn->position());
-
-        if (m_currentProjectionDepth > 0 && m_currentTransformNode) {
-            const mat4 &m = m_currentTransformNode->matrix();
-
-            vec3 tl = m * vec3(p1);
-            vec3 tr = m * vec3(p2.x, p1.y);
-            vec3 bl = m * vec3(p1.x, p2.y);
-            vec3 br = m * vec3(p2);
-
-            vec2 ptl = project(tl, m_currentProjectionDepth);
-            vec2 ptr = project(tr, m_currentProjectionDepth);
-            vec2 pbl = project(bl, m_currentProjectionDepth);
-            vec2 pbr = project(br, m_currentProjectionDepth);
-
-            ptl = m_matrixStack.top() * ptl;
-            ptr = m_matrixStack.top() * ptr;
-            pbl = m_matrixStack.top() * pbl;
-            pbr = m_matrixStack.top() * pbr;
-
-            float data[] = { ptl.x, ptl.y,
-                             pbl.x, pbl.y,
-                             ptr.x, ptr.y,
-                             pbr.x, pbr.y };
-            drawColorQuad(data, rn->color());
-
-        } else {
-            p1 = m_matrixStack.top() * p1;
-            p2 = m_matrixStack.top() * p2;
-            float data[] = { p1.x, p1.y,
-                             p1.x, p2.y,
-                             p2.x, p1.y,
-                             p2.x, p2.y };
-            drawColorQuad(data, rn->color());
-
-        }
+        const vec2 &p1 = state()->matrices.top() * ln->position();
+        const vec2 &p2 = state()->matrices.top() * (ln->size() + ln->position());
+        const float data[] = { p1.x, p1.y,
+                               p1.x, p2.y,
+                               p2.x, p1.y,
+                               p2.x, p2.y };
+        drawColorQuad(data, rn->color());
 
     } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
         if (tn->projectionDepth() > 0) {
-            float oldProjDepth = m_currentProjectionDepth;
-            TransformNode *oldTn = m_currentTransformNode;
-            m_currentProjectionDepth = tn->projectionDepth();
-            m_currentTransformNode = tn;
+            m_states.push_back(RenderState());
+            state()->farPlane = tn->projectionDepth();
+            state()->matrices.push(tn->matrix());
 
-            for (auto it : n->children())
-                render(it);
+            for (auto child : n->children())
+                render3D(child);
 
-            m_currentTransformNode = oldTn;
-            m_currentProjectionDepth = oldProjDepth;
+            m_states.pop_back();
+
         } else {
-            m_matrixStack.push(m_matrixStack.top() * tn->matrix());
+            state()->matrices.push(tn->matrix());
             for (auto it : n->children())
                 render(it);
-            m_matrixStack.pop();
+            state()->matrices.pop();
         }
         return;
 
@@ -293,5 +258,46 @@ void OpenGLRenderer::render(Node *n)
 
     for (auto it : n->children())
         render(it);
+}
+
+
+
+void OpenGLRenderer::render3D(Node *n)
+{
+    assert(m_states.size() > 1); // base state won't have projection, so we must have at least two...
+    assert(state()->farPlane > 0); // pre-req for entering into 3D rendering in the first place.
+
+    if (LayerNode *ln = Node::from<LayerNode>(n)) {
+        float v[8];
+        const vec2 &p1 = ln->position();
+        const vec2 &p2 = ln->size() + ln->position();
+        projectQuad(p1, p2, v);
+        Layer *l = ln->layer();
+        assert(l);
+        assert(l->textureId());
+        drawTextureQuad(v, l->textureId());
+
+    } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
+        float v[8];
+        const vec2 &p1 = rn->position();
+        const vec2 &p2 = rn->size() + rn->position();
+        projectQuad(p1, p2, v);
+        drawColorQuad(v, rn->color());
+
+    } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
+        if (tn->projectionDepth() > 0) {
+            cout << "Nested projection depths are currently not supported, ignoring..." << endl;
+        }
+
+        state()->push(tn->matrix());
+        for (auto child : n->children())
+            render3D(child);
+        state()->pop();
+
+        return;
+    }
+
+    for (auto child : n->children())
+        render3D(child);
 
 }

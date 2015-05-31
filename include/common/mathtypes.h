@@ -77,6 +77,11 @@ struct vec3 {
     vec3(float v = 0.0f) : x(v), y(v), z(v) { }
     vec3(const vec2 &v, float z = 0) : x(v.x), y(v.y), z(z) { }
 
+    vec2 project2D(float farPlane) const {
+        float zScale = (farPlane - z) / farPlane;
+        return vec2(x / zScale, y / zScale);
+    }
+
     vec3 operator*(float v) const { return vec3(x*v, y*v, z*v); }
     vec3 operator/(float v) const { return vec3(x/v, y/v, z/v); }
     vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }

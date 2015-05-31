@@ -43,10 +43,27 @@ public:
     bool render();
 
 private:
+    struct RenderState {
+        RenderState()
+            : farPlane(0)
+        {
+        }
+
+        std::stack<mat4> matrices;
+
+        void push(const mat4 &m) { matrices.push(matrices.top() * m); }
+        void pop() { matrices.pop(); }
+
+        float farPlane;
+    };
+
     void render(Node *n);
-    void drawColorQuad(float *v, const vec4 &color);
-    void drawTextureQuad(float *v, GLuint texId);
+    void drawColorQuad(const float *v, const vec4 &color);
+    void drawTextureQuad(const float *v, GLuint texId);
     void activateShader(const OpenGLShaderProgram *shader);
+    void projectQuad(const vec2 &a, const vec2 &b, float *v);
+    void render3D(Node *n);
+    RenderState *state();
 
     OpenGLContext *m_gl;
 
@@ -58,11 +75,32 @@ private:
         int color;
     } prog_solid;
 
-    std::stack<mat4> m_matrixStack;
+    std::vector<RenderState> m_states;
 
     OpenGLShaderProgram *m_activeShader;
-    float m_currentProjectionDepth;
-    TransformNode *m_currentTransformNode;
 };
+
+inline OpenGLRenderer::RenderState *OpenGLRenderer::state() { return &m_states.back(); }
+
+inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, float *v)
+{
+    // ### todo make const&
+    const mat4 &M3D = state()->matrices.top();
+    const mat4 &P = m_states.at(m_states.size() - 2).matrices.top();
+    const float farPlane = state()->farPlane;
+
+    // The steps involved in each line is as follows.:
+    // pt_3d = proj3D_matrix * pt            // apply the 3D transform
+    // pt_proj = pt_3d.project2D()           // project it to 2D based on current farPlane
+    // pt_screen = parent_matrix * pt_proj   // Put the output of our local 3D into the scene world coordinate system
+
+    // Output the results direclty into the v array
+    vec2 *vv = (vec2 *) v;
+    vv[0] = P * (M3D * vec3(a))       .project2D(farPlane);    // top left
+    vv[1] = P * (M3D * vec3(a.x, b.y)).project2D(farPlane);    // bottom left
+    vv[2] = P * (M3D * vec3(b.x, a.y)).project2D(farPlane);    // top right
+    vv[3] = P * (M3D * vec3(b))       .project2D(farPlane);    // bottom right
+}
+
 
 RENGINE_END_NAMESPACE
