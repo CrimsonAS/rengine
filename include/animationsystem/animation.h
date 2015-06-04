@@ -191,15 +191,15 @@ class KeyFrameValuesBase
 {
 public:
     virtual ~KeyFrameValuesBase() {}
-    virtual void interpolate(int i0, int i1, double v, Target *target) = 0;
-    virtual int size() const = 0;
+    virtual void interpolate(size_t i0, size_t i1, double v, Target *target) = 0;
+    virtual size_t size() const = 0;
 };
 
 template <typename ValueType, typename Target, typename ApplyFunctor>
 class KeyFrameValues : public KeyFrameValuesBase<Target>
 {
 public:
-    void interpolate(int i0, int i1, double t, Target *target) {
+    void interpolate(size_t i0, size_t i1, double t, Target *target) {
         assert(i0 >= 0);
         assert(i0 < values.size());
         assert(i1 > 0);
@@ -222,7 +222,7 @@ public:
      */
     KeyFrameValues<ValueType, Target, ApplyFunctor> &operator<<(const ValueType &v) { append(v); return *this; }
 
-    int size() const { return values.size(); }
+    size_t size() const { return values.size(); }
 
 private:
     ApplyFunctor applyFunctor;
@@ -361,8 +361,8 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
     }
 
     // Find the two indices to interpolate between
-    int i0 = 0;
-    int i1 = 1;
+    size_t i0 = 0;
+    size_t i1 = 1;
     const std::vector<double> &kft = keyFrames->immutableTimes();
     // we're before the thing starts...
     if (kft.front() > scaledTime) {

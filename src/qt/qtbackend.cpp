@@ -27,11 +27,12 @@
     either expressed or implied, of the FreeBSD Project.
 */
 
-#include "rengine.h"
-
 #include <QGuiApplication>
 #include <QWindow>
 #include <QOpenGLContext>
+
+#include "rengine.h"
+
 
 RENGINE_USE_NAMESPACE;
 

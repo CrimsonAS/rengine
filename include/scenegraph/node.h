@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <vector>
+#include <algorithm>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -127,7 +128,7 @@ public:
     template <typename T>
     static T* from(Node *n) {
         assert(n);
-        return (n->type() == T::StaticType) ? static_cast<T *>(n) : 0;
+        return (n->type() == (Node::Type) T::StaticType) ? static_cast<T *>(n) : 0;
     }
 
     /*!

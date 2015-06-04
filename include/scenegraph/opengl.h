@@ -37,12 +37,12 @@
 #else
 // Other
 #include <EGL/egl.h>
-#include <GLESv2/gl2.h>
+#include <GLES2/gl2.h>
 #define RENGINE_OPENGL_ES_2
 #endif
 
 #ifdef RENGINE_OPENGL_DESKTOP
 # define RENGINE_GLSL_HEADER "#define highp\n#define mediump\n#define lowp\n"
 #else
-# define RENGINE_GLSL_HEADER "#define highp\n#define mediump\n#define lowp\n"
+# define RENGINE_GLSL_HEADER ""
 #endif

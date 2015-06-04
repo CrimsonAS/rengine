@@ -4,7 +4,7 @@ using namespace rengine;
 using namespace std;
 
 
-class Window : public StandardSurfaceInterface
+class MyWindow : public StandardSurfaceInterface
 {
 public:
     Node *update(Node *old) {
@@ -61,4 +61,4 @@ public:
     }
 };
 
-RENGINE_MAIN(Window)
+RENGINE_MAIN(MyWindow)

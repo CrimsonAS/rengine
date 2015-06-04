@@ -53,10 +53,10 @@ struct QuadTimingFunction {
     double operator()(double t) { return t * t; }
 };
 
-class Window : public StandardSurfaceInterface
+class MyWindow : public StandardSurfaceInterface
 {
 public:
-    Window()
+    MyWindow()
     {
     }
 
@@ -122,7 +122,7 @@ public:
     LayerNode *m_layerNode;
 };
 
-RENGINE_MAIN(Window)
+RENGINE_MAIN(MyWindow)
 
 // int main(int argc, char **argv)
 // {

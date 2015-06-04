@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -57,7 +58,7 @@ public:
     GLuint createShader(const char *sh, GLenum type)
     {
         GLuint id = glCreateShader(type);
-        int len = strlen(sh);
+        int len = std::strlen(sh);
         glShaderSource(id, 1, &sh, &len);
         glCompileShader(id);
         int param = 0;
@@ -91,7 +92,7 @@ public:
         glAttachShader(m_id, vid);
         glAttachShader(m_id, fid);
 
-        for (int i=0; i<attrs.size(); ++i)
+        for (unsigned i=0; i<attrs.size(); ++i)
             glBindAttribLocation(m_id, i, attrs.at(i));
 
         glLinkProgram(m_id);

@@ -81,8 +81,8 @@ OpenGLRenderer::OpenGLRenderer()
     : m_gl(0)
     , m_activeShader(0)
 {
-    memset(&prog_layer, 0, sizeof(prog_layer));
-    memset(&prog_solid, 0, sizeof(prog_solid));
+    std::memset(&prog_layer, 0, sizeof(prog_layer));
+    std::memset(&prog_solid, 0, sizeof(prog_solid));
 }
 
 Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format format, void *data)
@@ -131,7 +131,6 @@ bool OpenGLRenderer::render()
     glClearColor(c.x, c.y, c.z, c.w);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glDepthRange(-1000.0, 1000.0);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDepthMask(false);
