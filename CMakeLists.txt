@@ -4,6 +4,11 @@ project(rengine)
 find_package(Qt5Gui)
 find_package(OpenGL)
 
+if (OPENGL_FOUND)
+    message("OpenGL (Desktop) was detected")
+    add_definitions(-DRENGINE_OPENGL_DESKTOP)
+endif()
+
 include_directories(include 3rdparty)
 
 enable_testing()

@@ -125,8 +125,8 @@ public:
 
 Backend *Backend::get()
 {
-    static QtBackend singleton;
-    return &singleton;
+    static QtBackend *singleton = new QtBackend();
+    return singleton;
 }
 
 void QtBackend::processEvents()

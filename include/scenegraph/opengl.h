@@ -32,7 +32,6 @@
 #if defined(__APPLE__)
 // OSX
 # include <OpenGL/gl.h>
-# define RENGINE_OPENGL_DESKTOP
 
 #else
 // Other
