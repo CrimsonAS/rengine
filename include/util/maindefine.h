@@ -5,10 +5,12 @@ RENGINE_BEGIN_NAMESPACE
 template <typename InterfaceName>
 int rengine_main(int argc, char **argv) {
     Backend *backend = Backend::get();
-    InterfaceName iface;
-    Surface *surface = backend->createSurface(&iface);
+    InterfaceName *iface = new InterfaceName();
+    Surface *surface = backend->createSurface(iface);
     surface->show();
     backend->run();
+    delete iface;
+    delete backend;
     return 0;
 }
 

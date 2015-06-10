@@ -34,6 +34,8 @@ RENGINE_BEGIN_NAMESPACE
 class Backend
 {
 public:
+    virtual ~Backend() { }
+
     static Backend *get();
 
     virtual void run() = 0;
