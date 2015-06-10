@@ -13,8 +13,6 @@ public:
 
         vec2 s = surface()->size();
 
-        // ### todo set up animation system and reuse scene graph...
-
         // Root has origin in screen center
         TransformNode *root = new TransformNode();
         root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));

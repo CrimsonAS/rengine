@@ -20,4 +20,10 @@ struct TransformNode_rotateAroundZ {
     }
 };
 
+struct OpacityNode_setOpacity {
+    void operator()(double opacity, OpacityNode *node) {
+        node->setOpacity(opacity);
+    }
+};
+
 RENGINE_END_NAMESPACE

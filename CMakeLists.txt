@@ -73,6 +73,7 @@ target_link_libraries(rengine Qt5::Gui)
 #
 add_rengine_example(hello)
 add_rengine_example(rectangles)
+add_rengine_example(layeredopacity)
 
 add_rengine_test(node)
 add_rengine_test(mathtypes)

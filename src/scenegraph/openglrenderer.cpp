@@ -226,8 +226,8 @@ void OpenGLRenderer::render(Node *n)
         drawTextureQuad(data, l->textureId());
 
     } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
-        const vec2 &p1 = state()->matrices.top() * ln->position();
-        const vec2 &p2 = state()->matrices.top() * (ln->size() + ln->position());
+        const vec2 &p1 = state()->matrices.top() * rn->position();
+        const vec2 &p2 = state()->matrices.top() * (rn->size() + rn->position());
         const float data[] = { p1.x, p1.y,
                                p1.x, p2.y,
                                p2.x, p1.y,
@@ -255,6 +255,8 @@ void OpenGLRenderer::render(Node *n)
         }
         return;
 
+    } else if (OpacityNode *on = Node::from<OpacityNode>(n)) {
+        cout << "opacity node at: " << on->opacity() << endl;
     }
 
     for (auto it : n->children())
