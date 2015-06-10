@@ -142,7 +142,7 @@ bool OpenGLRenderer::render()
     glUseProgram(prog_layer.id());
     glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
     glUseProgram(prog_solid.id());
-    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
+    glUniformMatrix4fv(prog_solid.matrix, 1, true, proj.m);
 
     m_states.push_back(RenderState());
     state()->matrices.push(proj);
