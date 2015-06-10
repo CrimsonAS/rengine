@@ -33,6 +33,9 @@
 
 #include "rengine.h"
 
+#if QT_VERSION >= 0x050500
+#define QWINDOW_HAS_REQUEST_UPDATE
+#endif
 
 RENGINE_USE_NAMESPACE;
 
@@ -64,7 +67,12 @@ public:
 class QtWindow : public QWindow
 {
 public:
-    QtWindow(QtSurface *s) :s(s) {
+    QtWindow(QtSurface *s)
+    : s(s)
+#ifndef QWINDOW_HAS_REQUEST_UPDATE
+    , updateTimer(0)
+#endif
+    {
         resize(800, 480);
         setSurfaceType(QWindow::OpenGLSurface);
         create();
@@ -75,6 +83,14 @@ public:
     void resizeEvent(QResizeEvent *e);
 
     QtSurface *s;
+
+#ifndef QWINDOW_HAS_REQUEST_UPDATE
+    void requestUpdate() {
+        if (updateTimer == 0)
+            updateTimer = startTimer(5);
+    }
+    int updateTimer;
+#endif
 };
 
 class QtSurface : public Surface
@@ -93,7 +109,9 @@ public:
         int dpr = window.devicePixelRatio();
         return vec2(window.width() * dpr, window.height() * dpr);
     }
-    void requestRender() { window.requestUpdate(); }
+    void requestRender() {
+        window.requestUpdate();
+    }
 
     QtWindow window;
     SurfaceInterface *iface;
@@ -162,10 +180,18 @@ OpenGLContext *QtBackend::createOpenGLContext()
 
 bool QtWindow::event(QEvent *e)
 {
+#ifdef QWINDOW_HAS_REQUEST_UPDATE
     if (e->type() == QEvent::UpdateRequest) {
         s->iface->onRender();
         return true;
     }
+#else
+    if (e->type() == QEvent::Timer) {
+        killTimer(updateTimer);
+        updateTimer = 0;
+        s->iface->onRender();
+    }
+#endif
     return QWindow::event(e);
 }
 
