@@ -53,6 +53,7 @@ struct vec2 {
     vec2 operator/(float v) const { return vec2(x/v, y/v); }
     vec2 operator+(const vec2 &o) const { return vec2(x+o.x, y+o.y); }
     vec2 operator-(const vec2 &o) const { return vec2(x-o.x, y-o.y); }
+    vec2 operator-() const { return vec2(-x, -y); }
     vec2 &operator+=(const vec2 &o) {
         x += o.x;
         y += o.y;
@@ -86,6 +87,7 @@ struct vec3 {
     vec3 operator/(float v) const { return vec3(x/v, y/v, z/v); }
     vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }
     vec3 operator-(const vec3 &o) const { return vec3(x-o.x, y-o.y, z+o.z); }
+    vec3 operator-() const { return vec3(-x, -y, -z); }
     vec3 &operator+=(const vec3 &o) {
         x += o.x;
         y += o.y;
@@ -118,6 +120,7 @@ struct vec4 {
     vec4 operator/(float v) const { return vec4(x/v, y/v, z/v, w/v); }
     vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
     vec4 operator-(const vec4 &o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
+    vec4 operator-() const { return vec4(-x, -y, -z, -w); }
     vec4 &operator+=(const vec4 &o) {
         x += o.x;
         y += o.y;
