@@ -112,10 +112,10 @@ inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, float *v)
 
     // Output the results direclty into the v array
     vec2 *vv = (vec2 *) v;
-    vv[0] = P * (M3D * vec3(a))       .project2D(farPlane);    // top left
-    vv[1] = P * (M3D * vec3(a.x, b.y)).project2D(farPlane);    // bottom left
-    vv[2] = P * (M3D * vec3(b.x, a.y)).project2D(farPlane);    // top right
-    vv[3] = P * (M3D * vec3(b))       .project2D(farPlane);    // bottom right
+    vv[0] = P * ((M3D * vec3(a))       .project2D(farPlane));    // top left
+    vv[1] = P * ((M3D * vec3(a.x, b.y)).project2D(farPlane));    // bottom left
+    vv[2] = P * ((M3D * vec3(b.x, a.y)).project2D(farPlane));    // top right
+    vv[3] = P * ((M3D * vec3(b))       .project2D(farPlane));    // bottom right
 }
 
 
