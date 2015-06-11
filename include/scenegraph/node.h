@@ -110,7 +110,7 @@ public:
     /*!
      * Returns this node's list of children.
      */
-    const std::vector<Node *> children() const { return m_children; }
+    const std::vector<Node *> &children() const { return m_children; }
 
     /*!
      * Returns this node's parent node.
@@ -196,9 +196,8 @@ public:
     void setProjectionDepth(float d) { m_projectionDepth = d; }
 
 private:
-    mat4 m_matrix; // ### Replace with mat3/mat4 once it is implemented..
+    mat4 m_matrix;
     float m_projectionDepth;
-
 };
 
 

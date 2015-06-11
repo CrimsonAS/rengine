@@ -80,6 +80,11 @@ void main() {                                   \n\
 OpenGLRenderer::OpenGLRenderer()
     : m_gl(0)
     , m_activeShader(0)
+    , m_numOpacityNodes(0)
+    , m_numLayerNodes(0)
+    , m_numRectangleNodes(0)
+    , m_numTransformNodes(0)
+    , m_numTransformNodesWith3d(0)
 {
     std::memset(&prog_layer, 0, sizeof(prog_layer));
     std::memset(&prog_solid, 0, sizeof(prog_solid));
@@ -114,6 +119,26 @@ void OpenGLRenderer::initialize()
     }
 }
 
+void OpenGLRenderer::prepass(Node *n)
+{
+    switch (n->type()) {
+    case Node::OpacityNodeType: ++m_numOpacityNodes; break;
+    case Node::LayerNodeType: ++m_numLayerNodes; break;
+    case Node::RectangleNodeType: ++m_numRectangleNodes; break;
+    case Node::TransformNodeType:
+        ++m_numTransformNodes;
+        if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
+            ++m_numTransformNodesWith3d;
+        break;
+    default:
+        // ignore...
+        break;
+    }
+
+    for (auto c : n->children())
+        prepass(c);
+}
+
 bool OpenGLRenderer::render()
 {
     assert(m_states.empty());
@@ -122,6 +147,20 @@ bool OpenGLRenderer::render()
         cout << __PRETTY_FUNCTION__ << " - no 'sceneRoot', surely this is not what you intended?" << endl;
         return false;
     }
+
+    m_numOpacityNodes = 0;
+    m_numLayerNodes = 0;
+    m_numRectangleNodes = 0;
+    m_numTransformNodes = 0;
+    m_numTransformNodesWith3d = 0;
+    prepass(sceneRoot());
+    // cout << "render: " << m_numLayerNodes << " layers, "
+    //                    << m_numRectangleNodes << " rects, "
+    //                    << m_numTransformNodes << " xforms, "
+    //                    << m_numTransformNodesWith3d << " 3dxforms, "
+    //                    << m_numOpacityNodes << " opacites"
+    //                    << endl;
+
     m_gl->makeCurrent(targetSurface());
 
     vec2 surfaceSize = targetSurface()->size();
@@ -314,3 +353,5 @@ void OpenGLRenderer::render3D()
         }
     }
 }
+
+

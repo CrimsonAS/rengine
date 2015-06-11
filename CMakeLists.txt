@@ -7,6 +7,18 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 
+################################################################################
+#
+# Options
+#
+option(RENGINE_LOG_INFO "LogInfo" ON)
+
+if (RENGINE_LOG_INFO)
+    add_definitions(-DRENGINE_LOG_INFO)
+else()
+    message("logging is off")
+endif()
+
 
 ################################################################################
 #
@@ -26,6 +38,9 @@ macro(add_rengine_test name)
     add_dependencies(${TEST_NAME} rengine)
     target_link_libraries(${TEST_NAME} rengine)
 endmacro(add_rengine_test)
+
+
+
 
 
 

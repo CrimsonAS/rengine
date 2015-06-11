@@ -38,6 +38,7 @@
 #endif
 
 RENGINE_USE_NAMESPACE;
+using namespace std;
 
 class QtBackend;
 class QtSurface;
@@ -53,6 +54,9 @@ public:
     QtBackend()
         : app(argc, (char **) argv)
     {
+#ifdef RENGINE_LOG_INFO
+        cout << "QtBackend: created..." << endl;
+#endif
     }
 
     void run();
@@ -101,6 +105,9 @@ public:
     , iface(iface)
     {
         setSurfaceToInterface(iface);
+#ifdef RENGINE_LOG_INFO
+        cout << "QtBackend::Surface created with interface=" << iface << endl;
+#endif
     }
 
     void show() { window.show(); }
@@ -124,11 +131,40 @@ class QtOpenGLContext : public OpenGLContext
 public:
     QtOpenGLContext()
     {
-        context.create();
+        QSurfaceFormat format;
+        // format.setAlphaBufferSize(8);
+        format.setSamples(4);
+        context.setFormat(format);
+        if (!context.create())
+            cout << "QtBackend::OpenGLContext: failed to create OpenGL context" << endl;
+#ifdef RENGINE_LOG_INFO
+        cout << "QtBackend::OpenGLContext is " << (context.isValid() ? "created" : "invalid...") << endl;
+#endif
     }
 
     bool makeCurrent(Surface *s) {
-        return context.makeCurrent(&static_cast<QtSurface *>(s)->window);
+        if (!context.makeCurrent(&static_cast<QtSurface *>(s)->window)) {
+            cout << "QtBackend::OpenGLContext: failed to make current..." << endl;
+            return false;
+        }
+#ifdef RENGINE_LOG_INFO
+        static bool logged = false;
+        if (!logged) {
+            QSurfaceFormat f = context.format();
+            logged = true;
+            cout << "OpenGL\n" << endl
+                 << " - Renderer .......: " << glGetString(GL_RENDERER) << endl;
+            cout << " - Version ........: " << glGetString(GL_VERSION) << endl;
+            cout << " - R/G/B/A ........: " << f.redBufferSize() << " "
+                                       << f.greenBufferSize() << " "
+                                       << f.blueBufferSize() << " "
+                                       << f.alphaBufferSize() << endl;
+            cout << " - Depth/Stencil ..: " << f.depthBufferSize() << " "
+                                            << f.stencilBufferSize() << endl;
+            cout << "OpenGL Extensions ..: " << glGetString(GL_EXTENSIONS) << endl;
+        }
+#endif
+        return true;
     }
 
     bool swapBuffers(Surface *s) {
@@ -155,7 +191,13 @@ void QtBackend::processEvents()
 
 void QtBackend::run()
 {
+#ifdef RENGINE_LOG_INFO
+    cout << "QtBackend: starting eventloop..." << endl;
+#endif
     app.exec();
+#ifdef RENGINE_LOG_INFO
+    cout << "QtBackend: exited eventloop..." << endl;
+#endif
 }
 
 Surface *QtBackend::createSurface(SurfaceInterface *iface)
@@ -197,7 +239,7 @@ bool QtWindow::event(QEvent *e)
 
 void QtWindow::exposeEvent(QExposeEvent *e)
 {
-    if (isExposed())
+    if (isExposed() && isVisible())
         s->iface->onRender();
 }
 

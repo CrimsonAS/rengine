@@ -19,6 +19,7 @@ public:
             m_renderer = Backend::get()->createRenderer();
             m_renderer->setTargetSurface(surface());
             m_renderer->initialize();
+            m_animationManager.start();
         }
 
         // Create the scene graph; update if it already exists..

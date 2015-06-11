@@ -47,8 +47,8 @@ public:
 
         root->append(xnode);
 
-        AnimationClosure<TransformNode> *anim = new AnimationClosure<TransformNode>(rotationNode);
-        anim->setDuration(15);
+        AnimationClosure<TransformNode, SmoothedTimingFunction> *anim = new AnimationClosure<TransformNode, SmoothedTimingFunction>(rotationNode);
+        anim->setDuration(4);
         anim->setIterations(-1);
         anim->keyFrames.times() << 0 << 1;
         anim->keyFrames.addValues<double, TransformNode_rotateAroundY>() << 0 << M_PI * 2.0;

@@ -66,6 +66,7 @@ private:
         float farPlane;
     };
 
+    void prepass(Node *n);
     void render(Node *n);
     void drawColorQuad(const float *v, const vec4 &color);
     void drawTextureQuad(const float *v, GLuint texId);
@@ -88,19 +89,24 @@ private:
     std::vector<RenderState> m_states;
 
     OpenGLShaderProgram *m_activeShader;
+
+    unsigned m_numOpacityNodes;
+    unsigned m_numLayerNodes;
+    unsigned m_numRectangleNodes;
+    unsigned m_numTransformNodes;
+    unsigned m_numTransformNodesWith3d;
 };
 
 inline OpenGLRenderer::RenderState *OpenGLRenderer::state() { return &m_states.back(); }
 
 inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, float *v)
 {
-    // ### todo make const&
     const mat4 &M3D = state()->matrices.top();
     const mat4 &P = m_states.at(m_states.size() - 2).matrices.top();
     const float farPlane = state()->farPlane;
 
     // The steps involved in each line is as follows.:
-    // pt_3d = proj3D_matrix * pt            // apply the 3D transform
+    // pt_3d = matrix3D * pt                 // apply the 3D transform
     // pt_proj = pt_3d.project2D()           // project it to 2D based on current farPlane
     // pt_screen = parent_matrix * pt_proj   // Put the output of our local 3D into the scene world coordinate system
 

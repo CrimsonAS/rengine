@@ -56,6 +56,15 @@ public:
 };
 
 /*!
+    Timing function based on traditional smoothstep, 3*t^2 - 2*t^3
+ */
+class SmoothedTimingFunction
+{
+public:
+    double operator()(double t) const { return 3*t*t - 2*t*t*t; }
+};
+
+/*!
 
     Defines an animation, greatly inspored by the HTML/CSS animation
     primitives.
@@ -334,12 +343,14 @@ template <typename Target,
           typename TimingFunction>
 void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFrames, const TimingFunction &func)
 {
+#ifndef NDEBUG
     assert(isRunning());
     assert(keyFrames); // no animations without 'em.
     for (auto i : keyFrames->values())
         assert(keyFrames->immutableTimes().size() == i->size());
+#endif
 
-    // cout << "tick: time=" << time << endl;
+    // std::cout << "tick: time=" << time << std::endl;
     bool stop = false;
     int curIter = (int) (time / m_duration);
     double timeInThisIteration = fmod(time, m_duration);
@@ -347,7 +358,7 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
         stop = true;
         timeInThisIteration = m_duration; // so we run until the very end..
         curIter = m_iterations - 1; // set to last iteration
-        // cout << " - reached the end" << endl;
+        // std::cout << " - reached the end" << std::endl;
     }
 
     double scaledTime = timeInThisIteration / m_duration;
@@ -356,7 +367,7 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
     if (m_direction == Reverse
         || (m_direction == Alternate && ((curIter % 2) == 1))
         || (m_direction == AlternateReverse && (curIter % 2 == 0))) {
-        // cout << " - reversed..." << endl;
+        // std::cout << " - reversed..." << std::endl;
         scaledTime = 1.0 - scaledTime;
     }
 
@@ -377,7 +388,7 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
             i0 = i1 - 1;
     }
 
-    // cout << " - using: [ " << i0 << " -> " << i1 << " ] out of " << kft.size() << endl;
+    // std::cout << " - using: [ " << i0 << " -> " << i1 << " ] out of " << kft.size() << std::endl;
 
     assert(i0 >= 0);
     assert(i1 < kft.size());
@@ -386,7 +397,7 @@ void Animation::tick(double time, Target *target, const KeyFrames<Target> *keyFr
     double t = (i0 < i1) ? (scaledTime - t0) / (t1 - t0) : t1;
     double et = func(t);
 
-    // cout << " - time: [ " << t0 << " -> " << t1 << " ] t=" << t << "; eased=" << et << "; st=" << scaledTime << endl;
+    // std::cout << " - time: [ " << t0 << " -> " << t1 << " ] t=" << t << "; eased=" << et << "; st=" << scaledTime << std::endl;
 
     for (auto v : keyFrames->values())
         v->interpolate(i0, i1, et, target);
@@ -433,7 +444,10 @@ public:
         later...
      */
     void tick() {
-        clock::time_point now = clock::now();
+        // alternatively:
+        // time_point now = clock::now();
+        time_point now = m_nextTick;
+        m_nextTick += std::chrono::milliseconds(16);
 
         // Start pending animations if we've passed beyond its starting point.
         // ### TODO: these should probably be sorted so animations start in the right order
@@ -441,7 +455,10 @@ public:
         while (si != m_scheduledAnimations.end()) {
             assert(!si->animation->isRunning());
             if (si->when < now) {
-                startAnimation(si->animation);
+                // Make sure we start at t=0
+                si->when = now;
+                si->animation->setRunning(true);
+                m_runningAnimations.push_back(*si);
                 si = m_scheduledAnimations.erase(si);
             } else {
                 ++si;
@@ -464,6 +481,7 @@ public:
 
     void start() {
         m_startTime = clock::now();
+        m_nextTick = m_startTime;
         tick();
     }
 
@@ -471,11 +489,7 @@ public:
     }
 
     void startAnimation(Animation *animation) {
-        TimedAnimation anim;
-        anim.when = clock::now();
-        anim.animation = animation;
-        animation->setRunning(true);
-        m_runningAnimations.push_back(anim);
+        scheduleAnimation(0, animation);
     }
 
     void scheduleAnimation(double delay, Animation *animation) {
@@ -494,6 +508,7 @@ private:
         Animation *animation;
     };
     time_point m_startTime;
+    time_point m_nextTick;
 
     std::list<TimedAnimation> m_runningAnimations;
     std::list<TimedAnimation> m_scheduledAnimations;
