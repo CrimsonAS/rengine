@@ -193,8 +193,7 @@ void OpenGLRenderer::prepass(Node *n)
 {
     n->preprocess();
     switch (n->type()) {
-    // ### needs to be enabled...
-    // case Node::OpacityNodeType: ++m_numLayeredNodes; break;
+    case Node::OpacityNodeType: ++m_numLayeredNodes; break;
     case Node::LayerNodeType: ++m_numTextureNodes; break;
     case Node::RectangleNodeType: ++m_numRectangleNodes; break;
     case Node::TransformNodeType:
@@ -277,6 +276,32 @@ void OpenGLRenderer::build(Node *n)
             m_farPlane = 0;
             m_elements[index].range = m_elementIndex-1;
         }
+    } break;
+
+    case Node::OpacityNodeType: {
+        OpacityNode *on = static_cast<OpacityNode *>(on);
+
+        bool enteredLayer = false;
+        unsigned index = m_elementsIndex;
+        if (on->opacity() < 1.0) {
+            enteredLayer = true;
+            m_layered = true;
+            Element *e = m_elements + m_elementsIndex++;
+            e->node = n;
+            e->projection = m_render3d;
+            e->layered = true;
+        }
+
+        for (auto c : n->children())
+            build(c);
+
+        if (enteredLayer) {
+            Elements &e = m_elements[index];
+            e.range = m_elementsIndex-1;
+            if (m_render3d) {
+                e.z = (m_m3d * vec3(e.bounds + p2) / 2.0f)).z;
+        }
+
     } break;
 
     default:
