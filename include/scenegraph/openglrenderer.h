@@ -47,7 +47,6 @@ public:
     ~OpenGLRenderer();
 
     Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data);
-    void setOpenGLContext(OpenGLContext *gl) { m_gl = gl; }
     void initialize();
     bool render() override;
 
@@ -58,8 +57,6 @@ public:
     void activateShader(const OpenGLShaderProgram *shader);
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(unsigned first, unsigned last);
-
-    OpenGLContext *m_gl;
 
     struct LayerProgram : public OpenGLShaderProgram {
         int matrix;

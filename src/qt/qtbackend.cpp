@@ -53,19 +53,12 @@ public:
 #ifdef RENGINE_LOG_INFO
         cout << "QtBackend: created..." << endl;
 #endif
-#ifdef RENGINE_OPENGL_FTB
-        surfaceFormat.setAlphaBufferSize(8);
-#endif
-        surfaceFormat.setSamples(4);
     }
 
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
-    Renderer *createRenderer();
-    OpenGLContext *createOpenGLContext();
-
-    QSurfaceFormat surfaceFormat;
+    Renderer *createRenderer(Surface *surface);
 
     QGuiApplication app;
 };
@@ -73,16 +66,12 @@ public:
 class QtWindow : public QWindow
 {
 public:
-    QtWindow(QtSurface *s, const QSurfaceFormat &format)
+    QtWindow(QtSurface *s)
     : s(s)
 #ifndef QWINDOW_HAS_REQUEST_UPDATE
     , updateTimer(0)
 #endif
     {
-        resize(800, 480);
-        setFormat(format);
-        setSurfaceType(QWindow::OpenGLSurface);
-        create();
     }
 
     bool event(QEvent *e);
@@ -103,14 +92,37 @@ public:
 class QtSurface : public Surface
 {
 public:
-    QtSurface(SurfaceInterface *iface, const QSurfaceFormat &format)
-    : window(this, format)
+    QtSurface(SurfaceInterface *iface)
+    : window(this)
     , iface(iface)
     {
         setSurfaceToInterface(iface);
 #ifdef RENGINE_LOG_INFO
         cout << "QtBackend::Surface created with interface=" << iface << endl;
 #endif
+        QSurfaceFormat format;
+        format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
+
+        window.setFormat(format);
+        window.setSurfaceType(QSurface::OpenGLSurface);
+        window.resize(800, 480);
+        window.create();
+
+        context.setFormat(format);
+        context.create();
+    }
+
+    bool makeCurrent() {
+        if (!context.makeCurrent(&window)) {
+            cout << "QtSurface::makeCurrent: failed..." << endl;
+            return false;
+        }
+        return true;
+    }
+
+    bool swapBuffers() {
+        context.swapBuffers(&window);
+        return context.isValid();
     }
 
     void show() { window.show(); }
@@ -123,62 +135,11 @@ public:
         window.requestUpdate();
     }
 
+    QOpenGLContext context;
     QtWindow window;
     SurfaceInterface *iface;
 };
 
-
-
-class QtOpenGLContext : public OpenGLContext
-{
-public:
-    QtOpenGLContext(const QSurfaceFormat &format)
-    {
-        context.setFormat(format);
-        if (!context.create())
-            cout << "QtBackend::OpenGLContext: failed to create OpenGL context" << endl;
-#ifdef RENGINE_LOG_INFO
-        cout << "QtBackend::OpenGLContext is " << (context.isValid() ? "created" : "invalid...") << endl;
-#endif
-    }
-
-    bool makeCurrent(Surface *s) {
-        if (!context.makeCurrent(&static_cast<QtSurface *>(s)->window)) {
-            cout << "QtBackend::OpenGLContext: failed to make current..." << endl;
-            return false;
-        }
-#ifdef RENGINE_LOG_INFO
-        static bool logged = false;
-        if (!logged) {
-            QSurfaceFormat f = context.format();
-            logged = true;
-            int samples, maxTexSize;
-            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-            glGetIntegerv(GL_SAMPLES, &samples);
-            cout << "OpenGL" << endl
-                 << " - Renderer .........: " << glGetString(GL_RENDERER) << endl;
-            cout << " - Version ..........: " << glGetString(GL_VERSION) << endl;
-            cout << " - R/G/B/A ..........: " << f.redBufferSize() << " "
-                                       << f.greenBufferSize() << " "
-                                       << f.blueBufferSize() << " "
-                                       << f.alphaBufferSize() << endl;
-            cout << " - Depth/Stencil ....: " << f.depthBufferSize() << " "
-                                            << f.stencilBufferSize() << endl;
-            cout << " - Samples ..........: " << samples << endl;
-            cout << " - Max Texture Size .: " << maxTexSize << endl;
-            cout << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << endl;
-        }
-#endif
-        return true;
-    }
-
-    bool swapBuffers(Surface *s) {
-        context.swapBuffers(&static_cast<QtSurface *>(s)->window);
-        return true;
-    }
-
-    QOpenGLContext context;
-};
 
 
 
@@ -208,21 +169,17 @@ void QtBackend::run()
 Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
-    QtSurface *s = new QtSurface(iface, surfaceFormat);
+    QtSurface *s = new QtSurface(iface);
     return s;
 }
 
-Renderer *QtBackend::createRenderer()
+Renderer *QtBackend::createRenderer(Surface *surface)
 {
+    assert(surface);
+    assert(&static_cast<QtSurface *>(surface)->context == QOpenGLContext::currentContext());
     OpenGLRenderer *r = new OpenGLRenderer();
-    OpenGLContext *gl = createOpenGLContext();
-    r->setOpenGLContext(gl);
+    r->setTargetSurface(surface);
     return r;
-}
-
-OpenGLContext *QtBackend::createOpenGLContext()
-{
-    return new QtOpenGLContext(surfaceFormat);
 }
 
 bool QtWindow::event(QEvent *e)

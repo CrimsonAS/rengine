@@ -36,8 +36,7 @@ public:
 
     virtual void run() = 0;
     virtual Surface *createSurface(SurfaceInterface *) = 0;
-    virtual Renderer *createRenderer() = 0;
-    virtual OpenGLContext *createOpenGLContext() = 0;
+    virtual Renderer *createRenderer(Surface *surface) = 0;
 };
 
 RENGINE_END_NAMESPACE

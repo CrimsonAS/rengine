@@ -19,12 +19,11 @@ public:
     virtual Node *update(Node *oldRoot) = 0;
 
     void onRender() {
+        surface()->makeCurrent();
 
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {
-            m_renderer = Backend::get()->createRenderer();
-            m_renderer->setTargetSurface(surface());
-            m_renderer->initialize();
+            m_renderer = Backend::get()->createRenderer(surface());
             m_animationManager.start();
         }
 
@@ -36,6 +35,8 @@ public:
 
         // And then render the stuff
         m_renderer->render();
+
+        surface()->swapBuffers();
 
         // Schedule a repaint again if there are animations running...
 

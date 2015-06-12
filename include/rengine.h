@@ -25,7 +25,6 @@ class LayerNode;
 class TransformNode;
 class Renderer;
 class Layer;
-class OpenGLContext;
 class OpenGLRenderer;
 class OpenGLTextureLayer;
 class OpenGLShaderProgram;
@@ -48,7 +47,6 @@ RENGINE_END_NAMESPACE
 #include "scenegraph/node.h"
 #include "scenegraph/layer.h"
 #include "scenegraph/renderer.h"
-#include "scenegraph/openglcontext.h"
 #include "scenegraph/openglshaderprogram.h"
 #include "scenegraph/openglrenderer.h"
 #include "scenegraph/opengltexturelayer.h"

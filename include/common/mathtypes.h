@@ -376,6 +376,8 @@ public:
             && p.y >= tl.y && p.y <= br.y;
     }
 
+    vec2 center() const { return (tl + br) / 2.0; }
+
     vec2 tl;
     vec2 br;
 };

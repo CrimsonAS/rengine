@@ -75,8 +75,7 @@ void main() {                                   \n\
 ";
 
 OpenGLRenderer::OpenGLRenderer()
-    : m_gl(0)
-    , m_numLayeredNodes(0)
+    : m_numLayeredNodes(0)
     , m_numTextureNodes(0)
     , m_numRectangleNodes(0)
     , m_numTransformNodes(0)
@@ -93,6 +92,7 @@ OpenGLRenderer::OpenGLRenderer()
 {
     std::memset(&prog_layer, 0, sizeof(prog_layer));
     std::memset(&prog_solid, 0, sizeof(prog_solid));
+    initialize();
 }
 
 OpenGLRenderer::~OpenGLRenderer()
@@ -112,8 +112,6 @@ Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format 
 
 void OpenGLRenderer::initialize()
 {
-    m_gl->makeCurrent(targetSurface());
-
     {   // Create a texture coordinate buffer
         const float data[] = { 0, 0, 0, 1, 1, 0, 1, 1 };
         glGenBuffers(1, &m_texCoordBuffer);
@@ -140,6 +138,32 @@ void OpenGLRenderer::initialize()
         prog_solid.matrix = prog_solid.resolve("m");
         prog_solid.color = prog_solid.resolve("color");
     }
+
+#ifdef RENGINE_LOG_INFO
+    static bool logged = false;
+    if (!logged) {
+        logged = true;
+        int samples, maxTexSize;
+        int r, g, b, a, d, s;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+        glGetIntegerv(GL_SAMPLES, &samples);
+        glGetIntegerv(GL_RED_BITS, r);
+        glGetIntegerv(GL_GREEN_BITS, g);
+        glGetIntegerv(GL_BLUE_BITS, b);
+        glGetIntegerv(GL_ALPHA_BITS, a);
+        glGetIntegerv(GL_DEPTH_BITS, d);
+        glGetIntegerv(GL_STENCIL_BITS, s);
+        cout << "OpenGL" << endl
+             << " - Renderer .........: " << glGetString(GL_RENDERER) << endl;
+        cout << " - Version ..........: " << glGetString(GL_VERSION) << endl;
+        cout << " - R/G/B/A ..........: " << r << " " << g << " " << " " << b << " " << a << endl;
+        cout << " - Depth/Stencil ....: " << d << " " << s << endl;
+        cout << " - Samples ..........: " << samples << endl;
+        cout << " - Max Texture Size .: " << maxTexSize << endl;
+        cout << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << endl;
+    }
+#endif
+
 }
 
 /*!
@@ -279,15 +303,15 @@ void OpenGLRenderer::build(Node *n)
     } break;
 
     case Node::OpacityNodeType: {
-        OpacityNode *on = static_cast<OpacityNode *>(on);
+        OpacityNode *on = static_cast<OpacityNode *>(n);
 
         bool enteredLayer = false;
-        unsigned index = m_elementsIndex;
+        unsigned index = m_elementIndex;
         if (on->opacity() < 1.0) {
             enteredLayer = true;
             m_layered = true;
-            Element *e = m_elements + m_elementsIndex++;
-            e->node = n;
+            Element *e = m_elements + m_elementIndex++;
+            e->node = on;
             e->projection = m_render3d;
             e->layered = true;
         }
@@ -296,10 +320,10 @@ void OpenGLRenderer::build(Node *n)
             build(c);
 
         if (enteredLayer) {
-            Elements &e = m_elements[index];
-            e.range = m_elementsIndex-1;
-            if (m_render3d) {
-                e.z = (m_m3d * vec3(e.bounds + p2) / 2.0f)).z;
+            Element &e = m_elements[index];
+            e.range = m_elementIndex-1;
+            if (m_render3d)
+                e.z = (m_m3d * vec3(e.bounds.center())).z;
         }
 
     } break;
@@ -355,27 +379,24 @@ bool OpenGLRenderer::render()
     m_vertices = (vec2 *) alloca(vertexCount * sizeof(vec2));
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
-    cout << "render: " << m_numTextureNodes << " layers, "
-                       << m_numRectangleNodes << " rects, "
-                       << m_numTransformNodes << " xforms, "
-                       << m_numTransformNodesWith3d << " xforms3D, "
-                       << m_numLayeredNodes << " opacites, "
-                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
-                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
-                       << endl;
+    // cout << "render: " << m_numTextureNodes << " layers, "
+    //                    << m_numRectangleNodes << " rects, "
+    //                    << m_numTransformNodes << " xforms, "
+    //                    << m_numTransformNodesWith3d << " xforms3D, "
+    //                    << m_numLayeredNodes << " opacites, "
+    //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+    //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+    //                    << endl;
     build(sceneRoot());
     assert(elementCount > 0);
     assert(m_elementIndex == elementCount);
-    for (unsigned i=0; i<m_elementIndex; ++i) {
-        const Element &e = m_elements[i];
-        cout << " " << i << ": " << e.node->type() << " "
-             << (e.projection ? "projection " : "orthogonal ")
-             << "range=" << e.range << " "
-             << "z=" << e.z << endl;
-    }
-
-    // Begin the actual rendering...
-    m_gl->makeCurrent(targetSurface());
+    // for (unsigned i=0; i<m_elementIndex; ++i) {
+    //     const Element &e = m_elements[i];
+    //     cout << " " << i << ": " << e.node->type() << " "
+    //          << (e.projection ? "projection " : "orthogonal ")
+    //          << "range=" << e.range << " "
+    //          << "z=" << e.z << endl;
+    // }
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
@@ -409,8 +430,6 @@ bool OpenGLRenderer::render()
     render(0, elementCount-1);
 
     activateShader(0);
-
-    m_gl->swapBuffers(targetSurface());
 
     m_vertices = 0;
     m_elements = 0;

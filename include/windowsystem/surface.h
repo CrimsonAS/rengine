@@ -45,6 +45,23 @@ public:
     virtual void show() = 0;
 
     /*!
+        Called by the application to start a new frame. Makes the rendering
+        context current.
+
+        Returns true if all is well; false if it failed for whatever reason..
+     */
+    virtual bool makeCurrent() = 0;
+
+    /*!
+        Called by the application it is done rendering to push the current
+        content to screen.
+
+        Returns true if all went wll; false if it failed for whatever reason..
+
+     */
+    virtual bool swapBuffers() = 0;
+
+    /*!
         Returns the size of this surface. When the surface size changes,
         the client is notified via SurfaceInterface::onSizeChange()
 
