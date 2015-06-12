@@ -1,17 +1,26 @@
 #include "rengine.h"
-
-using namespace rengine;
-using namespace std;
-
+#include "examples.h"
 
 class MyWindow : public StandardSurfaceInterface
 {
 public:
+    MyWindow()
+        : m_layer(0)
+    {
+    }
+
+    ~MyWindow()
+    {
+        delete m_layer;
+    }
+
     Node *update(Node *old) {
         if (old)
             return old;
 
         vec2 s = surface()->size();
+
+        m_layer = rengine_loadImage(renderer(), "walker.png");
 
         // Root has origin in screen center
         TransformNode *root = new TransformNode();
@@ -37,12 +46,21 @@ public:
                           * mat4::rotateAroundY(M_PI/2.0));
 
             RectangleNode *rn = new RectangleNode();
-
             rn->setGeometry(-w/2, -h/2, w, h);
-            rn->setColor(vec4(c, 0, 1-c, 0.9));
-
+            rn->setColor(vec4(c, 0.5, 1-c, 1.0));
             tn->append(rn);
             rotationNode->append(tn);
+
+            TransformNode *depthAdjustment = new TransformNode();
+            depthAdjustment->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
+                                       * mat4::translate(s.x * 0.33 + 2, 0, 0)
+                                       * mat4::rotateAroundY(M_PI/2.0));
+            LayerNode *ln = new LayerNode();
+            ln->setGeometry(-w/2, -h/2, w, h);
+            ln->setLayer(m_layer);
+            depthAdjustment->append(ln);
+
+            rotationNode->append(depthAdjustment);
         }
 
         root->append(xnode);
@@ -55,8 +73,10 @@ public:
         animationManager()->startAnimation(anim);
 
         return root;
-
     }
+
+private:
+    Layer *m_layer;
 };
 
 RENGINE_MAIN(MyWindow)

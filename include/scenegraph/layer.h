@@ -36,6 +36,8 @@ typedef void* BufferHandle;
 class Layer {
 public:
 
+    virtual ~Layer() { }
+
     enum Format {
         AlphaFormatMask = 0x1000,
         RGBA_32 = 1 | AlphaFormatMask,

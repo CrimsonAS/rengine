@@ -57,6 +57,10 @@ public:
 #ifdef RENGINE_LOG_INFO
         cout << "QtBackend: created..." << endl;
 #endif
+#ifdef RENGINE_OPENGL_FTB
+        surfaceFormat.setAlphaBufferSize(8);
+#endif
+        surfaceFormat.setSamples(4);
     }
 
     void run();
@@ -65,19 +69,22 @@ public:
     Renderer *createRenderer();
     OpenGLContext *createOpenGLContext();
 
+    QSurfaceFormat surfaceFormat;
+
     QGuiApplication app;
 };
 
 class QtWindow : public QWindow
 {
 public:
-    QtWindow(QtSurface *s)
+    QtWindow(QtSurface *s, const QSurfaceFormat &format)
     : s(s)
 #ifndef QWINDOW_HAS_REQUEST_UPDATE
     , updateTimer(0)
 #endif
     {
         resize(800, 480);
+        setFormat(format);
         setSurfaceType(QWindow::OpenGLSurface);
         create();
     }
@@ -100,8 +107,8 @@ public:
 class QtSurface : public Surface
 {
 public:
-    QtSurface(SurfaceInterface *iface)
-    : window(this)
+    QtSurface(SurfaceInterface *iface, const QSurfaceFormat &format)
+    : window(this, format)
     , iface(iface)
     {
         setSurfaceToInterface(iface);
@@ -129,11 +136,8 @@ public:
 class QtOpenGLContext : public OpenGLContext
 {
 public:
-    QtOpenGLContext()
+    QtOpenGLContext(const QSurfaceFormat &format)
     {
-        QSurfaceFormat format;
-        // format.setAlphaBufferSize(8);
-        format.setSamples(4);
         context.setFormat(format);
         if (!context.create())
             cout << "QtBackend::OpenGLContext: failed to create OpenGL context" << endl;
@@ -152,16 +156,21 @@ public:
         if (!logged) {
             QSurfaceFormat f = context.format();
             logged = true;
-            cout << "OpenGL\n" << endl
-                 << " - Renderer .......: " << glGetString(GL_RENDERER) << endl;
-            cout << " - Version ........: " << glGetString(GL_VERSION) << endl;
-            cout << " - R/G/B/A ........: " << f.redBufferSize() << " "
+            int samples, maxTexSize;
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+            glGetIntegerv(GL_SAMPLES, &samples);
+            cout << "OpenGL" << endl
+                 << " - Renderer .........: " << glGetString(GL_RENDERER) << endl;
+            cout << " - Version ..........: " << glGetString(GL_VERSION) << endl;
+            cout << " - R/G/B/A ..........: " << f.redBufferSize() << " "
                                        << f.greenBufferSize() << " "
                                        << f.blueBufferSize() << " "
                                        << f.alphaBufferSize() << endl;
-            cout << " - Depth/Stencil ..: " << f.depthBufferSize() << " "
+            cout << " - Depth/Stencil ....: " << f.depthBufferSize() << " "
                                             << f.stencilBufferSize() << endl;
-            cout << "OpenGL Extensions ..: " << glGetString(GL_EXTENSIONS) << endl;
+            cout << " - Samples ..........: " << samples << endl;
+            cout << " - Max Texture Size .: " << maxTexSize << endl;
+            cout << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << endl;
         }
 #endif
         return true;
@@ -203,7 +212,7 @@ void QtBackend::run()
 Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
-    QtSurface *s = new QtSurface(iface);
+    QtSurface *s = new QtSurface(iface, surfaceFormat);
     return s;
 }
 
@@ -217,7 +226,7 @@ Renderer *QtBackend::createRenderer()
 
 OpenGLContext *QtBackend::createOpenGLContext()
 {
-    return new QtOpenGLContext();
+    return new QtOpenGLContext(surfaceFormat);
 }
 
 bool QtWindow::event(QEvent *e)

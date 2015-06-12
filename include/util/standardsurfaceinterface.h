@@ -10,6 +10,12 @@ public:
     {
     }
 
+    ~StandardSurfaceInterface()
+    {
+        delete m_renderer->sceneRoot();
+        delete m_renderer;
+    }
+
     virtual Node *update(Node *oldRoot) = 0;
 
     void onRender() {
