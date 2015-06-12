@@ -49,8 +49,12 @@ endmacro(add_rengine_test)
 #
 # Resolving libraries
 #
-find_package(Qt5Gui)
+#find_package(Qt5Gui)
 find_package(OpenGL)
+
+include(FindPkgConfig)
+pkg_search_module(SDL2 REQUIRED sdl2)
+include_directories(${SDL2_INCLUDE_DIRS})
 
 if (OPENGL_FOUND)
     message("OpenGL (Desktop) was detected")
@@ -76,10 +80,12 @@ enable_testing()
 # librengine.a
 #
 add_library(rengine STATIC
-    src/qt/qtbackend.cpp
+#    src/qt/qtbackend.cpp
+    src/sdl/sdlbackend.cpp
     src/scenegraph/openglrenderer.cpp
 )
-target_link_libraries(rengine Qt5::Gui)
+#target_link_libraries(rengine Qt5::Gui)
+target_link_libraries(rengine ${SDL2_LIBRARIES})
 
 
 
