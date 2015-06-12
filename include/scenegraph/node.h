@@ -51,6 +51,7 @@ public:
     Node(Type type = BasicNodeType)
         : m_parent(0)
         , m_type(type)
+        , m_preprocess(false)
     {
     }
 
@@ -140,6 +141,17 @@ public:
         return (n->type() == T::StaticType) ? static_cast<const T *>(n) : 0;
     }
 
+    void requestPreprocess() { m_preprocess = true; }
+    void preprocess() {
+        if (m_preprocess) {
+            m_preprocess = false;
+            onPreprocess();
+        }
+    }
+
+protected:
+    virtual void onPreprocess() { }
+
 private:
     /*!
      * Sets this node's parent to \a p. This function is for internal use
@@ -156,6 +168,7 @@ private:
     std::vector<Node *> m_children;
 
     Type m_type : 4;
+    unsigned m_preprocess : 1;
 };
 
 

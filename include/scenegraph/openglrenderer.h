@@ -36,45 +36,32 @@ RENGINE_BEGIN_NAMESPACE
 class OpenGLRenderer : public Renderer
 {
 public:
+    struct Element {
+        Node *node;
+        rect2d bounds;          // only valid when 'layered' is set
+        float z;                // only valid when 'projection' is set
+        unsigned range;         // offset into vbo for draw nodes, size of 'batch' for projection/layered
+        bool projection : 1;    // 3d subtree
+        bool layered : 1;       // as in flattened subtree
+
+        bool operator<(const Element &e) const { assert(projection); return z < e.z; }
+    };
+
     OpenGLRenderer();
+    ~OpenGLRenderer();
+
     Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data);
     void setOpenGLContext(OpenGLContext *gl) { m_gl = gl; }
     void initialize();
-    bool render();
-
-private:
-    struct NodeToRender {
-        Node *node;
-        float vertices[8];
-        float z;
-        bool operator<(const NodeToRender &o) const { return z < o.z; }
-    };
-
-    struct RenderState {
-        RenderState()
-            : farPlane(0)
-        {
-        }
-
-        std::stack<mat4> matrices;
-
-        void push(const mat4 &m) { matrices.push(matrices.top() * m); }
-        void pop() { matrices.pop(); }
-
-        std::vector<NodeToRender> nodes;
-
-        float farPlane;
-    };
+    bool render() override;
 
     void prepass(Node *n);
-    void render(Node *n);
-    void drawColorQuad(const float *v, const vec4 &color);
-    void drawTextureQuad(const float *v, GLuint texId);
+    void build(Node *n);
+    void drawColorQuad(unsigned bufferOffset, const vec4 &color);
+    void drawTextureQuad(unsigned bufferOffset, GLuint texId);
     void activateShader(const OpenGLShaderProgram *shader);
-    void projectQuad(const vec2 &a, const vec2 &b, float *v);
-    void gatherNodes3D(Node *n);
-    void render3D();
-    RenderState *state();
+    void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
+    void render(unsigned first, unsigned last);
 
     OpenGLContext *m_gl;
 
@@ -86,36 +73,39 @@ private:
         int color;
     } prog_solid;
 
-    std::vector<RenderState> m_states;
-
-    OpenGLShaderProgram *m_activeShader;
-
-    unsigned m_numOpacityNodes;
-    unsigned m_numLayerNodes;
+    unsigned m_numLayeredNodes;
+    unsigned m_numTextureNodes;
     unsigned m_numRectangleNodes;
     unsigned m_numTransformNodes;
     unsigned m_numTransformNodesWith3d;
+
+    unsigned m_vertexIndex;
+    unsigned m_elementIndex;
+    vec2 *m_vertices;
+    Element *m_elements;
+    mat4 m_m2d;    // world matrix
+    mat4 m_m3d;    // projection matrix
+    float m_farPlane;
+
+    OpenGLShaderProgram *m_activeShader;
+    GLuint m_texCoordBuffer;
+    GLuint m_vertexBuffer;
+
+    bool m_render3d : 1;
+    bool m_layered : 1;
+
 };
 
-inline OpenGLRenderer::RenderState *OpenGLRenderer::state() { return &m_states.back(); }
-
-inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, float *v)
+inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, vec2 *v)
 {
-    const mat4 &M3D = state()->matrices.top();
-    const mat4 &P = m_states.at(m_states.size() - 2).matrices.top();
-    const float farPlane = state()->farPlane;
-
     // The steps involved in each line is as follows.:
     // pt_3d = matrix3D * pt                 // apply the 3D transform
     // pt_proj = pt_3d.project2D()           // project it to 2D based on current farPlane
     // pt_screen = parent_matrix * pt_proj   // Put the output of our local 3D into the scene world coordinate system
-
-    // Output the results direclty into the v array
-    vec2 *vv = (vec2 *) v;
-    vv[0] = P * ((M3D * vec3(a))       .project2D(farPlane));    // top left
-    vv[1] = P * ((M3D * vec3(a.x, b.y)).project2D(farPlane));    // bottom left
-    vv[2] = P * ((M3D * vec3(b.x, a.y)).project2D(farPlane));    // top right
-    vv[3] = P * ((M3D * vec3(b))       .project2D(farPlane));    // bottom right
+    v[0] = m_m2d * ((m_m3d * vec3(a))       .project2D(m_farPlane));    // top left
+    v[1] = m_m2d * ((m_m3d * vec3(a.x, b.y)).project2D(m_farPlane));    // bottom left
+    v[2] = m_m2d * ((m_m3d * vec3(b.x, a.y)).project2D(m_farPlane));    // top right
+    v[3] = m_m2d * ((m_m3d * vec3(b))       .project2D(m_farPlane));    // bottom right
 }
 
 

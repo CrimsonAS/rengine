@@ -30,6 +30,7 @@
 #include "rengine.h"
 
 #include <stdio.h>
+#include <alloca.h>
 
 using namespace rengine;
 using namespace std;
@@ -79,15 +80,30 @@ void main() {                                   \n\
 
 OpenGLRenderer::OpenGLRenderer()
     : m_gl(0)
-    , m_activeShader(0)
-    , m_numOpacityNodes(0)
-    , m_numLayerNodes(0)
+    , m_numLayeredNodes(0)
+    , m_numTextureNodes(0)
     , m_numRectangleNodes(0)
     , m_numTransformNodes(0)
     , m_numTransformNodesWith3d(0)
+    , m_vertexIndex(0)
+    , m_elementIndex(0)
+    , m_vertices(0)
+    , m_elements(0)
+    , m_farPlane(0)
+    , m_activeShader(0)
+    , m_texCoordBuffer(0)
+    , m_render3d(false)
+    , m_layered(false)
 {
     std::memset(&prog_layer, 0, sizeof(prog_layer));
     std::memset(&prog_solid, 0, sizeof(prog_solid));
+}
+
+OpenGLRenderer::~OpenGLRenderer()
+{
+    glDeleteBuffers(1, &m_texCoordBuffer);
+    glDeleteProgram(prog_layer.id());
+    glDeleteProgram(prog_solid.id());
 }
 
 Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format format, void *data)
@@ -101,6 +117,17 @@ Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format 
 void OpenGLRenderer::initialize()
 {
     m_gl->makeCurrent(targetSurface());
+
+    {   // Create a texture coordinate buffer
+        const float data[] = { 0, 0, 0, 1, 1, 0, 1, 1 };
+        glGenBuffers(1, &m_texCoordBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
+        glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), data, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    // Create the vertex coordinate buffer
+    glGenBuffers(1, &m_vertexBuffer);
 
     { // Default layer shader
         vector<const char *> attrs;
@@ -119,83 +146,28 @@ void OpenGLRenderer::initialize()
     }
 }
 
-void OpenGLRenderer::prepass(Node *n)
-{
-    switch (n->type()) {
-    case Node::OpacityNodeType: ++m_numOpacityNodes; break;
-    case Node::LayerNodeType: ++m_numLayerNodes; break;
-    case Node::RectangleNodeType: ++m_numRectangleNodes; break;
-    case Node::TransformNodeType:
-        ++m_numTransformNodes;
-        if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
-            ++m_numTransformNodesWith3d;
-        break;
-    default:
-        // ignore...
-        break;
-    }
+/*!
 
-    for (auto c : n->children())
-        prepass(c);
+    Draws a quad using the 'solid' program. \a v is a vector of 8 floats,
+    composed of four interleaved x/y points. \a c is the color.
+
+ */
+void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
+{
+    activateShader(&prog_solid);
+
+    glUniform4f(prog_solid.color, c.x, c.y, c.z, c.w);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-bool OpenGLRenderer::render()
+void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId)
 {
-    assert(m_states.empty());
+    activateShader(&prog_layer);
 
-    if (sceneRoot() == 0) {
-        cout << __PRETTY_FUNCTION__ << " - no 'sceneRoot', surely this is not what you intended?" << endl;
-        return false;
-    }
-
-    m_numOpacityNodes = 0;
-    m_numLayerNodes = 0;
-    m_numRectangleNodes = 0;
-    m_numTransformNodes = 0;
-    m_numTransformNodesWith3d = 0;
-    prepass(sceneRoot());
-    // cout << "render: " << m_numLayerNodes << " layers, "
-    //                    << m_numRectangleNodes << " rects, "
-    //                    << m_numTransformNodes << " xforms, "
-    //                    << m_numTransformNodesWith3d << " 3dxforms, "
-    //                    << m_numOpacityNodes << " opacites"
-    //                    << endl;
-
-    m_gl->makeCurrent(targetSurface());
-
-    vec2 surfaceSize = targetSurface()->size();
-    glViewport(0, 0, surfaceSize.x, surfaceSize.y);
-
-    vec4 c = fillColor();
-    glClearColor(c.x, c.y, c.z, c.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_STENCIL_TEST);
-    glDepthMask(false);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    mat4 proj = mat4::translate2D(-1.0, 1.0)
-                * mat4::scale2D(2.0f / surfaceSize.x, -2.0f / surfaceSize.y);
-    glUseProgram(prog_layer.id());
-    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
-    glUseProgram(prog_solid.id());
-    glUniformMatrix4fv(prog_solid.matrix, 1, true, proj.m);
-
-    m_states.push_back(RenderState());
-    state()->matrices.push(proj);
-
-    render(sceneRoot());
-
-    m_states.pop_back();
-    assert(m_states.empty());
-
-    activateShader(0);
-
-    m_gl->swapBuffers(targetSurface());
-
-    return true;
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
@@ -219,139 +191,209 @@ void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
         glEnableVertexAttribArray(i);
     for (int i=oldCount-1; i>=newCount; --i)
         glDisableVertexAttribArray(i);
-
 }
 
-/*!
-
-    Draws a quad using the 'solid' program. \a v is a vector of 8 floats,
-    composed of four interleaved x/y points. \a c is the color.
-
- */
-void OpenGLRenderer::drawColorQuad(const float *v, const vec4 &c)
+void OpenGLRenderer::prepass(Node *n)
 {
-    activateShader(&prog_solid);
+    n->preprocess();
+    switch (n->type()) {
+    // ### needs to be enabled...
+    // case Node::OpacityNodeType: ++m_numLayeredNodes; break;
+    case Node::LayerNodeType: ++m_numTextureNodes; break;
+    case Node::RectangleNodeType: ++m_numRectangleNodes; break;
+    case Node::TransformNodeType:
+        ++m_numTransformNodes;
+        if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
+            ++m_numTransformNodesWith3d;
+        break;
+    default:
+        // ignore...
+        break;
+    }
 
-    glUniform4f(prog_solid.color, c.x, c.y, c.z, c.w);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, v);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    for (auto c : n->children())
+        prepass(c);
 }
 
-void OpenGLRenderer::drawTextureQuad(const float *v, GLuint texId)
+void OpenGLRenderer::build(Node *n)
 {
-    activateShader(&prog_layer);
+    switch (n->type()) {
+    case Node::LayerNodeType:
+    case Node::RectangleNodeType: {
+        RectangleNode *rn = static_cast<RectangleNode *>(n);
+        Element *e = m_elements + m_elementIndex;
+        e->node = n;
+        e->range = m_vertexIndex;
+        e->layered = m_layered;
+        e->projection = m_render3d;
+        vec2 p1 = rn->position();
+        vec2 p2 = rn->size() + rn->position();
+        vec2 *v = m_vertices + m_vertexIndex;
 
-    const float tv[] = { 0, 0, 0, 1, 1, 0, 1, 1 };
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, v);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tv);
-    glBindTexture(GL_TEXTURE_2D, texId);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-void OpenGLRenderer::render(Node *n)
-{
-    if (LayerNode *ln = Node::from<LayerNode>(n)) {
-        const vec2 &p1 = state()->matrices.top() * ln->position();
-        const vec2 &p2 = state()->matrices.top() * (ln->size() + ln->position());
-        const float data[] = { p1.x, p1.y,
-                               p1.x, p2.y,
-                               p2.x, p1.y,
-                               p2.x, p2.y };
-
-        Layer *l = ln->layer();
-        assert(l);
-        assert(l->textureId());
-        drawTextureQuad(data, l->textureId());
-
-    } else if (RectangleNode *rn = Node::from<RectangleNode>(n)) {
-        const vec2 &p1 = state()->matrices.top() * rn->position();
-        const vec2 &p2 = state()->matrices.top() * (rn->size() + rn->position());
-        const float data[] = { p1.x, p1.y,
-                               p1.x, p2.y,
-                               p2.x, p1.y,
-                               p2.x, p2.y };
-        drawColorQuad(data, rn->color());
-
-    } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
-        if (tn->projectionDepth() > 0) {
-            m_states.push_back(RenderState());
-            state()->farPlane = tn->projectionDepth();
-            state()->matrices.push(tn->matrix());
-
-            for (auto child : n->children())
-                gatherNodes3D(child);
-
-            render3D();
-
-            m_states.pop_back();
+        if (m_render3d) {
+            e->z = (m_m3d * vec3((p1 + p2) / 2.0f)).z;
+            projectQuad(p1, p2, v);
 
         } else {
-            state()->matrices.push(tn->matrix());
-            for (auto it : n->children())
-                render(it);
-            state()->matrices.pop();
+            p1 = m_m2d * p1;
+            p2 = m_m2d * p2;
+            v[0] = vec2(p1.x, p1.y);
+            v[1] = vec2(p1.x, p2.y);
+            v[2] = vec2(p2.x, p1.y);
+            v[3] = vec2(p2.x, p2.y);
         }
-        return;
+        m_vertexIndex += 4;
+        m_elementIndex += 1;
 
-    } else if (OpacityNode *on = Node::from<OpacityNode>(n)) {
-        cout << "opacity node at: " << on->opacity() << endl;
+        for (auto c : n->children())
+            build(c);
+
+    } break;
+
+    case Node::TransformNodeType: {
+        TransformNode *tn = static_cast<TransformNode *>(n);
+
+        bool entered3d = false;
+        unsigned index = m_elementIndex;
+
+        if (tn->projectionDepth() && !m_render3d) {
+            entered3d = true;
+            m_render3d = true;
+            m_farPlane = tn->projectionDepth();
+            Element *e = m_elements + m_elementIndex++;
+            e->node = n;
+            e->z = 0;
+            e->projection = true;
+            e->layered = m_layered;
+        }
+
+        mat4 *m = m_render3d ? &m_m3d : &m_m2d;
+        mat4 old = *m;
+        *m = *m * tn->matrix();
+
+        for (auto c : n->children())
+            build(c);
+
+        // restore previous state
+        *m = old;
+        if (entered3d) {
+            m_render3d = false;
+            m_farPlane = 0;
+            m_elements[index].range = m_elementIndex-1;
+        }
+    } break;
+
+    default:
+        for (auto c : n->children())
+            build(c);
+        break;
     }
-
-    for (auto it : n->children())
-        render(it);
 }
 
 
-void OpenGLRenderer::gatherNodes3D(Node *n)
+
+void OpenGLRenderer::render(unsigned first, unsigned last)
 {
-    assert(m_states.size() > 1); // base state won't have projection, so we must have at least two...
-    assert(state()->farPlane > 0); // pre-req for entering into 3D rendering in the first place.
-
-    if (n->type() == Node::LayerNodeType || n->type() == Node::RectangleNodeType) {
-        RectangleNode *rn = static_cast<RectangleNode *>(n);
-        const vec2 &p1 = rn->position();
-        const vec2 &p2 = rn->size() + rn->position();
-        NodeToRender ntr;
-        ntr.node = n;
-        ntr.z = (state()->matrices.top() * vec3((p1 + p2) / 2.0f)).z;
-        projectQuad(p1, p2, ntr.vertices);
-        state()->nodes.push_back(ntr);
-
-    } else if (TransformNode *tn = Node::from<TransformNode>(n)) {
-        if (tn->projectionDepth() > 0) {
-            cout << "Nested projection depths are currently not supported, ignoring..." << endl;
-        }
-
-        state()->push(tn->matrix());
-        for (auto child : n->children())
-            gatherNodes3D(child);
-        state()->pop();
-
-        return;
+    if (m_elements[first].projection) {
+        std::sort(m_elements+first, m_elements+last+1);
     }
 
-    for (auto child : n->children())
-        gatherNodes3D(child);
+    while (first <= last) {
+        const Element &e = m_elements[first];
 
+        if (e.node->type() == Node::RectangleNodeType) {
+            drawColorQuad(e.range, static_cast<RectangleNode *>(e.node)->color());
+        } else if (e.node->type() == Node::LayerNodeType) {
+            drawTextureQuad(e.range, static_cast<LayerNode *>(e.node)->layer()->textureId());
+        }
+
+        ++first;
+    }
 }
 
-
-
-void OpenGLRenderer::render3D()
+bool OpenGLRenderer::render()
 {
-    sort(state()->nodes.begin(), state()->nodes.end());
-
-    for (const auto &n : state()->nodes) {
-        if (LayerNode *ln = Node::from<LayerNode>(n.node)) {
-            Layer *l = ln->layer();
-            assert(l);
-            assert(l->textureId());
-            drawTextureQuad(n.vertices, l->textureId());
-        } else if (RectangleNode *rn = Node::from<RectangleNode>(n.node)) {
-            drawColorQuad(n.vertices, rn->color());
-        }
+    if (sceneRoot() == 0) {
+        cout << __PRETTY_FUNCTION__ << " - no 'sceneRoot', surely this is not what you intended?" << endl;
+        return false;
     }
-}
 
+    m_numLayeredNodes = 0;
+    m_numTextureNodes = 0;
+    m_numRectangleNodes = 0;
+    m_numTransformNodes = 0;
+    m_numTransformNodesWith3d = 0;
+    m_vertexIndex = 0;
+    m_elementIndex = 0;
+    prepass(sceneRoot());
+
+    unsigned vertexCount = (m_numTextureNodes + m_numLayeredNodes + m_numRectangleNodes) * 4;
+    if (vertexCount == 0)
+        return true;
+
+    m_vertices = (vec2 *) alloca(vertexCount * sizeof(vec2));
+    unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
+    m_elements = (Element *) alloca(elementCount * sizeof(Element));
+    cout << "render: " << m_numTextureNodes << " layers, "
+                       << m_numRectangleNodes << " rects, "
+                       << m_numTransformNodes << " xforms, "
+                       << m_numTransformNodesWith3d << " xforms3D, "
+                       << m_numLayeredNodes << " opacites, "
+                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+                       << endl;
+    build(sceneRoot());
+    assert(elementCount > 0);
+    assert(m_elementIndex == elementCount);
+    for (unsigned i=0; i<m_elementIndex; ++i) {
+        const Element &e = m_elements[i];
+        cout << " " << i << ": " << e.node->type() << " "
+             << (e.projection ? "projection " : "orthogonal ")
+             << "range=" << e.range << " "
+             << "z=" << e.z << endl;
+    }
+
+    // Begin the actual rendering...
+    m_gl->makeCurrent(targetSurface());
+
+    // Assign our static texture coordinate buffer to attribute 1.
+    glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // Upload the vertices for this frame
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec2), m_vertices, GL_STATIC_DRAW);
+
+    vec2 surfaceSize = targetSurface()->size();
+    glViewport(0, 0, surfaceSize.x, surfaceSize.y);
+
+    vec4 c = fillColor();
+    glClearColor(c.x, c.y, c.z, c.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDepthMask(false);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    mat4 proj = mat4::translate2D(-1.0, 1.0)
+                * mat4::scale2D(2.0f / surfaceSize.x, -2.0f / surfaceSize.y);
+    // Push the screenspace projection matrix to the programs. We handle
+    glUseProgram(prog_layer.id());
+    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
+    glUseProgram(prog_solid.id());
+    glUniformMatrix4fv(prog_solid.matrix, 1, true, proj.m);
+
+    render(0, elementCount-1);
+
+    activateShader(0);
+
+    m_gl->swapBuffers(targetSurface());
+
+    m_vertices = 0;
+    m_elements = 0;
+
+    return true;
+}
 

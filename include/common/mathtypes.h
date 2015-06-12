@@ -355,7 +355,33 @@ struct mat4 {
 
     float m[16];
     unsigned type;
+};
 
+struct rect2d {
+public:
+    rect2d() { }
+    rect2d(const vec2 &tl, const vec2 &br) : tl(tl), br(br) { }
+    rect2d(float x1, float y1, float x2, float y2) : tl(x1, y1), br(x2, y2) { }
+
+    float top() const { return tl.y; }
+    float left() const { return tl.x; }
+    float bottom() const { return br.y; }
+    float right() const { return br.x; }
+
+    rect2d operator|(const vec2 &p) const {
+        return rect2d(p.x < tl.x ? p.x : tl.x,
+                      p.y < tl.y ? p.y : tl.y,
+                      p.x > br.x ? p.x : br.x,
+                      p.y > br.y ? p.y : br.y);
+    }
+
+    bool contains(const vec2 &p) const {
+        return p.x >= tl.x && p.x <= br.x
+            && p.y >= tl.y && p.y <= br.y;
+    }
+
+    vec2 tl;
+    vec2 br;
 };
 
 inline std::ostream &operator<<(std::ostream &o, const vec2 &v) {
