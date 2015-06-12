@@ -173,16 +173,16 @@ void OpenGLRenderer::initialize()
     static bool logged = false;
     if (!logged) {
         logged = true;
-        int samples, maxTexSize;
-        int r, g, b, a, d, s;
+        GLint samples, maxTexSize;
+        GLint r, g, b, a, d, s;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
         glGetIntegerv(GL_SAMPLES, &samples);
-        glGetIntegerv(GL_RED_BITS, r);
-        glGetIntegerv(GL_GREEN_BITS, g);
-        glGetIntegerv(GL_BLUE_BITS, b);
-        glGetIntegerv(GL_ALPHA_BITS, a);
-        glGetIntegerv(GL_DEPTH_BITS, d);
-        glGetIntegerv(GL_STENCIL_BITS, s);
+        glGetIntegerv(GL_RED_BITS, &r);
+        glGetIntegerv(GL_GREEN_BITS, &g);
+        glGetIntegerv(GL_BLUE_BITS, &b);
+        glGetIntegerv(GL_ALPHA_BITS, &a);
+        glGetIntegerv(GL_DEPTH_BITS, &d);
+        glGetIntegerv(GL_STENCIL_BITS, &s);
         cout << "OpenGL" << endl
              << " - Renderer .........: " << glGetString(GL_RENDERER) << endl;
         cout << " - Version ..........: " << glGetString(GL_VERSION) << endl;
