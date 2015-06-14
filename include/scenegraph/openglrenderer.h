@@ -34,15 +34,17 @@ class OpenGLRenderer : public Renderer
 public:
     struct Element {
         Node *node;
-        rect2d bounds;          // only valid when 'layered' is set
-        float z;                // only valid when 'projection' is set
-        unsigned range;         // offset into vbo for draw nodes, size of 'batch' for projection/layered
-        bool projection : 1;    // 3d subtree
-        bool layered : 1;       // as in flattened subtree
+        unsigned groupSize;         // The size of this group, used with 'projection' and 'flattened'
+        unsigned vboOffset;         // offset into vbo for flattened, rect and layer nodes
+        float z;                    // only valid when 'projection' is set
+        unsigned texture : 29;      // only valid during rendering when 'flattened' is set. Packed
+                                    // to fit into the bits below.
+        unsigned projection : 1;    // 3d subtree
+        unsigned layered : 1;       // as in flatten the subtree into a single texture, not the Layer class :p
+        unsigned completed : 1;     // used during the actual rendering to know we're done with it
 
-        bool operator<(const Element &e) const { assert(projection); return z < e.z; }
+        bool operator<(const Element &e) const { return e.completed || z < e.z; }
     };
-
     OpenGLRenderer();
     ~OpenGLRenderer();
 
@@ -56,11 +58,17 @@ public:
     void drawTextureQuad(unsigned bufferOffset, GLuint texId);
     void activateShader(const OpenGLShaderProgram *shader);
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
-    void render(unsigned first, unsigned last);
+    void render(Element *first, Element *last);
+    void beginLayer(Element *layeredElement);
+    void endLayer();
 
     struct LayerProgram : public OpenGLShaderProgram {
         int matrix;
     } prog_layer;
+    struct AlphaLayerProgram : public OpenGLShaderProgram {
+        int matrix;
+        int alpha;
+    } prog_alphaLayer;
     struct SolidProgram : public OpenGLShaderProgram {
         int matrix;
         int color;
@@ -76,9 +84,11 @@ public:
     unsigned m_elementIndex;
     vec2 *m_vertices;
     Element *m_elements;
-    mat4 m_m2d;    // world matrix
-    mat4 m_m3d;    // projection matrix
+    mat4 m_m2d;    // for the 2d world
+    mat4 m_m3d;    // below a 3d projection subtree
     float m_farPlane;
+    rect2d m_layerBoundingBox;
+    vec2 m_surfaceSize;
 
     OpenGLShaderProgram *m_activeShader;
     GLuint m_texCoordBuffer;

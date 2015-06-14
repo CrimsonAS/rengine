@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <alloca.h>
+#include <iomanip>
 
 using namespace rengine;
 using namespace std;
@@ -71,6 +72,17 @@ uniform lowp sampler2D t;                       \n\
 varying highp vec2 vT;                          \n\
 void main() {                                   \n\
     gl_FragColor = texture2D(t, vT);            \n\
+}                                               \n\
+";
+
+static const char *fsh_es_layer_alpha =
+RENGINE_GLSL_HEADER
+"\
+uniform lowp sampler2D t;                       \n\
+uniform lowp float alpha;                       \n\
+varying highp vec2 vT;                          \n\
+void main() {                                   \n\
+    gl_FragColor = texture2D(t, vT) * alpha;    \n\
 }                                               \n\
 ";
 
@@ -129,6 +141,18 @@ void OpenGLRenderer::initialize()
         attrs.push_back("aT");
         prog_layer.initialize(vsh_es_layer, fsh_es_layer, attrs);
         prog_layer.matrix = prog_layer.resolve("m");
+        assert(prog_layer.matrix >= 0);
+    }
+
+    { // Alpha layer shader
+        vector<const char *> attrs;
+        attrs.push_back("aV");
+        attrs.push_back("aT");
+        prog_alphaLayer.initialize(vsh_es_layer, fsh_es_layer_alpha, attrs);
+        prog_alphaLayer.matrix = prog_alphaLayer.resolve("m");
+        prog_alphaLayer.alpha = prog_alphaLayer.resolve("alpha");
+        assert(prog_alphaLayer.matrix >= 0);
+        assert(prog_alphaLayer.alpha >= 0);
     }
 
     { // Solid color shader...
@@ -137,6 +161,8 @@ void OpenGLRenderer::initialize()
         prog_solid.initialize(vsh_es_solid, fsh_es_solid, attrs);
         prog_solid.matrix = prog_solid.resolve("m");
         prog_solid.color = prog_solid.resolve("color");
+        assert(prog_solid.matrix >= 0);
+        assert(prog_solid.color >= 0);
     }
 
 #ifdef RENGINE_LOG_INFO
@@ -242,9 +268,7 @@ void OpenGLRenderer::build(Node *n)
         RectangleNode *rn = static_cast<RectangleNode *>(n);
         Element *e = m_elements + m_elementIndex;
         e->node = n;
-        e->range = m_vertexIndex;
-        e->layered = m_layered;
-        e->projection = m_render3d;
+        e->vboOffset = m_vertexIndex;
         vec2 p1 = rn->position();
         vec2 p2 = rn->size() + rn->position();
         vec2 *v = m_vertices + m_vertexIndex;
@@ -264,26 +288,26 @@ void OpenGLRenderer::build(Node *n)
         m_vertexIndex += 4;
         m_elementIndex += 1;
 
-        for (auto c : n->children())
-            build(c);
+        // Add to the bounding box if we're in inside a layer
+        if (m_layered) {
+            for (int i=0; i<4; ++i)
+                m_layerBoundingBox |= v[i];
+        }
 
     } break;
 
     case Node::TransformNodeType: {
         TransformNode *tn = static_cast<TransformNode *>(n);
 
-        bool entered3d = false;
-        unsigned index = m_elementIndex;
+        Element *e = 0;
 
         if (tn->projectionDepth() && !m_render3d) {
-            entered3d = true;
             m_render3d = true;
             m_farPlane = tn->projectionDepth();
-            Element *e = m_elements + m_elementIndex++;
+            e = m_elements + m_elementIndex++;
             e->node = n;
             e->z = 0;
             e->projection = true;
-            e->layered = m_layered;
         }
 
         mat4 *m = m_render3d ? &m_m3d : &m_m2d;
@@ -295,64 +319,138 @@ void OpenGLRenderer::build(Node *n)
 
         // restore previous state
         *m = old;
-        if (entered3d) {
+        if (e) {
             m_render3d = false;
             m_farPlane = 0;
-            m_elements[index].range = m_elementIndex-1;
+            e->groupSize = (m_elements + m_elementIndex) - e;
         }
-    } break;
+    } return;
 
     case Node::OpacityNodeType: {
         OpacityNode *on = static_cast<OpacityNode *>(n);
 
-        bool enteredLayer = false;
-        unsigned index = m_elementIndex;
+        Element *e = 0;
+        rect2d storedBox = m_layerBoundingBox;
         if (on->opacity() < 1.0) {
-            enteredLayer = true;
             m_layered = true;
-            Element *e = m_elements + m_elementIndex++;
+            e = m_elements + m_elementIndex++;
             e->node = on;
             e->projection = m_render3d;
             e->layered = true;
+            const float inf = numeric_limits<float>::infinity();
+            m_layerBoundingBox = rect2d(inf, inf, -inf, -inf);
         }
 
         for (auto c : n->children())
             build(c);
 
-        if (enteredLayer) {
-            Element &e = m_elements[index];
-            e.range = m_elementIndex-1;
-            if (m_render3d)
-                e.z = (m_m3d * vec3(e.bounds.center())).z;
+        if (e) {
+            e->groupSize = (m_elements + m_elementIndex) - e;
+            e->vboOffset = m_vertexIndex;
+            rect2d box = m_layerBoundingBox.aligned();
+            vec2 *v = m_vertices + m_vertexIndex;
+            v[0] = box.tl;
+            v[1] = vec2(box.left(), box.bottom());
+            v[2] = vec2(box.right(), box.top());
+            v[3] = box.br;
+            m_vertexIndex += 4;
+
+            m_layerBoundingBox = storedBox;
+            if (m_render3d) {
+                // Let the opacity layer's z be the average of all its children..
+                float z = 0;
+                for (unsigned i=0; i<=e->groupSize; ++i)
+                    z += (e+i)->z;
+                e->z = z / e->groupSize;
+            }
         }
 
-    } break;
+    } return;
 
     default:
-        for (auto c : n->children())
-            build(c);
         break;
     }
+
+    for (auto c : n->children())
+        build(c);
+
+
 }
 
 
-
-void OpenGLRenderer::render(unsigned first, unsigned last)
+void OpenGLRenderer::beginLayer(Element *e)
 {
-    if (m_elements[first].projection) {
-        std::sort(m_elements+first, m_elements+last+1);
+    assert(e->layered);
+    // ### todo, don't create fbos for the stuff outside the viewport.
+    // rect2d devRect = bounds.aligned();
+
+    // int w = devRect.width();
+    // int h = devRect.height();
+
+    // GLuint texture;
+    // glGenTextures(1, &texture);
+    // glBindTexture(GL_TEXTURE_2D, texture);
+    // glTexture2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    // GLuint fbo;
+    // glGenFramebuffers(1, &fbo);
+    // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHEMENT0, GL_TEXTURE_2D, texture);
+
+}
+
+void OpenGLRenderer::endLayer()
+{
+
+}
+
+
+void OpenGLRenderer::render(Element *first, Element *last)
+{
+    // Check if we need to flatten something in this render range
+    if (m_numLayeredNodes > 0) {
+        Element *e = first;
+        while (e < last) {
+            cout << " - render(layered)" << e->node << endl;
+            if (e->layered) {
+                beginLayer(e);
+                bool stored3d = m_render3d;
+                m_render3d |= e->projection;
+                render(e + 1, e + e->groupSize);
+                endLayer();
+                // ### store the rendered texture.. in range, perhaps?
+                m_render3d = stored3d;
+                e = e + e->groupSize;
+            } else {
+                ++e;
+            }
+        }
     }
 
-    while (first <= last) {
-        const Element &e = m_elements[first];
-
-        if (e.node->type() == Node::RectangleNodeType) {
-            drawColorQuad(e.range, static_cast<RectangleNode *>(e.node)->color());
-        } else if (e.node->type() == Node::LayerNodeType) {
-            drawTextureQuad(e.range, static_cast<LayerNode *>(e.node)->layer()->textureId());
+    Element *e = first;
+    while (e < last) {
+        cout << " - render(normal)" << e->node << " " << (e->completed ? "*done*" : "");
+        if (e->completed) {
+            ++e;
+            continue;
         }
 
-        ++first;
+        if (e->node->type() == Node::RectangleNodeType) {
+            cout << " ---> rect quad" << e->vboOffset << endl;
+            drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
+        } else if (e->node->type() == Node::LayerNodeType) {
+            cout << " ---> texture quad" << e->vboOffset << endl;
+            drawTextureQuad(e->vboOffset, static_cast<LayerNode *>(e->node)->layer()->textureId());
+        } else if (e->layered) {
+            cout << " ---> layered texture quad" << e->vboOffset << e->texture << endl;
+            drawTextureQuad(e->vboOffset, e->texture);
+        } else if (e->projection) {
+            std::sort(e + 1, e + e->groupSize);
+            cout << " ---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
+        }
+
+        e->completed = true;
+        ++e;
     }
 }
 
@@ -379,24 +477,26 @@ bool OpenGLRenderer::render()
     m_vertices = (vec2 *) alloca(vertexCount * sizeof(vec2));
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
-    // cout << "render: " << m_numTextureNodes << " layers, "
-    //                    << m_numRectangleNodes << " rects, "
-    //                    << m_numTransformNodes << " xforms, "
-    //                    << m_numTransformNodesWith3d << " xforms3D, "
-    //                    << m_numLayeredNodes << " opacites, "
-    //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
-    //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
-    //                    << endl;
+    memset(m_elements, 0, elementCount * sizeof(Element));
+    cout << "render: " << m_numTextureNodes << " layers, "
+                       << m_numRectangleNodes << " rects, "
+                       << m_numTransformNodes << " xforms, "
+                       << m_numTransformNodesWith3d << " xforms3D, "
+                       << m_numLayeredNodes << " opacites, "
+                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+                       << endl;
     build(sceneRoot());
     assert(elementCount > 0);
     assert(m_elementIndex == elementCount);
-    // for (unsigned i=0; i<m_elementIndex; ++i) {
-    //     const Element &e = m_elements[i];
-    //     cout << " " << i << ": " << e.node->type() << " "
-    //          << (e.projection ? "projection " : "orthogonal ")
-    //          << "range=" << e.range << " "
-    //          << "z=" << e.z << endl;
-    // }
+    for (unsigned i=0; i<m_elementIndex; ++i) {
+        const Element &e = m_elements[i];
+        cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
+             << (e.projection ? "projection " : "")
+             << "vboOffset=" << setw(5) << e.vboOffset << " "
+             << "groupSize=" << setw(3) << e.groupSize << " "
+             << "z=" << e.z << " " << endl;
+    }
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
@@ -406,8 +506,8 @@ bool OpenGLRenderer::render()
     glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec2), m_vertices, GL_STATIC_DRAW);
 
-    vec2 surfaceSize = targetSurface()->size();
-    glViewport(0, 0, surfaceSize.x, surfaceSize.y);
+    m_surfaceSize = targetSurface()->size();
+    glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
 
     vec4 c = fillColor();
     glClearColor(c.x, c.y, c.z, c.w);
@@ -420,14 +520,15 @@ bool OpenGLRenderer::render()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     mat4 proj = mat4::translate2D(-1.0, 1.0)
-                * mat4::scale2D(2.0f / surfaceSize.x, -2.0f / surfaceSize.y);
+                * mat4::scale2D(2.0f / m_surfaceSize.x, -2.0f / m_surfaceSize.y);
     // Push the screenspace projection matrix to the programs. We handle
     glUseProgram(prog_layer.id());
     glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
     glUseProgram(prog_solid.id());
     glUniformMatrix4fv(prog_solid.matrix, 1, true, proj.m);
 
-    render(0, elementCount-1);
+    assert(!m_render3d);
+    render(m_elements, m_elements + elementCount);
 
     activateShader(0);
 

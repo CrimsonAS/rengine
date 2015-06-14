@@ -36,6 +36,7 @@
 #pragma once
 
 #include <math.h>
+#include <cmath>
 #include <ostream>
 
 RENGINE_BEGIN_NAMESPACE
@@ -364,6 +365,9 @@ public:
     float bottom() const { return br.y; }
     float right() const { return br.x; }
 
+    float width() const { return br.x - tl.x; }
+    float height() const { return br.y - tl.y; }
+
     rect2d operator|(const vec2 &p) const {
         return rect2d(p.x < tl.x ? p.x : tl.x,
                       p.y < tl.y ? p.y : tl.y,
@@ -371,12 +375,27 @@ public:
                       p.y > br.y ? p.y : br.y);
     }
 
+    rect2d &operator|=(const vec2 &p) {
+        if (p.x < tl.x) tl.x = p.x;
+        if (p.y < tl.y) tl.y = p.y;
+        if (p.x > br.x) br.x = p.x;
+        if (p.y > br.y) br.y = p.x;
+        return *this;
+    }
+
     bool contains(const vec2 &p) const {
         return p.x >= tl.x && p.x <= br.x
             && p.y >= tl.y && p.y <= br.y;
     }
 
+    rect2d aligned() const {
+        return rect2d(std::floor(tl.x), std::floor(tl.y),
+                      std::ceil(br.x), std::ceil(br.y));
+    }
+
     vec2 center() const { return (tl + br) / 2.0; }
+
+
 
     vec2 tl;
     vec2 br;
@@ -402,6 +421,11 @@ inline std::ostream &operator<<(std::ostream &o, const mat4 &m) {
     for (int i=1; i<16; ++i)
         o << ", " << m.m[i];
     o << ")";
+    return o;
+}
+
+inline std::ostream &operator<<(std::ostream &o, const rect2d &r) {
+    o << "rect2d(" << r.tl << ", " << r.br << ")";
     return o;
 }
 
