@@ -18,6 +18,7 @@ public:
         root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));
 
         OpacityNode *opacityNode = new OpacityNode();
+        // opacityNode->setOpacity(0.5);
         root->append(opacityNode);
 
         RectangleNode *rectA = new RectangleNode();

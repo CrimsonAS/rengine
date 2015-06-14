@@ -37,14 +37,16 @@ todo
 
 lots and lots...
  - OpenGL renderer
-   - antialiased edges
+   - antialiased edges -> rely on MSAA for now, though this is slow on intel chips
    - layer flattening under opacity and filter nodes
+      -> special case single layer flattening and apply filter directly?
+      -> special case non-overlapping opacity rendering to void fbo
    - filter nodes (maybe drop blur/dropshadow for now since they are expensive as hell)
+      -> provide effects both as 'live' in the tree and 'static' as a means of producing a Layer instance.
    - caching of non-changing flattened subtrees to improve performance
  - add more properties to LayerNode
-   - x, y
    - opacity
-   - border and rounded edges?
+   - border and rounded edges? -> lets not for now...
 
 overview of the dependencies between source directories
 -------------------------------------------------------

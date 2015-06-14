@@ -34,17 +34,20 @@ class OpenGLRenderer : public Renderer
 public:
     struct Element {
         Node *node;
-        unsigned groupSize;         // The size of this group, used with 'projection' and 'flattened'
         unsigned vboOffset;         // offset into vbo for flattened, rect and layer nodes
         float z;                    // only valid when 'projection' is set
-        unsigned texture : 29;      // only valid during rendering when 'flattened' is set. Packed
-                                    // to fit into the bits below.
+        unsigned texture;           // only valid during rendering when 'flattened' is set.
+        unsigned groupSize : 29;    // The size of this group, used with 'projection' and 'flattened'. Packed to ft into 32-bit
         unsigned projection : 1;    // 3d subtree
         unsigned layered : 1;       // as in flatten the subtree into a single texture, not the Layer class :p
         unsigned completed : 1;     // used during the actual rendering to know we're done with it
 
         bool operator<(const Element &e) const { return e.completed || z < e.z; }
     };
+    struct Program : OpenGLShaderProgram {
+        int matrix;
+    };
+
     OpenGLRenderer();
     ~OpenGLRenderer();
 
@@ -55,22 +58,20 @@ public:
     void prepass(Node *n);
     void build(Node *n);
     void drawColorQuad(unsigned bufferOffset, const vec4 &color);
-    void drawTextureQuad(unsigned bufferOffset, GLuint texId);
-    void activateShader(const OpenGLShaderProgram *shader);
+    void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0);
+    void activateShader(const Program *shader);
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
-    void beginLayer(Element *layeredElement);
-    void endLayer();
+    void renderToLayer(Element *e);
 
-    struct LayerProgram : public OpenGLShaderProgram {
+
+    struct LayerProgram : public Program {
         int matrix;
     } prog_layer;
-    struct AlphaLayerProgram : public OpenGLShaderProgram {
-        int matrix;
+    struct AlphaLayerProgram : public Program {
         int alpha;
     } prog_alphaLayer;
-    struct SolidProgram : public OpenGLShaderProgram {
-        int matrix;
+    struct SolidProgram : public Program {
         int color;
     } prog_solid;
 
@@ -84,15 +85,17 @@ public:
     unsigned m_elementIndex;
     vec2 *m_vertices;
     Element *m_elements;
+    mat4 m_proj;
     mat4 m_m2d;    // for the 2d world
     mat4 m_m3d;    // below a 3d projection subtree
     float m_farPlane;
     rect2d m_layerBoundingBox;
     vec2 m_surfaceSize;
 
-    OpenGLShaderProgram *m_activeShader;
+    const Program *m_activeShader;
     GLuint m_texCoordBuffer;
     GLuint m_vertexBuffer;
+    GLuint m_fbo;
 
     bool m_render3d : 1;
     bool m_layered : 1;

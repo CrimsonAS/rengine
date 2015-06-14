@@ -234,7 +234,13 @@ public:
     }
 
     const vec4 &color() const { return m_color; }
-    void setColor(const vec4 &color) { m_color = color; }
+    void setColor(const vec4 &color) {
+        m_color = color;
+        m_color.x = std::max(std::min(m_color.x, 1.0f), 0.0f);
+        m_color.y = std::max(std::min(m_color.y, 1.0f), 0.0f);
+        m_color.z = std::max(std::min(m_color.z, 1.0f), 0.0f);
+        m_color.w = std::max(std::min(m_color.w, 1.0f), 0.0f);
+    }
 
 protected:
     RectangleNode(Type type) : Node(type) { }

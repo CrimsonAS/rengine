@@ -28,6 +28,16 @@ Layer *rengine_loadImage(Renderer *renderer, const char *file)
         exit(1);
     }
 
+    // Premultiply it...
+    for (int y=0; y<h; ++y)
+        for (int x=0; x<w; ++x) {
+            unsigned char *p = data + (y * w + x) * 4;
+            unsigned a = p[3];
+            p[0] = (unsigned(p[0]) * a) / 255;
+            p[1] = (unsigned(p[1]) * a) / 255;
+            p[2] = (unsigned(p[2]) * a) / 255;
+        }
+
     Layer *layer = renderer->createLayerFromImageData(vec2(w,h), Layer::RGBA_32, data);
     assert(layer);
     STBI_FREE(data);

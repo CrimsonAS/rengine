@@ -71,7 +71,7 @@ RENGINE_GLSL_HEADER
 uniform lowp sampler2D t;                       \n\
 varying highp vec2 vT;                          \n\
 void main() {                                   \n\
-    gl_FragColor = texture2D(t, vT);            \n\
+    gl_FragColor = texture2D(t, vT) + vec4(0.1);            \n\
 }                                               \n\
 ";
 
@@ -99,6 +99,8 @@ OpenGLRenderer::OpenGLRenderer()
     , m_farPlane(0)
     , m_activeShader(0)
     , m_texCoordBuffer(0)
+    , m_vertexBuffer(0)
+    , m_fbo(0)
     , m_render3d(false)
     , m_layered(false)
 {
@@ -110,8 +112,9 @@ OpenGLRenderer::OpenGLRenderer()
 OpenGLRenderer::~OpenGLRenderer()
 {
     glDeleteBuffers(1, &m_texCoordBuffer);
-    glDeleteProgram(prog_layer.id());
-    glDeleteProgram(prog_solid.id());
+    glDeleteBuffers(1, &m_vertexBuffer);
+
+    assert(m_fbo == 0);
 }
 
 Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format format, void *data)
@@ -141,7 +144,6 @@ void OpenGLRenderer::initialize()
         attrs.push_back("aT");
         prog_layer.initialize(vsh_es_layer, fsh_es_layer, attrs);
         prog_layer.matrix = prog_layer.resolve("m");
-        assert(prog_layer.matrix >= 0);
     }
 
     { // Alpha layer shader
@@ -151,8 +153,6 @@ void OpenGLRenderer::initialize()
         prog_alphaLayer.initialize(vsh_es_layer, fsh_es_layer_alpha, attrs);
         prog_alphaLayer.matrix = prog_alphaLayer.resolve("m");
         prog_alphaLayer.alpha = prog_alphaLayer.resolve("alpha");
-        assert(prog_alphaLayer.matrix >= 0);
-        assert(prog_alphaLayer.alpha >= 0);
     }
 
     { // Solid color shader...
@@ -161,8 +161,6 @@ void OpenGLRenderer::initialize()
         prog_solid.initialize(vsh_es_solid, fsh_es_solid, attrs);
         prog_solid.matrix = prog_solid.resolve("m");
         prog_solid.color = prog_solid.resolve("color");
-        assert(prog_solid.matrix >= 0);
-        assert(prog_solid.color >= 0);
     }
 
 #ifdef RENGINE_LOG_INFO
@@ -202,21 +200,26 @@ void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
 {
     activateShader(&prog_solid);
 
-    glUniform4f(prog_solid.color, c.x, c.y, c.z, c.w);
+    glUniform4f(prog_solid.color, c.x * c.w, c.y * c.w, c.z * c.w, c.w);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId)
+void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacity)
 {
-    activateShader(&prog_layer);
+    if (opacity == 1)
+        activateShader(&prog_layer);
+    else {
+        activateShader(&prog_alphaLayer);
+        glUniform1f(prog_alphaLayer.alpha, opacity);
+    }
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
     glBindTexture(GL_TEXTURE_2D, texId);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
+void OpenGLRenderer::activateShader(const Program *shader)
 {
     if (shader == m_activeShader)
         return;
@@ -224,19 +227,32 @@ void OpenGLRenderer::activateShader(const OpenGLShaderProgram *shader)
     int oldCount = m_activeShader ? m_activeShader->attributeCount() : 0;
     int newCount = 0;
 
+
     if (shader) {
         newCount = shader->attributeCount();
         glUseProgram(shader->id());
-
+        glUniformMatrix4fv(shader->matrix, 1, true, m_proj.m);
     } else {
         glUseProgram(0);
     }
 
+    // cout << " --- switching shader: old=" << (m_activeShader ? m_activeShader->id() : 0)
+    //      << " (" << oldCount << " attr)"
+    //      << " new=" << (shader ? shader->id() : 0)
+    //      << " (" << newCount << " attr)"
+    //      << endl;
+
     // Enable new ones
-    for (int i=oldCount; i<newCount; ++i)
+    for (int i=oldCount; i<newCount; ++i) {
+        // cout << "    - enable " << i << endl;
         glEnableVertexAttribArray(i);
-    for (int i=oldCount-1; i>=newCount; --i)
+    }
+    for (int i=oldCount-1; i>=newCount; --i) {
+        // cout << "    - disable " << i << endl;
         glDisableVertexAttribArray(i);
+    }
+
+    m_activeShader = shader;
 }
 
 void OpenGLRenderer::prepass(Node *n)
@@ -329,6 +345,7 @@ void OpenGLRenderer::build(Node *n)
     case Node::OpacityNodeType: {
         OpacityNode *on = static_cast<OpacityNode *>(n);
 
+        bool storedLayered = m_layered;
         Element *e = 0;
         rect2d storedBox = m_layerBoundingBox;
         if (on->opacity() < 1.0) {
@@ -345,6 +362,7 @@ void OpenGLRenderer::build(Node *n)
             build(c);
 
         if (e) {
+            m_layered = storedLayered;
             e->groupSize = (m_elements + m_elementIndex) - e;
             e->vboOffset = m_vertexIndex;
             rect2d box = m_layerBoundingBox.aligned();
@@ -378,50 +396,74 @@ void OpenGLRenderer::build(Node *n)
 }
 
 
-void OpenGLRenderer::beginLayer(Element *e)
+void OpenGLRenderer::renderToLayer(Element *e)
 {
+    // cout << " ---> doing layered rendering for: element=" << e << " node=" << e->node << endl;
     assert(e->layered);
-    // ### todo, don't create fbos for the stuff outside the viewport.
-    // rect2d devRect = bounds.aligned();
 
-    // int w = devRect.width();
-    // int h = devRect.height();
+    // Store current state...
+    bool stored3d = m_render3d;
+    bool storedLayered = m_layered;
+    GLuint storedFbo = m_fbo;
+    mat4 storedProjection = m_proj;
 
-    // GLuint texture;
-    // glGenTextures(1, &texture);
-    // glBindTexture(GL_TEXTURE_2D, texture);
-    // glTexture2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    m_render3d |= e->projection;
+    m_layered = true;
 
-    // GLuint fbo;
-    // glGenFramebuffers(1, &fbo);
-    // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHEMENT0, GL_TEXTURE_2D, texture);
+    // Create the FBO
+    rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
+    int w = devRect.width();
+    int h = devRect.height();
+    glGenTextures(1, &e->texture);
+    glBindTexture(GL_TEXTURE_2D, e->texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
-}
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
+    // cout << "    -> FBO status: " << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << end;
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-void OpenGLRenderer::endLayer()
-{
+    // Render the layered group
+    m_proj = mat4::scale2D(1.0, -1.0)
+             * mat4::translate2D(-1.0, 1.0)
+             * mat4::scale2D(2.0f / w, -2.0f / h)
+             * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
 
+    glViewport(0, 0, w, h);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    render(e + 1, e + e->groupSize);
+
+    // Reset the GL state..
+    glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, storedFbo);
+    glDeleteFramebuffers(1, &m_fbo);
+
+    // Reset the old state...
+    m_fbo = storedFbo;
+    m_render3d = stored3d;
+    m_layered = storedLayered;
+    m_proj = storedProjection;
 }
 
 
 void OpenGLRenderer::render(Element *first, Element *last)
 {
-    // Check if we need to flatten something in this render range
+    // Check if we need to flatten something in this range
     if (m_numLayeredNodes > 0) {
+        // cout << " - render(layered) " << first->node << endl;
         Element *e = first;
         while (e < last) {
-            cout << " - render(layered)" << e->node << endl;
             if (e->layered) {
-                beginLayer(e);
-                bool stored3d = m_render3d;
-                m_render3d |= e->projection;
-                render(e + 1, e + e->groupSize);
-                endLayer();
-                // ### store the rendered texture.. in range, perhaps?
-                m_render3d = stored3d;
+                renderToLayer(e);
                 e = e + e->groupSize;
             } else {
+                // cout << " ---> skipping" << endl;
                 ++e;
             }
         }
@@ -429,24 +471,25 @@ void OpenGLRenderer::render(Element *first, Element *last)
 
     Element *e = first;
     while (e < last) {
-        cout << " - render(normal)" << e->node << " " << (e->completed ? "*done*" : "");
+        // cout << " - render(normal) " << e->node << " " << (e->completed ? "*done*" : "") << endl;
         if (e->completed) {
             ++e;
             continue;
         }
 
         if (e->node->type() == Node::RectangleNodeType) {
-            cout << " ---> rect quad" << e->vboOffset << endl;
+            // cout << " ---> rect quad, vbo=" << e->vboOffset << endl;
             drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
         } else if (e->node->type() == Node::LayerNodeType) {
-            cout << " ---> texture quad" << e->vboOffset << endl;
+            // cout << " ---> texture quad, vbo=" << e->vboOffset << endl;
             drawTextureQuad(e->vboOffset, static_cast<LayerNode *>(e->node)->layer()->textureId());
         } else if (e->layered) {
-            cout << " ---> layered texture quad" << e->vboOffset << e->texture << endl;
-            drawTextureQuad(e->vboOffset, e->texture);
+            // cout << " ---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
+            drawTextureQuad(e->vboOffset, e->texture, Node::from<OpacityNode>(e->node)->opacity());
+            glDeleteTextures(1, &e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize);
-            cout << " ---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
+            // cout << " ---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
         }
 
         e->completed = true;
@@ -478,25 +521,25 @@ bool OpenGLRenderer::render()
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
     memset(m_elements, 0, elementCount * sizeof(Element));
-    cout << "render: " << m_numTextureNodes << " layers, "
-                       << m_numRectangleNodes << " rects, "
-                       << m_numTransformNodes << " xforms, "
-                       << m_numTransformNodesWith3d << " xforms3D, "
-                       << m_numLayeredNodes << " opacites, "
-                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
-                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
-                       << endl;
+    // cout << "render: " << m_numTextureNodes << " layers, "
+    //                    << m_numRectangleNodes << " rects, "
+    //                    << m_numTransformNodes << " xforms, "
+    //                    << m_numTransformNodesWith3d << " xforms3D, "
+    //                    << m_numLayeredNodes << " opacites, "
+    //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+    //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+    //                    << endl;
     build(sceneRoot());
     assert(elementCount > 0);
     assert(m_elementIndex == elementCount);
-    for (unsigned i=0; i<m_elementIndex; ++i) {
-        const Element &e = m_elements[i];
-        cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
-             << (e.projection ? "projection " : "")
-             << "vboOffset=" << setw(5) << e.vboOffset << " "
-             << "groupSize=" << setw(3) << e.groupSize << " "
-             << "z=" << e.z << " " << endl;
-    }
+    // for (unsigned i=0; i<m_elementIndex; ++i) {
+    //     const Element &e = m_elements[i];
+    //     cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
+    //          << (e.projection ? "projection " : "")
+    //          << "vboOffset=" << setw(5) << e.vboOffset << " "
+    //          << "groupSize=" << setw(3) << e.groupSize << " "
+    //          << "z=" << e.z << " " << endl;
+    // }
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
@@ -517,21 +560,18 @@ bool OpenGLRenderer::render()
     glDisable(GL_STENCIL_TEST);
     glDepthMask(false);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    mat4 proj = mat4::translate2D(-1.0, 1.0)
-                * mat4::scale2D(2.0f / m_surfaceSize.x, -2.0f / m_surfaceSize.y);
-    // Push the screenspace projection matrix to the programs. We handle
-    glUseProgram(prog_layer.id());
-    glUniformMatrix4fv(prog_layer.matrix, 1, true, proj.m);
-    glUseProgram(prog_solid.id());
-    glUniformMatrix4fv(prog_solid.matrix, 1, true, proj.m);
+    m_proj = mat4::translate2D(-1.0, 1.0)
+             * mat4::scale2D(2.0f / m_surfaceSize.x, -2.0f / m_surfaceSize.y);
 
+    assert(!m_layered);
     assert(!m_render3d);
     render(m_elements, m_elements + elementCount);
 
     activateShader(0);
 
+    assert(m_fbo == 0);
     m_vertices = 0;
     m_elements = 0;
 

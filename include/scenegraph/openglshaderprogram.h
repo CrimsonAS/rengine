@@ -40,6 +40,11 @@ public:
     {
     }
 
+    ~OpenGLShaderProgram()
+    {
+        glDeleteProgram(m_id);
+    }
+
     GLuint id() const { return m_id; }
 
     GLint resolve(const char *name) {

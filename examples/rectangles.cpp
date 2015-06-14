@@ -47,7 +47,7 @@ public:
 
             RectangleNode *rn = new RectangleNode();
             rn->setGeometry(-w/2, -h/2, w, h);
-            rn->setColor(vec4(c, 0.5, 1-c, 1.0));
+            rn->setColor(vec4(c, 0.5, 1-c, 0.8));
             tn->append(rn);
             rotationNode->append(tn);
 
