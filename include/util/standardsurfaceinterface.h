@@ -38,6 +38,8 @@ public:
 
         surface()->swapBuffers();
 
+        m_renderer->frameSwapped();
+
         // Schedule a repaint again if there are animations running...
 
         // ### TODO: Optimize waiting for scheduled animations. Rather than

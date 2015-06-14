@@ -32,6 +32,38 @@ RENGINE_BEGIN_NAMESPACE
 class OpenGLRenderer : public Renderer
 {
 public:
+
+    struct TexturePool : public std::vector<GLuint>
+    {
+        ~TexturePool()
+        {
+            glDeleteTextures(size(), data());
+        }
+
+        GLuint acquire() {
+            GLuint id;
+            if (empty()) {
+                glGenTextures(1, &id);
+                return id;
+            }
+            id = back();
+            pop_back();
+            return id;
+        }
+
+        void release(GLuint id) {
+            push_back(id);
+        }
+
+        void compact() {
+            glFlush();
+            for (auto id : *this) {
+                glBindTexture(GL_TEXTURE_2D, id);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+            }
+        }
+    };
+
     struct Element {
         Node *node;
         unsigned vboOffset;         // offset into vbo for flattened, rect and layer nodes
@@ -54,6 +86,7 @@ public:
     Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data);
     void initialize();
     bool render() override;
+    void frameSwapped() override { m_texturePool.compact(); }
 
     void prepass(Node *n);
     void build(Node *n);
@@ -63,7 +96,6 @@ public:
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
     void renderToLayer(Element *e);
-
 
     struct LayerProgram : public Program {
         int matrix;
@@ -91,6 +123,8 @@ public:
     float m_farPlane;
     rect2d m_layerBoundingBox;
     vec2 m_surfaceSize;
+
+    TexturePool m_texturePool;
 
     const Program *m_activeShader;
     GLuint m_texCoordBuffer;

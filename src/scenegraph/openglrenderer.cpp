@@ -414,7 +414,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
     rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
     int w = devRect.width();
     int h = devRect.height();
-    glGenTextures(1, &e->texture);
+    e->texture = m_texturePool.acquire();
     glBindTexture(GL_TEXTURE_2D, e->texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -486,7 +486,7 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->layered) {
             // cout << " ---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             drawTextureQuad(e->vboOffset, e->texture, Node::from<OpacityNode>(e->node)->opacity());
-            glDeleteTextures(1, &e->texture);
+            m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize);
             // cout << " ---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;

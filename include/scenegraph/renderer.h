@@ -67,6 +67,8 @@ public:
      */
     virtual bool render() = 0;
 
+    virtual void frameSwapped() { }
+
     void setFillColor(const vec4 &c) { m_fillColor = c; }
     const vec4 &fillColor() const { return m_fillColor; }
 
