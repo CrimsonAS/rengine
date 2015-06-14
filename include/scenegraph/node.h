@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -60,7 +61,7 @@ public:
         if (m_parent)
             m_parent->remove(this);
         while (!m_children.empty())
-            delete m_children.front();
+            delete m_children.back();
     }
 
     /*!
@@ -74,6 +75,8 @@ public:
         m_children.push_back(child);
         child->setParent(this);
     }
+
+    Node &operator<<(Node *child) { append(child); return *this; }
 
     /*!
      * Adds \a child at the front of this node's list of children.
@@ -97,6 +100,45 @@ public:
         assert(std::find(m_children.begin(), m_children.end(), child) != m_children.end());
         m_children.erase(std::find(m_children.begin(), m_children.end(), child));
         child->setParent(0);
+    }
+
+    /*!
+     * Injects this node into the tree above \a node. This ndoe becomes a
+     * parent for \a node and will have the same order in the original parent's child list.
+     */
+    void injectAbove(Node *node) {
+        assert(node);
+        assert(node->parent());
+        assert(!parent());
+
+        // Attach ourselves to the node's parent
+        Node *p = node->parent();
+        auto pos = std::find(p->m_children.begin(), p->m_children.end(), node);
+        assert(pos != p->m_children.end());
+        *pos = this;
+        m_parent = p;
+
+        // attach node to ourselves
+        m_children.push_back(node);
+        node->m_parent = this;
+    }
+
+    /*!
+     * Removes this node from the tree and assigns all of its children to this
+     * node's parent.
+     */
+    void evict() {
+        assert(parent());
+        Node *p = parent();
+        auto pos = std::find(p->m_children.begin(), m_children.end(), this);
+        assert(pos != p->m_children.end());
+        pos = p->m_children.erase(pos);
+        for (auto i : m_children) {
+            pos = p->m_children.insert(pos, i);
+            i->m_parent = p;
+        }
+        m_children.clear();
+        m_parent = 0;
     }
 
     /*!
@@ -144,6 +186,24 @@ public:
             onPreprocess();
         }
     }
+
+    static void dump(Node *n, unsigned level = 0)
+    {
+        for (unsigned x=0; x<level; ++x) std::cout << " ";
+        switch (n->type()) {
+        case Node::BasicNodeType: std::cout << "Node"; break;
+        case Node::OpacityNodeType: std::cout << "OpacityNode"; break;
+        case Node::TransformNodeType: std::cout << "TransormNode"; break;
+        case Node::RectangleNodeType: std::cout << "RectangleNode"; break;
+        case Node::LayerNodeType: std::cout << "LayerNodeType"; break;
+        default: std::cout << "Node(type=" << n->type() << ")"; break;
+        }
+        std::cout << "(" << n << ") parent=" << n->parent() << " childCount=" << n->childCount() << std::endl;
+        for (auto child : n->children())
+            dump(child, level + 1);
+    }
+
+
 
 protected:
     virtual void onPreprocess() { }

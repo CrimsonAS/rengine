@@ -26,6 +26,7 @@
 
 #include "test.h"
 
+
 template <typename T> bool tst_node_cast_helper()
 {
     T org;
@@ -119,12 +120,53 @@ void tst_rectanglenode_geometry()
     cout << __FUNCTION__ << ": ok" << endl;
 }
 
+static  void tst_node_injectEvict()
+{
+    Node root;
+    Node n1;
+    Node n2;
+    Node n11;
+    Node n12;
+    Node n21;
+    Node n22;
+    Node injected;
+
+    root << &n1 << &n2;
+    n1 << &n11 << &n12;
+    n2 << &n21 << &n22;
+
+    injected.injectAbove(&n1);
+    check_equal(2, root.childCount());
+    check_equal(1, injected.childCount());
+    check_equal(root.children().at(0), &injected);
+    check_equal(&root, injected.parent());
+    check_equal(n1.parent(), &injected);
+    check_equal(n11.parent(), &n1);
+    check_equal(n12.parent(), &n1);
+    check_equal(n21.parent(), &n2);
+    check_equal(n22.parent(), &n2);
+
+    injected.evict();
+    check_equal(injected.parent(), 0);
+    check_equal(injected.childCount(), 0);
+    check_equal(2, root.childCount());
+    check_equal(root.children().at(0), &n1);
+    check_equal(n1.parent(), &root);
+    check_equal(n11.parent(), &n1);
+    check_equal(n12.parent(), &n1);
+    check_equal(n21.parent(), &n2);
+    check_equal(n22.parent(), &n2);
+
+    cout << __FUNCTION__ << ": ok" << endl;
+}
+
 
 int main(int, char **)
 {
     tst_node_cast();
     tst_node_addRemoveParent();
     tst_rectanglenode_geometry();
+    tst_node_injectEvict();
 
     return 0;
 }
