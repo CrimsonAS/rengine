@@ -40,7 +40,7 @@ macro(add_rengine_test name)
     add_executable(${TEST_NAME} "tests/tst_${name}.cpp")
     add_test(${TEST_NAME} ${TEST_NAME})
     add_dependencies(${TEST_NAME} rengine)
-    target_link_libraries(${TEST_NAME} rengine)
+    target_link_libraries(${TEST_NAME} rengine ${LIBS_OPENGL})
 endmacro(add_rengine_test)
 
 
@@ -92,4 +92,5 @@ add_rengine_example(layeredopacity)
 
 add_rengine_test(node)
 add_rengine_test(mathtypes)
-adD_rengine_test(keyframes)
+add_rengine_test(keyframes)
+add_rengine_test(render)

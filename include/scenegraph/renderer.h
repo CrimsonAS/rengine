@@ -57,7 +57,6 @@ public:
         Once this function is called, the scene graph can be built and
         put to the renderer.
      */
-
     virtual void initialize() = 0;
 
     /*!
@@ -67,6 +66,18 @@ public:
      */
     virtual bool render() = 0;
 
+    /*!
+        Read back pixels into \a bytes.
+
+        The pixels will be 32 bit RGBA and tightly packed into \a width and \a
+        height.
+     */
+    virtual bool readPixels(int x, int y, int width, int height, unsigned char *bytes) { return false; }
+
+    /*!
+        Called after the frame has been swapped. The renderer can use this
+        to perform post-frame cleanup, for instance...
+     */
     virtual void frameSwapped() { }
 
     void setFillColor(const vec4 &c) { m_fillColor = c; }

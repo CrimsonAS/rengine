@@ -87,6 +87,7 @@ public:
     void initialize();
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
+    bool readPixels(int x, int y, int w, int h, unsigned char *pixels);
 
     void prepass(Node *n);
     void build(Node *n);

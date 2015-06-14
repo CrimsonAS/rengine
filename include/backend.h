@@ -34,6 +34,7 @@ public:
 
     static Backend *get();
 
+    virtual void quit() = 0;
     virtual void run() = 0;
     virtual Surface *createSurface(SurfaceInterface *) = 0;
     virtual Renderer *createRenderer(Surface *surface) = 0;

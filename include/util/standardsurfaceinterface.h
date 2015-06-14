@@ -18,6 +18,9 @@ public:
 
     virtual Node *update(Node *oldRoot) = 0;
 
+    virtual void beforeRender() { }
+    virtual void afterRender() { }
+
     void onRender() {
         surface()->makeCurrent();
 
@@ -33,11 +36,13 @@ public:
         // Advance the animations just before rendering..
         m_animationManager.tick();
 
+
         // And then render the stuff
+        beforeRender();
         m_renderer->render();
+        afterRender();
 
         surface()->swapBuffers();
-
         m_renderer->frameSwapped();
 
         // Schedule a repaint again if there are animations running...

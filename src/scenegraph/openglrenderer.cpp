@@ -117,6 +117,12 @@ OpenGLRenderer::~OpenGLRenderer()
     assert(m_fbo == 0);
 }
 
+bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned char *bytes)
+{
+    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+    return true;
+}
+
 Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format format, void *data)
 {
     OpenGLTextureLayer *layer = new OpenGLTextureLayer();

@@ -55,6 +55,7 @@ public:
 #endif
     }
 
+    void quit() override { cout << "quitting..." << endl; app.exit(); }
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);

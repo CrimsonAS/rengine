@@ -66,6 +66,12 @@ RENGINE_BEGIN_NAMESPACE
             assert((a) == (b));                                               \
         }
 
+    #define check_equal_hex(a, b)                                             \
+        if (!((a) == (b))) {                                                  \
+            cout << "Not equal '" << hex << a << "' vs '" << b << "'" << endl;   \
+            assert((a) == (b));                                               \
+        }
+
     #define check_fuzzyEqual(a, b)                                              \
         if (!fuzzy_equals(a, b)) {                                              \
             cout << "Not fuzzy equal '" << a << "' vs '" << b << "'" << endl;   \
