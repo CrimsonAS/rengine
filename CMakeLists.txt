@@ -7,7 +7,6 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
 
-
 ################################################################################
 #
 # Options
@@ -22,6 +21,7 @@ if (RENGINE_OPENGL_FTB)
     add_definitions(-DRENGINE_OPENGL_FTB)
 endif()
 
+option(RENGINE_USE_SDL "SDL Backend" OFF)
 
 
 ################################################################################
@@ -32,7 +32,7 @@ macro(add_rengine_example name)
     set(EXAMPLE_NAME "ex_${name}")
     add_executable(${EXAMPLE_NAME} "examples/${name}.cpp")
     add_dependencies(${EXAMPLE_NAME} rengine)
-    target_link_libraries(${EXAMPLE_NAME} rengine ${LIBS_OPENGL})
+    target_link_libraries(${EXAMPLE_NAME} rengine ${RENGINE_LIBS})
 endmacro(add_rengine_example)
 
 macro(add_rengine_test name)
@@ -40,7 +40,7 @@ macro(add_rengine_test name)
     add_executable(${TEST_NAME} "tests/tst_${name}.cpp")
     add_test(${TEST_NAME} ${TEST_NAME})
     add_dependencies(${TEST_NAME} rengine)
-    target_link_libraries(${TEST_NAME} rengine ${LIBS_OPENGL})
+    target_link_libraries(${TEST_NAME} rengine ${RENGINE_LIBS})
 endmacro(add_rengine_test)
 
 
@@ -49,16 +49,24 @@ endmacro(add_rengine_test)
 #
 # Resolving libraries
 #
-#find_package(Qt5Gui)
+if (RENGINE_USE_SDL)
+    message("Building with SDL2")
+    include(FindPkgConfig)
+    pkg_search_module(SDL2 REQUIRED sdl2)
+    include_directories(${SDL2_INCLUDE_DIRS})
+    # ### TODO: Why is the -L needed here?
+    set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib)
+else()
+    message("Building with Qt")
+    find_package(Qt5Gui)
+endif()
+
 find_package(OpenGL)
 
-include(FindPkgConfig)
-pkg_search_module(SDL2 REQUIRED sdl2)
-include_directories(${SDL2_INCLUDE_DIRS})
 
 if (OPENGL_FOUND)
     message("OpenGL (Desktop) was detected")
-    set(LIBS_OPENGL ${OPENGL_LIBRARIES})
+    set(RENGINE_LIBS ${RENGINE_LIBS} ${OPENGL_LIBRARIES})
     add_definitions(-DRENGINE_OPENGL_DESKTOP)
 else()
     message(FATAL_ERROR, "OpenGL not detected")
@@ -79,13 +87,20 @@ enable_testing()
 #
 # librengine.a
 #
-add_library(rengine STATIC
-#    src/qt/qtbackend.cpp
-    src/sdl/sdlbackend.cpp
-    src/scenegraph/openglrenderer.cpp
-)
-#target_link_libraries(rengine Qt5::Gui)
-target_link_libraries(rengine ${SDL2_LIBRARIES})
+if (RENGINE_USE_SDL)
+    add_library(rengine STATIC
+                src/sdl/sdlbackend.cpp
+                src/scenegraph/openglrenderer.cpp
+               )
+    target_link_libraries(rengine ${SDL2_LIBRARIES})
+else()
+    # Qt based
+    add_library(rengine STATIC
+                src/qt/qtbackend.cpp
+                src/scenegraph/openglrenderer.cpp
+               )
+    target_link_libraries(rengine Qt5::Gui)
+endif()
 
 
 

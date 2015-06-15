@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2015, Robin Burchell <robin.burchell@viroteck.net>
+    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -53,6 +54,7 @@ public:
 #endif
     }
 
+    void quit() { cout << __PRETTY_FUNCTION__ << "; not implemented..." << endl; }
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
@@ -66,10 +68,14 @@ public:
         : s(s)
     {
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
         mainwindow = SDL_CreateWindow("rengine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                      800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                                      800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
 
         context = SDL_GL_CreateContext(mainwindow);
         SDL_GL_SetSwapInterval(1);
@@ -120,7 +126,7 @@ public:
     vec2 size() const {
         int w;
         int h;
-        SDL_GetWindowSize(window.mainwindow, &w, &h);
+        SDL_GL_GetDrawableSize(window.mainwindow, &w, &h);
         return vec2(w, h);
     }
 
