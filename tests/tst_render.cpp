@@ -1,21 +1,66 @@
 #include "test.h"
 
-static bool alreadyDone = false;
+class StaticRenderTest {
+public:
+    virtual Node *build() = 0;
+    virtual bool check() = 0;
 
-class RedGreenBlue : public StandardSurfaceInterface
+    bool checkPixel(int x, int y, const vec4 &expected, float errorMargin=0.01)
+    {
+        assert(x >= 0);
+        assert(x < m_w);
+        assert(y >= 0);
+        assert(y < m_h);
+
+        unsigned pixel = m_pixels[(m_h - y - 1) * m_w + x];
+        cout << hex << pixel << endl;
+        vec4 color = vec4((pixel & 0x000000ff) >> 0,
+                          (pixel & 0x0000ff00) >> 8,
+                          (pixel & 0x00ff0000) >> 16,
+                          (pixel & 0xff000000) >> 24) / 255.0;
+
+        if (abs(color.x - expected.x) > errorMargin
+            || abs(color.y - expected.y) > errorMargin
+            || abs(color.z - expected.z) > errorMargin
+            || abs(color.w - expected.w) > errorMargin) {
+            cout << "pixels differ: (" << x << "," << y << ")=" << color << "; expected=" << expected << endl;
+            assert(false);
+        }
+
+        return true;
+    }
+
+    Surface *surface() const { return m_surface; }
+    void setSurface(Surface *surface) { m_surface = surface; }
+
+    void setPixels(int w, int h, unsigned *pixels) {
+        m_w = w;
+        m_h = h;
+        m_pixels = pixels;
+    }
+
+    virtual const char *name() const = 0;
+
+private:
+    int m_w;
+    int m_h;
+    unsigned *m_pixels;
+    Surface *m_surface;
+};
+
+class TestBase : public StandardSurfaceInterface
 {
 public:
-    Node *update(Node *root) override {
+    Node *update(Node *root) {
         if (root)
-            return 0;
+            delete root;
 
-        root = new Node();
+        m_currentTest = tests.front();
+        tests.pop_front();
 
-        *root << new RectangleNode(rect2d::fromXywh(0, 0, 1, 1), vec4(1, 0, 0, 1))
-              << new RectangleNode(rect2d::fromXywh(1, 0, 1, 1), vec4(0, 1, 0, 1))
-              << new RectangleNode(rect2d::fromXywh(2, 0, 1, 1), vec4(0, 0, 1, 1));
+        m_currentTest->setSurface(surface());
 
-        return root;
+        return m_currentTest->build();
     }
 
     void afterRender() override {
@@ -25,26 +70,51 @@ public:
         bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned char *) pixels);
         check_true(ok);
 
-        int offset = (size.y - 1) * size.x;
+        m_currentTest->setPixels(size.x, size.y, pixels);
+        if (m_currentTest->check()) {
+            cout << "testng: '" << m_currentTest->name() << "': ok" << endl;
+        } else {
+            cout << m_currentTest->name() << ": failed!" << endl;
+        }
 
-        check_equal_hex(pixels[0 + offset], 0xff0000ff);
-        check_equal_hex(pixels[1 + offset], 0xff00ff00);
-        check_equal_hex(pixels[2 + offset], 0xffff0000);
-
-        cout << "tst_render: RedGreenBlue: ok" << endl;
-
-        alreadyDone = true;
-        Backend::get()->quit();
+        if (tests.empty())
+            Backend::get()->quit();
+        else
+            surface()->requestRender();
     }
+
+    StaticRenderTest *m_currentTest;
+    list<StaticRenderTest *> tests;
 };
+
+class RedGreenBlue : public StaticRenderTest
+{
+public:
+    Node *build() override {
+        Node *root = new Node();
+        *root << new RectangleNode(rect2d::fromXywh(0, 0, 1, 1), vec4(1, 0, 0, 1))
+              << new RectangleNode(rect2d::fromXywh(1, 0, 1, 1), vec4(0, 1, 0, 1))
+              << new RectangleNode(rect2d::fromXywh(2, 0, 1, 1), vec4(0, 0, 1, 1));
+        return root;
+    }
+
+    bool check() override {
+        return checkPixel(0, 0, vec4(1, 0, 0, 1))
+            && checkPixel(1, 0, vec4(0, 1, 0, 1))
+            && checkPixel(2, 0, vec4(0, 0, 1, 1));
+    }
+
+    const char *name() const override { return "RedGreenBlue"; }
+};
+
 
 int main(int argc, char *argv[])
 {
     std::unique_ptr<Backend> backend(Backend::get());
-    RedGreenBlue iface;
-    Surface *surface = backend->createSurface(&iface);
+    TestBase testBase;
+    testBase.tests.push_back(new RedGreenBlue());
+    Surface *surface = backend->createSurface(&testBase);
     surface->show();
-    if (!alreadyDone)
-        backend->run();
+    backend->run();
     return 0;
 }
