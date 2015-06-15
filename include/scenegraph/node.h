@@ -275,23 +275,31 @@ public:
     enum { StaticType = RectangleNodeType };
 
     RectangleNode() : Node(RectangleNodeType) { }
-
-    float x() const { return m_pos.x; }
-    float y() const { return m_pos.y; }
-    const vec2 &position() const { return m_pos; }
-    void setPosition(float x, float y) { setPosition(vec2(x, y)); }
-    void setPosition(const vec2 &pos) { m_pos = pos; }
-
-    float width() const { return m_size.x; }
-    float height() const { return m_size.y; }
-    const vec2 &size() const { return m_size; }
-    void setSize(float w, float h) { setSize(vec2(w, h)); }
-    void setSize(const vec2 &size) { m_size = size; }
-
-    void setGeometry(float x, float y, float w, float h) {
-        setPosition(x, y);
-        setSize(w, h);
+    RectangleNode(const rect2d &geometry, const vec4 &color)
+        : Node(RectangleNodeType)
+        , m_geometry(geometry)
+        , m_color(color)
+    {
     }
+
+    // float x() const { return m_geometry.tl.x; }
+    // float y() const { return m_geometry.tl.y; }
+    // vec2 position() const { return m_geometry.tl; }
+    // void setPosition(float x, float y) { setPosition(vec2(x, y)); }
+    // void setPosition(const vec2 &pos) { m_geometry.setPosition(pos); }
+
+    // float width() const { return m_geometry.width(); }
+    // float height() const { return m_geometry.height(); }
+    // vec2 size() const { return m_geometry.size(); }
+    // void setSize(float w, float h) { setSize(vec2(w, h)); }
+    // void setSize(const vec2 &size) { m_geometry.setSize(size); }
+
+    // void setGeometry(float x, float y, float w, float h) {
+    //     setPosition(x, y);
+    //     setSize(w, h);
+    // }
+
+    const rect2d &geometry() const { return m_geometry; }
 
     const vec4 &color() const { return m_color; }
     void setColor(const vec4 &color) {
@@ -304,20 +312,33 @@ public:
 
 protected:
     RectangleNode(Type type) : Node(type) { }
+    RectangleNode(Type type, const rect2d &geometry, const vec4 &color = vec4())
+        : Node(type)
+        , m_geometry(geometry)
+        , m_color(color)
+    {
+    }
 
 private:
-    vec2 m_pos;
-    vec2 m_size;
+    rect2d m_geometry;
     vec4 m_color;
 };
 
 
+// ### TODO: because layer node is a rectangle node it also has color. Does
+// ### that really make sense?
 class LayerNode : public RectangleNode {
 public:
     enum { StaticType = LayerNodeType };
     LayerNode()
         : RectangleNode(LayerNodeType)
         , m_layer(0)
+    {
+    }
+
+    LayerNode(const rect2d &geometry, Layer *layer)
+        : RectangleNode(LayerNodeType, geometry)
+        , m_layer(layer)
     {
     }
 

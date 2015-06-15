@@ -45,21 +45,14 @@ public:
                           * mat4::translate(s.x * 0.33, 0, 0)
                           * mat4::rotateAroundY(M_PI/2.0));
 
-            RectangleNode *rn = new RectangleNode();
-            rn->setGeometry(-w/2, -h/2, w, h);
-            rn->setColor(vec4(c, 0.5, 1-c, 0.8));
-            tn->append(rn);
+            *tn << new RectangleNode(rect2d::fromXywh(-w/2, -h/2, w, h), vec4(c, 0.5, 1-c, 0.8));
             rotationNode->append(tn);
 
             TransformNode *depthAdjustment = new TransformNode();
             depthAdjustment->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
                                        * mat4::translate(s.x * 0.33 + 2, 0, 0)
                                        * mat4::rotateAroundY(M_PI/2.0));
-            LayerNode *ln = new LayerNode();
-            ln->setGeometry(-w/2, -h/2, w, h);
-            ln->setLayer(m_layer);
-            depthAdjustment->append(ln);
-
+            *depthAdjustment << new LayerNode(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
             rotationNode->append(depthAdjustment);
         }
 

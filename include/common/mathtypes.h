@@ -360,13 +360,27 @@ public:
     rect2d(const vec2 &tl, const vec2 &br) : tl(tl), br(br) { }
     rect2d(float x1, float y1, float x2, float y2) : tl(x1, y1), br(x2, y2) { }
 
+    static rect2d fromPosSize(const vec2 &pos, const vec2 &size) { return rect2d(pos, pos + size); }
+    static rect2d fromXywh(float x, float y, float w, float h) { return rect2d(x, y, x+w, y+h); }
+
     float top() const { return tl.y; }
     float left() const { return tl.x; }
     float bottom() const { return br.y; }
     float right() const { return br.x; }
 
+    float x() const { return tl.x; }
+    float y() const { return tl.y; }
     float width() const { return br.x - tl.x; }
     float height() const { return br.y - tl.y; }
+
+    vec2 position() const { return tl; }
+    void setPosition(const vec2 &position) {
+        br = position + vec2(width(), height());
+        tl = position;
+    }
+
+    vec2 size() const { return vec2(width(), height()); }
+    void setSize(const vec2 &size) { br = tl + size; }
 
     rect2d operator|(const vec2 &p) const {
         return rect2d(p.x < tl.x ? p.x : tl.x,

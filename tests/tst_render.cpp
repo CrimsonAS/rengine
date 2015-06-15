@@ -1,13 +1,5 @@
 #include "test.h"
 
-static RectangleNode *createRect(float x, float y, float w, float h, const vec4 &color)
-{
-    RectangleNode *r = new RectangleNode();
-    r->setGeometry(x, y, w, h);
-    r->setColor(color);
-    return r;
-}
-
 static bool alreadyDone = false;
 
 class RedGreenBlue : public StandardSurfaceInterface
@@ -19,9 +11,9 @@ public:
 
         root = new Node();
 
-        *root << createRect(0, 0, 1, 1, vec4(1, 0, 0, 1))
-              << createRect(1, 0, 1, 1, vec4(0, 1, 0, 1))
-              << createRect(2, 0, 1, 1, vec4(0, 0, 1, 1));
+        *root << new RectangleNode(rect2d::fromXywh(0, 0, 1, 1), vec4(1, 0, 0, 1))
+              << new RectangleNode(rect2d::fromXywh(1, 0, 1, 1), vec4(0, 1, 0, 1))
+              << new RectangleNode(rect2d::fromXywh(2, 0, 1, 1), vec4(0, 0, 1, 1));
 
         return root;
     }
@@ -32,8 +24,6 @@ public:
 
         bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned char *) pixels);
         check_true(ok);
-
-        cout << hex << pixels[0] << " " << pixels[1] << " " << pixels[2] << endl;
 
         int offset = (size.y - 1) * size.x;
 

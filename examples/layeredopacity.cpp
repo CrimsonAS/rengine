@@ -21,22 +21,11 @@ public:
         // opacityNode->setOpacity(0.5);
         root->append(opacityNode);
 
-        RectangleNode *rectA = new RectangleNode();
-        rectA->setPosition(-s3);
-        rectA->setSize(s3);
-        rectA->setColor(vec4(0.5, 0.5, 0.8, 1));
-        opacityNode->append(rectA);
+        vec4 color(0.5, 0.5, 0.8, 1.0);
 
-        RectangleNode *rectB = new RectangleNode();
-        rectB->setPosition(-s3 / 2);
-        rectB->setSize(s3);
-        rectB->setColor(vec4(0.5, 0.5, 0.8, 1));
-        opacityNode->append(rectB);
-
-        RectangleNode *rectC = new RectangleNode();
-        rectC->setSize(s3);
-        rectC->setColor(vec4(0.5, 0.5, 0.8, 1));
-        opacityNode->append(rectC);
+        *opacityNode << new RectangleNode(rect2d::fromPosSize(-s3, s3), color)
+                     << new RectangleNode(rect2d::fromPosSize(-s3/2, s3), color)
+                     << new RectangleNode(rect2d::fromPosSize(vec2(), s3), color);
 
         AnimationClosure<OpacityNode> *anim = new AnimationClosure<OpacityNode>(opacityNode);
         anim->setDuration(3);

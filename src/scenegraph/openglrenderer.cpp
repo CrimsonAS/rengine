@@ -291,8 +291,8 @@ void OpenGLRenderer::build(Node *n)
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
-        vec2 p1 = rn->position();
-        vec2 p2 = rn->size() + rn->position();
+        const vec2 &p1 = rn->geometry().tl;
+        const vec2 &p2 = rn->geometry().br;
         vec2 *v = m_vertices + m_vertexIndex;
 
         if (m_render3d) {
@@ -300,12 +300,12 @@ void OpenGLRenderer::build(Node *n)
             projectQuad(p1, p2, v);
 
         } else {
-            p1 = m_m2d * p1;
-            p2 = m_m2d * p2;
-            v[0] = vec2(p1.x, p1.y);
-            v[1] = vec2(p1.x, p2.y);
-            v[2] = vec2(p2.x, p1.y);
-            v[3] = vec2(p2.x, p2.y);
+            vec2 a = m_m2d * p1;
+            vec2 b = m_m2d * p2;
+            v[0] = vec2(a.x, a.y);
+            v[1] = vec2(a.x, b.y);
+            v[2] = vec2(b.x, a.y);
+            v[3] = vec2(b.x, b.y);
         }
         m_vertexIndex += 4;
         m_elementIndex += 1;
