@@ -48,20 +48,22 @@ class QtBackend : public Backend
 {
 public:
     QtBackend()
-        : app(argc, (char **) argv)
+        : app(argc, (char **) argv), exited(false)
     {
 #ifdef RENGINE_LOG_INFO
         cout << "QtBackend: created..." << endl;
 #endif
     }
 
-    void quit() override { cout << "quitting..." << endl; app.exit(); }
+    void quit() override { cout << "quitting..." << endl; exited = true; app.quit(); }
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
     Renderer *createRenderer(Surface *surface);
 
     QGuiApplication app;
+
+    bool exited;
 };
 
 class QtWindow : public QWindow
@@ -160,8 +162,11 @@ void QtBackend::run()
 {
 #ifdef RENGINE_LOG_INFO
     cout << "QtBackend: starting eventloop..." << endl;
+    if (exited)
+        cout << " -> quit() already called, not starting eventloop.." << endl;
 #endif
-    app.exec();
+    if (!exited)
+        app.exec();
 #ifdef RENGINE_LOG_INFO
     cout << "QtBackend: exited eventloop..." << endl;
 #endif

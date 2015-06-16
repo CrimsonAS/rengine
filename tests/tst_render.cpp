@@ -1,110 +1,96 @@
 #include "test.h"
 
-class StaticRenderTest {
-public:
-    virtual Node *build() = 0;
-    virtual bool check() = 0;
-
-    bool checkPixel(int x, int y, const vec4 &expected, float errorMargin=0.01)
-    {
-        assert(x >= 0);
-        assert(x < m_w);
-        assert(y >= 0);
-        assert(y < m_h);
-
-        unsigned pixel = m_pixels[(m_h - y - 1) * m_w + x];
-        cout << hex << pixel << endl;
-        vec4 color = vec4((pixel & 0x000000ff) >> 0,
-                          (pixel & 0x0000ff00) >> 8,
-                          (pixel & 0x00ff0000) >> 16,
-                          (pixel & 0xff000000) >> 24) / 255.0;
-
-        if (abs(color.x - expected.x) > errorMargin
-            || abs(color.y - expected.y) > errorMargin
-            || abs(color.z - expected.z) > errorMargin
-            || abs(color.w - expected.w) > errorMargin) {
-            cout << "pixels differ: (" << x << "," << y << ")=" << color << "; expected=" << expected << endl;
-            assert(false);
-        }
-
-        return true;
-    }
-
-    Surface *surface() const { return m_surface; }
-    void setSurface(Surface *surface) { m_surface = surface; }
-
-    void setPixels(int w, int h, unsigned *pixels) {
-        m_w = w;
-        m_h = h;
-        m_pixels = pixels;
-    }
-
-    virtual const char *name() const = 0;
-
-private:
-    int m_w;
-    int m_h;
-    unsigned *m_pixels;
-    Surface *m_surface;
-};
-
-class TestBase : public StandardSurfaceInterface
-{
-public:
-    Node *update(Node *root) {
-        if (root)
-            delete root;
-
-        m_currentTest = tests.front();
-        tests.pop_front();
-
-        m_currentTest->setSurface(surface());
-
-        return m_currentTest->build();
-    }
-
-    void afterRender() override {
-        vec2 size = surface()->size();
-        unsigned *pixels = (unsigned *) malloc(size.x * size.y * sizeof(unsigned));
-
-        bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned char *) pixels);
-        check_true(ok);
-
-        m_currentTest->setPixels(size.x, size.y, pixels);
-        if (m_currentTest->check()) {
-            cout << "testng: '" << m_currentTest->name() << "': ok" << endl;
-        } else {
-            cout << m_currentTest->name() << ": failed!" << endl;
-        }
-
-        if (tests.empty())
-            Backend::get()->quit();
-        else
-            surface()->requestRender();
-    }
-
-    StaticRenderTest *m_currentTest;
-    list<StaticRenderTest *> tests;
-};
-
-class RedGreenBlue : public StaticRenderTest
+class ColorsAndPositions : public StaticRenderTest
 {
 public:
     Node *build() override {
         Node *root = new Node();
-        *root << new RectangleNode(rect2d::fromXywh(0, 0, 1, 1), vec4(1, 0, 0, 1))
-              << new RectangleNode(rect2d::fromXywh(1, 0, 1, 1), vec4(0, 1, 0, 1))
-              << new RectangleNode(rect2d::fromXywh(2, 0, 1, 1), vec4(0, 0, 1, 1));
+
+        // White background to blend against..
+        *root << new RectangleNode(rect2d::fromXywh(18, 0, 6, 11), vec4(1, 1, 1, 1));
+
+        for (int i=0; i<=10; ++i) {
+            float c = i / 10.0;
+            // black to primary and secondary colors
+            *root << new RectangleNode(rect2d::fromXywh( 0, i, 1, 1), vec4(c, 0, 0, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 1, i, 1, 1), vec4(0, c, 0, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 2, i, 1, 1), vec4(0, 0, c, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 3, i, 1, 1), vec4(c, c, 0, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 4, i, 1, 1), vec4(0, c, c, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 5, i, 1, 1), vec4(c, 0, c, 1));
+
+            // primary and secondary colors to white
+            *root << new RectangleNode(rect2d::fromXywh( 6, i, 1, 1), vec4(1, c, c, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 7, i, 1, 1), vec4(c, 1, c, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 8, i, 1, 1), vec4(c, c, 1, 1));
+            *root << new RectangleNode(rect2d::fromXywh( 9, i, 1, 1), vec4(1, 1, c, 1));
+            *root << new RectangleNode(rect2d::fromXywh(10, i, 1, 1), vec4(c, 1, 1, 1));
+            *root << new RectangleNode(rect2d::fromXywh(11, i, 1, 1), vec4(1, c, 1, 1));
+
+            // fade prim/sec colors on top of black
+            *root << new RectangleNode(rect2d::fromXywh(12, i, 1, 1), vec4(1, 0, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(13, i, 1, 1), vec4(0, 1, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(14, i, 1, 1), vec4(0, 0, 1, c));
+            *root << new RectangleNode(rect2d::fromXywh(15, i, 1, 1), vec4(1, 1, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(16, i, 1, 1), vec4(0, 1, 1, c));
+            *root << new RectangleNode(rect2d::fromXywh(17, i, 1, 1), vec4(1, 0, 1, c));
+
+            // fade prim/sec colors on top of white (rect added before loop)
+            *root << new RectangleNode(rect2d::fromXywh(18, i, 1, 1), vec4(1, 0, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(19, i, 1, 1), vec4(0, 1, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(20, i, 1, 1), vec4(0, 0, 1, c));
+            *root << new RectangleNode(rect2d::fromXywh(21, i, 1, 1), vec4(1, 1, 0, c));
+            *root << new RectangleNode(rect2d::fromXywh(22, i, 1, 1), vec4(0, 1, 1, c));
+            *root << new RectangleNode(rect2d::fromXywh(23, i, 1, 1), vec4(1, 0, 1, c));
+        }
+
         return root;
     }
 
     bool check() override {
-        return checkPixel(0, 0, vec4(1, 0, 0, 1))
-            && checkPixel(1, 0, vec4(0, 1, 0, 1))
-            && checkPixel(2, 0, vec4(0, 0, 1, 1));
+        for (int i=0; i<10; ++i) {
+            float c = i / 10.0;
+
+            // Black to primary and secondary
+            checkPixel( 0, i, vec4(c, 0, 0, 1));
+            checkPixel( 1, i, vec4(0, c, 0, 1));
+            checkPixel( 2, i, vec4(0, 0, c, 1));
+            checkPixel( 3, i, vec4(c, c, 0, 1));
+            checkPixel( 4, i, vec4(0, c, c, 1));
+            checkPixel( 5, i, vec4(c, 0, c, 1));
+
+            // primary and secondary to white
+            checkPixel( 6, i, vec4(1, c, c, 1));
+            checkPixel( 7, i, vec4(c, 1, c, 1));
+            checkPixel( 8, i, vec4(c, c, 1, 1));
+            checkPixel( 9, i, vec4(1, 1, c, 1));
+            checkPixel(10, i, vec4(c, 1, 1, 1));
+            checkPixel(11, i, vec4(1, c, 1, 1));
+
+            // alpha fade on top of black
+            checkPixel(12, i, vec4(c, 0, 0, 1));
+            checkPixel(13, i, vec4(0, c, 0, 1));
+            checkPixel(14, i, vec4(0, 0, c, 1));
+            checkPixel(15, i, vec4(c, c, 0, 1));
+            checkPixel(16, i, vec4(0, c, c, 1));
+            checkPixel(17, i, vec4(c, 0, c, 1));
+
+            // alpha fade on top of white
+            float ci = 1.0 - c;
+            checkPixel(18, i, vec4( 1, ci, ci, 1));
+            checkPixel(19, i, vec4(ci,  1, ci, 1));
+            checkPixel(20, i, vec4(ci, ci,  1, 1));
+            checkPixel(21, i, vec4( 1,  1, ci, 1));
+            checkPixel(22, i, vec4(ci,  1,  1, 1));
+            checkPixel(23, i, vec4( 1, ci,  1, 1));
+
+
+
+        }
+        return true;
     }
 
-    const char *name() const override { return "RedGreenBlue"; }
+    const char *name() const override { return "ColorsAndPositions"; }
 };
 
 
@@ -112,9 +98,13 @@ int main(int argc, char *argv[])
 {
     std::unique_ptr<Backend> backend(Backend::get());
     TestBase testBase;
-    testBase.tests.push_back(new RedGreenBlue());
-    Surface *surface = backend->createSurface(&testBase);
+    testBase.leaveRunning = true;
+    std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));
+
+    testBase.tests.push_back(new ColorsAndPositions());
+
     surface->show();
     backend->run();
+
     return 0;
 }
