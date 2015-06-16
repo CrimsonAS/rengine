@@ -117,9 +117,12 @@ OpenGLRenderer::~OpenGLRenderer()
     assert(m_fbo == 0);
 }
 
-bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned char *bytes)
+bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned *bytes)
 {
-    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+    // Read line-by-line and flip it so we get what we want out..
+    // Slow as hell, but this is used for autotesting, so who cares..
+    for (int i=0; i<h; ++i)
+        glReadPixels(x, h - i - 1, w, 1, GL_RGBA, GL_UNSIGNED_BYTE, bytes + i * w);
     return true;
 }
 

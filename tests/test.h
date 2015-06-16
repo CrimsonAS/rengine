@@ -31,7 +31,11 @@
 #include <assert.h>
 #include <cmath>
 #include <iostream>
+#include <string>
 #include "rengine.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 using namespace std;
 
@@ -91,7 +95,7 @@ public:
         assert(y >= 0);
         assert(y < m_h);
 
-        unsigned pixel = m_pixels[(m_h - y - 1) * m_w + x];
+        unsigned pixel = m_pixels[y * m_w + x];
         vec4 color = vec4((pixel & 0x000000ff) >> 0,
                           (pixel & 0x0000ff00) >> 8,
                           (pixel & 0x00ff0000) >> 16,
@@ -144,14 +148,20 @@ public:
         vec2 size = surface()->size();
         unsigned *pixels = (unsigned *) malloc(size.x * size.y * sizeof(unsigned));
 
-        bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned char *) pixels);
+        bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned *) pixels);
         check_true(ok);
 
         m_currentTest->setPixels(size.x, size.y, pixels);
         if (m_currentTest->check()) {
-            cout << "testng: '" << m_currentTest->name() << "': ok" << endl;
+            cout << "tst_" << m_currentTest->name() << ": ok" << endl;
         } else {
             cout << m_currentTest->name() << ": failed!" << endl;
+
+            // dump the image to disk..
+            string file("pixeldump_");
+            file.append(m_currentTest->name());
+            file.append(".png");
+            stbi_write_png(file.c_str(), size.x, size.y, 4, pixels, size.x * sizeof(unsigned));
         }
 
         if (tests.empty()) {
@@ -160,6 +170,8 @@ public:
         } else {
             surface()->requestRender();
         }
+
+        free(pixels);
     }
 
     bool leaveRunning;
