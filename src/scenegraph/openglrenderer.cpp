@@ -101,6 +101,7 @@ OpenGLRenderer::OpenGLRenderer()
     , m_texCoordBuffer(0)
     , m_vertexBuffer(0)
     , m_fbo(0)
+    , m_matrixState(UpdateAllPrograms)
     , m_render3d(false)
     , m_layered(false)
 {
@@ -208,7 +209,7 @@ void OpenGLRenderer::initialize()
 void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
 {
     activateShader(&prog_solid);
-
+    ensureMatrixUpdated(UpdateSolidProgram, &prog_solid);
     glUniform4f(prog_solid.color, c.x * c.w, c.y * c.w, c.z * c.w, c.w);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -216,10 +217,12 @@ void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
 
 void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacity)
 {
-    if (opacity == 1)
+    if (opacity == 1) {
         activateShader(&prog_layer);
-    else {
+        ensureMatrixUpdated(UpdateLayerProgram, &prog_layer);
+    } else {
         activateShader(&prog_alphaLayer);
+        ensureMatrixUpdated(UpdateAlphaLayerProgram, &prog_alphaLayer);
         glUniform1f(prog_alphaLayer.alpha, opacity);
     }
 
@@ -236,11 +239,9 @@ void OpenGLRenderer::activateShader(const Program *shader)
     int oldCount = m_activeShader ? m_activeShader->attributeCount() : 0;
     int newCount = 0;
 
-
     if (shader) {
         newCount = shader->attributeCount();
         glUseProgram(shader->id());
-        glUniformMatrix4fv(shader->matrix, 1, true, m_proj.m);
     } else {
         glUseProgram(0);
     }
@@ -350,7 +351,7 @@ void OpenGLRenderer::build(Node *n)
         if (e) {
             m_render3d = false;
             m_farPlane = 0;
-            e->groupSize = (m_elements + m_elementIndex) - e;
+            e->groupSize = (m_elements + m_elementIndex) - e - 1;
         }
     } return;
 
@@ -376,7 +377,7 @@ void OpenGLRenderer::build(Node *n)
 
         if (e) {
             m_layered = storedLayered;
-            e->groupSize = (m_elements + m_elementIndex) - e;
+            e->groupSize = (m_elements + m_elementIndex) - e - 1;
             // cout << "groupSize of " << e << " is " << e->groupSize << " based on: " << m_elements << " " << m_elementIndex << " " << e << endl;
             e->vboOffset = m_vertexIndex;
             rect2d box = m_layerBoundingBox.aligned();
@@ -409,10 +410,14 @@ void OpenGLRenderer::build(Node *n)
 
 }
 
+// static int recursion;
 
 void OpenGLRenderer::renderToLayer(Element *e)
 {
-    // cout << " ---> doing layered rendering for: element=" << e << " node=" << e->node << endl;
+    // string space;
+    // for (int i=0; i<recursion; ++i)
+    //     space += "    ";
+    // cout << "- doing layered rendering for: element=" << e << " node=" << e->node << endl;
     assert(e->layered);
 
     // Store current state...
@@ -439,7 +444,6 @@ void OpenGLRenderer::renderToLayer(Element *e)
     glGenFramebuffers(1, &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
-    // cout << "    -> FBO status: " << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << end;
 
 #ifndef NDEBUG
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -455,11 +459,16 @@ void OpenGLRenderer::renderToLayer(Element *e)
              * mat4::translate2D(-1.0, 1.0)
              * mat4::scale2D(2.0f / w, -2.0f / h)
              * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
+    m_matrixState = UpdateAllPrograms;
+
+    // cout << space << "- rect=" << devRect << " texture=" << e->texture << " fbo=" << m_fbo
+    //      << " status=" << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << " ok=" << GL_FRAMEBUFFER_COMPLETE
+    //      << " " << m_proj << endl;
 
     glViewport(0, 0, w, h);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    render(e + 1, e + e->groupSize);
+    render(e + 1, e + e->groupSize + 1);
 
     // Reset the GL state..
     glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
@@ -473,21 +482,31 @@ void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d = stored3d;
     m_layered = storedLayered;
     m_proj = storedProjection;
+    // cout << space << "- layer is completed..." << endl;
 }
 
-
+/*!
+    Render the elements, starting at \a first and all elements up to, but not including \a last.
+ */
 void OpenGLRenderer::render(Element *first, Element *last)
 {
+    // string space;
+    // for (int i=0; i<recursion; ++i)
+    //     space += "    ";
+    // cout << space << "render " << first << " -> " << last - 1 << endl;
+
     // Check if we need to flatten something in this range
     if (m_numLayeredNodes > 0) {
-        // cout << " - render(layered) " << first->node << endl;
         Element *e = first;
+        // cout << space << "- checking layering for " << e << endl;
         while (e < last) {
             if (e->layered) {
+                // cout << space << "- needs layering: " << e << endl;
+                // ++recursion;
                 renderToLayer(e);
-                e = e + e->groupSize;
+                // --recursion;
+                e = e + e->groupSize + 1;
             } else {
-                // cout << " ---> skipping" << endl;
                 ++e;
             }
         }
@@ -495,25 +514,26 @@ void OpenGLRenderer::render(Element *first, Element *last)
 
     Element *e = first;
     while (e < last) {
-        // cout << " - render(normal) " << e->node << " " << (e->completed ? "*done*" : "") << endl;
+        // cout << space << "- render(normal) " << e << " node=(" << e->node << ") " << (e->completed ? "*done*" : "") << endl;
         if (e->completed) {
             ++e;
             continue;
         }
 
         if (e->node->type() == Node::RectangleNodeType) {
-            // cout << " ---> rect quad, vbo=" << e->vboOffset << endl;
+            // cout << space << "---> rect quad, vbo=" << e->vboOffset
+            //      << " " << m_proj * m_vertices[e->vboOffset] << " " << m_proj * m_vertices[e->vboOffset+3] << endl;
             drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
         } else if (e->node->type() == Node::LayerNodeType) {
-            // cout << " ---> texture quad, vbo=" << e->vboOffset << endl;
+            // cout << space << "---> texture quad, vbo=" << e->vboOffset << endl;
             drawTextureQuad(e->vboOffset, static_cast<LayerNode *>(e->node)->layer()->textureId());
         } else if (e->layered) {
-            // cout << " ---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
+            // cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             drawTextureQuad(e->vboOffset, e->texture, Node::from<OpacityNode>(e->node)->opacity());
             m_texturePool.release(e->texture);
         } else if (e->projection) {
-            std::sort(e + 1, e + e->groupSize);
-            // cout << " ---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
+            std::sort(e + 1, e + e->groupSize + 1);
+            // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
         }
 
         e->completed = true;

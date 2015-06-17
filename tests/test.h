@@ -86,7 +86,7 @@ inline bool fuzzy_equals(const vec4 &a, const vec4 &b, float threshold = 0.0001f
 class StaticRenderTest {
 public:
     virtual Node *build() = 0;
-    virtual bool check() = 0;
+    virtual void check() = 0;
 
     bool checkPixel(int x, int y, const vec4 &expected, float errorMargin=0.01)
     {
@@ -163,18 +163,15 @@ public:
         bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned *) pixels);
         check_true(ok);
 
-        m_currentTest->setPixels(size.x, size.y, pixels);
-        if (m_currentTest->check()) {
-            cout << "tst_" << m_currentTest->name() << ": ok" << endl;
-        } else {
-            cout << m_currentTest->name() << ": failed!" << endl;
+        // dump the image to disk..
+        string file("pixeldump_");
+        file.append(m_currentTest->name());
+        file.append(".png");
+        stbi_write_png(file.c_str(), size.x, size.y, 4, pixels, size.x * sizeof(unsigned));
 
-            // dump the image to disk..
-            string file("pixeldump_");
-            file.append(m_currentTest->name());
-            file.append(".png");
-            stbi_write_png(file.c_str(), size.x, size.y, 4, pixels, size.x * sizeof(unsigned));
-        }
+        m_currentTest->setPixels(size.x, size.y, pixels);
+        m_currentTest->check();
+        cout << "tst_" << m_currentTest->name() << ": ok" << endl;
 
         if (tests.empty()) {
             if (!leaveRunning)

@@ -70,6 +70,7 @@ public:
         float z;                    // only valid when 'projection' is set
         unsigned texture;           // only valid during rendering when 'flattened' is set.
         unsigned groupSize : 29;    // The size of this group, used with 'projection' and 'flattened'. Packed to ft into 32-bit
+                                    // The groupSize is the number of nodes inside the group, excluding the parent.
         unsigned projection : 1;    // 3d subtree
         unsigned layered : 1;       // as in flatten the subtree into a single texture, not the Layer class :p
         unsigned completed : 1;     // used during the actual rendering to know we're done with it
@@ -78,6 +79,12 @@ public:
     };
     struct Program : OpenGLShaderProgram {
         int matrix;
+    };
+    enum ProgramUpdate {
+        UpdateSolidProgram          = 0x01,
+        UpdateLayerProgram          = 0x02,
+        UpdateAlphaLayerProgram     = 0x04,
+        UpdateAllPrograms           = 0xffffffff
     };
 
     OpenGLRenderer();
@@ -97,6 +104,8 @@ public:
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
     void renderToLayer(Element *e);
+
+    void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
 
     struct LayerProgram : public Program {
         int matrix;
@@ -132,6 +141,8 @@ public:
     GLuint m_vertexBuffer;
     GLuint m_fbo;
 
+    unsigned m_matrixState;
+
     bool m_render3d : 1;
     bool m_layered : 1;
 
@@ -148,6 +159,15 @@ inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, vec2 *v)
     v[2] = m_m2d * ((m_m3d * vec3(b.x, a.y)).project2D(m_farPlane));    // top right
     v[3] = m_m2d * ((m_m3d * vec3(b))       .project2D(m_farPlane));    // bottom right
 }
+
+inline void OpenGLRenderer::ensureMatrixUpdated(ProgramUpdate bit, Program *p)
+{
+    if (m_matrixState & bit) {
+        m_matrixState &= ~bit;
+        glUniformMatrix4fv(p->matrix, 1, true, m_proj.m);
+    }
+}
+
 
 
 RENGINE_END_NAMESPACE

@@ -47,7 +47,7 @@ public:
         return root;
     }
 
-    bool check() override {
+    void check() override {
         for (int i=0; i<10; ++i) {
             float c = i / 10.0;
 
@@ -83,34 +83,25 @@ public:
             checkPixel(21, i, vec4( 1,  1, ci, 1));
             checkPixel(22, i, vec4(ci,  1,  1, 1));
             checkPixel(23, i, vec4( 1, ci,  1, 1));
-
-
-
         }
-        return true;
     }
 
     const char *name() const override { return "ColorsAndPositions"; }
 };
 
-class PositionsOfLayers : public StaticRenderTest
+class LayersOnViewportEdge : public StaticRenderTest
 {
 public:
     Node *build() override {
         vec2 size = surface()->size();
         Node *root = new Node();
         *root
-            << &(*new OpacityNode(0.9) << new RectangleNode(rect2d::fromXywh(10, 10, 1, 1), vec4(1, 0, 1, 1)))
-
             // Top-left, 50% red
             << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(-1, -1, 2, 2), vec4(1, 0, 0, 1)))
-
             // Top-right, 25% green
             << &(*new OpacityNode(0.25) << new RectangleNode(rect2d::fromXywh(size.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
-
             // Bottom-left, 75% blue
-            << &(*new OpacityNode(0.75) << new RectangleNode(rect2d::fromXywh(-1, size.y-10, 2, 2), vec4(0, 0, 1, 1)))
-
+            << &(*new OpacityNode(0.75) << new RectangleNode(rect2d::fromXywh(-1, size.y-1, 2, 2), vec4(0, 0, 1, 1)))
             // Bottom-right,
             << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(size.x-1, size.y-1, 2, 2), vec4(1, 1, 1, 1)))
             ;
@@ -118,24 +109,51 @@ public:
         return root;
     }
 
-    bool check() {
-        return true;
+    void check() override {
+        vec2 size = surface()->size();
+
+        int r = size.x - 1;
+        int b = size.y - 1;
+
+        // Top/left 50% red
+        checkPixel(0, 0, vec4(0.5, 0, 0, 1));
+        checkPixel(1, 0, vec4(0.0, 0, 0, 1));
+        checkPixel(1, 1, vec4(0.0, 0, 0, 1));
+        checkPixel(0, 1, vec4(0.0, 0, 0, 1));
+
+        // Top/right 25% green
+        checkPixel(r,   0, vec4(0, 0.25, 0, 1));
+        checkPixel(r-1, 0, vec4(0.0, 0, 0, 1));
+        checkPixel(r,   1, vec4(0.0, 0, 0, 1));
+        checkPixel(r-1, 1, vec4(0.0, 0, 0, 1));
+
+        // Bottom/left 75% blue
+        checkPixel(0, b,   vec4(0, 0, 0.75, 1));
+        checkPixel(1, b,   vec4(0, 0, 0, 1));
+        checkPixel(0, b-1, vec4(0, 0, 0, 1));
+        checkPixel(1, b-1, vec4(0, 0, 0, 1));
+
+        // Top/right 50% white
+        checkPixel(r, b,  vec4(0.5, 0.5, 0.5, 1));
+        checkPixel(r-1, b, vec4(0, 0, 0, 1));
+        checkPixel(r, b-1, vec4(0, 0, 0, 1));
+        checkPixel(r-1, b-1, vec4(0, 0, 0, 1));
+
     }
 
-    const char *name() const override { return "PositionsOfLayers"; }
+    const char *name() const override { return "LayersOnViewportEdge"; }
 };
 
 int main(int argc, char *argv[])
 {
     TestBase testBase;
-    // testBase.leaveRunning = true;
-    testBase.addTest(new ColorsAndPositions());
-    testBase.addTest(new PositionsOfLayers());
+    testBase.leaveRunning = true;
+    // testBase.addTest(new ColorsAndPositions());
+    testBase.addTest(new LayersOnViewportEdge());
 
     std::unique_ptr<Backend> backend(Backend::get());
     std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));
     surface->show();
-    surface->requestRender();
 
     backend->run();
 
