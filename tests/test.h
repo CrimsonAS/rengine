@@ -132,9 +132,18 @@ class TestBase : public StandardSurfaceInterface
 public:
     TestBase() : leaveRunning(false), m_currentTest(0) { }
 
+    void addTest(StaticRenderTest *test) {
+        tests.push_back(test);
+        if (surface())
+            surface()->requestRender();
+    }
+
     Node *update(Node *root) {
         if (root)
             delete root;
+
+        if (tests.empty())
+            return 0;
 
         m_currentTest = tests.front();
         tests.pop_front();
@@ -145,6 +154,9 @@ public:
     }
 
     void afterRender() override {
+        if (!m_currentTest)
+            return;
+
         vec2 size = surface()->size();
         unsigned *pixels = (unsigned *) malloc(size.x * size.y * sizeof(unsigned));
 
@@ -176,6 +188,7 @@ public:
 
     bool leaveRunning;
 
+private:
     StaticRenderTest *m_currentTest;
     list<StaticRenderTest *> tests;
 };

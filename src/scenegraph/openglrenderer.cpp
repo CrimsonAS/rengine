@@ -298,6 +298,8 @@ void OpenGLRenderer::build(Node *n)
         const vec2 &p2 = rn->geometry().br;
         vec2 *v = m_vertices + m_vertexIndex;
 
+        // cout << " -- building rect from " << p1 << " " << p2 << " into " << m_vertices << " " << e << endl;
+
         if (m_render3d) {
             e->z = (m_m3d * vec3((p1 + p2) / 2.0f)).z;
             projectQuad(p1, p2, v);
@@ -317,6 +319,7 @@ void OpenGLRenderer::build(Node *n)
         if (m_layered) {
             for (int i=0; i<4; ++i)
                 m_layerBoundingBox |= v[i];
+            // cout << " ----> bounds: " << m_layerBoundingBox << endl;
         }
 
     } break;
@@ -366,6 +369,7 @@ void OpenGLRenderer::build(Node *n)
             const float inf = numeric_limits<float>::infinity();
             m_layerBoundingBox = rect2d(inf, inf, -inf, -inf);
         }
+        // cout << " -- building opacitynode into " << e << endl;
 
         for (auto c : n->children())
             build(c);
@@ -373,6 +377,7 @@ void OpenGLRenderer::build(Node *n)
         if (e) {
             m_layered = storedLayered;
             e->groupSize = (m_elements + m_elementIndex) - e;
+            // cout << "groupSize of " << e << " is " << e->groupSize << " based on: " << m_elements << " " << m_elementIndex << " " << e << endl;
             e->vboOffset = m_vertexIndex;
             rect2d box = m_layerBoundingBox.aligned();
             vec2 *v = m_vertices + m_vertexIndex;
@@ -421,6 +426,8 @@ void OpenGLRenderer::renderToLayer(Element *e)
 
     // Create the FBO
     rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
+    // cout << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
+
     int w = devRect.width();
     int h = devRect.height();
     e->texture = m_texturePool.acquire();
@@ -433,7 +440,15 @@ void OpenGLRenderer::renderToLayer(Element *e)
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
     // cout << "    -> FBO status: " << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << end;
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+#ifndef NDEBUG
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        cerr << "OpenGLRenderer::renderToLayer: FBO failed, devRect=" << devRect
+             << ", dim=" << w << "x" << h << ", tex=" << e->texture << ", fbo=" << m_fbo << ", error="
+             << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+        assert(false);
+    }
+#endif
 
     // Render the layered group
     m_proj = mat4::scale2D(1.0, -1.0)
@@ -549,6 +564,8 @@ bool OpenGLRenderer::render()
     //          << "groupSize=" << setw(3) << e.groupSize << " "
     //          << "z=" << e.z << " " << endl;
     // }
+    // for (unsigned i=0; i<m_vertexIndex; ++i)
+    //     cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << endl;
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);

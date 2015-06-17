@@ -93,17 +93,50 @@ public:
     const char *name() const override { return "ColorsAndPositions"; }
 };
 
+class PositionsOfLayers : public StaticRenderTest
+{
+public:
+    Node *build() override {
+        vec2 size = surface()->size();
+        Node *root = new Node();
+        *root
+            << &(*new OpacityNode(0.9) << new RectangleNode(rect2d::fromXywh(10, 10, 1, 1), vec4(1, 0, 1, 1)))
+
+            // Top-left, 50% red
+            << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(-1, -1, 2, 2), vec4(1, 0, 0, 1)))
+
+            // Top-right, 25% green
+            << &(*new OpacityNode(0.25) << new RectangleNode(rect2d::fromXywh(size.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
+
+            // Bottom-left, 75% blue
+            << &(*new OpacityNode(0.75) << new RectangleNode(rect2d::fromXywh(-1, size.y-10, 2, 2), vec4(0, 0, 1, 1)))
+
+            // Bottom-right,
+            << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(size.x-1, size.y-1, 2, 2), vec4(1, 1, 1, 1)))
+            ;
+
+        return root;
+    }
+
+    bool check() {
+        return true;
+    }
+
+    const char *name() const override { return "PositionsOfLayers"; }
+};
 
 int main(int argc, char *argv[])
 {
-    std::unique_ptr<Backend> backend(Backend::get());
     TestBase testBase;
-    testBase.leaveRunning = true;
+    // testBase.leaveRunning = true;
+    testBase.addTest(new ColorsAndPositions());
+    testBase.addTest(new PositionsOfLayers());
+
+    std::unique_ptr<Backend> backend(Backend::get());
     std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));
-
-    testBase.tests.push_back(new ColorsAndPositions());
-
     surface->show();
+    surface->requestRender();
+
     backend->run();
 
     return 0;

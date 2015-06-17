@@ -26,6 +26,7 @@
 #include <QGuiApplication>
 #include <QWindow>
 #include <QOpenGLContext>
+#include <QTimer>
 
 #include "rengine.h"
 
@@ -55,7 +56,7 @@ public:
 #endif
     }
 
-    void quit() override { cout << "quitting..." << endl; exited = true; app.quit(); }
+    void quit() override { exited = true; app.quit(); }
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
@@ -128,8 +129,8 @@ public:
         return context.isValid();
     }
 
-    void show() { window.show(); }
-    void hide() { window.hide(); }
+    void show() { QTimer::singleShot(0, &window, SLOT(show())); }
+    void hide() { QTimer::singleShot(0, &window, SLOT(hide())); }
     vec2 size() const {
         int dpr = window.devicePixelRatio();
         return vec2(window.width() * dpr, window.height() * dpr);

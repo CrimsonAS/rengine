@@ -237,6 +237,11 @@ public:
         , m_opacity(1.0f)
     {
     }
+    OpacityNode(float opacity)
+        : Node(OpacityNodeType)
+        , m_opacity(opacity)
+    {
+    }
 
     float opacity() const { return m_opacity; }
     void setOpacity(float opacity) { m_opacity = opacity; }
