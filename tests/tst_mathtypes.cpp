@@ -186,12 +186,67 @@ void tst_mat4_vecx()
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
 
+void tst_rect2d()
+{
+    rect2d r(1, 2, 4, 8);
+    check_equal(r.tl, vec2(1, 2));
+    check_equal(r.br, vec2(4, 8));
+    check_equal(r.width(), 3);
+    check_equal(r.height(), 6);
+    check_equal(r.left(), 1);
+    check_equal(r.top(), 2);
+    check_equal(r.right(), 4);
+    check_equal(r.bottom(), 8);
+    check_equal(r.position(), vec2(1, 2));
+    check_equal(r.size(), vec2(3, 6));
+
+    r = rect2d::fromXywh(1, 2, 4, 8);
+    check_equal(r.tl, vec2(1, 2));
+    check_equal(r.br, vec2(5, 10));
+    check_equal(r.width(), 4);
+    check_equal(r.height(), 8);
+
+    r = rect2d::fromPosSize(vec2(1, 2), vec2(4, 8));
+    check_equal(r.tl, vec2(1, 2));
+    check_equal(r.br, vec2(5, 10));
+    check_equal(r.width(), 4);
+    check_equal(r.height(), 8);
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
+void tst_rect2d_intersect()
+{
+    float inf = numeric_limits<float>::infinity();
+    rect2d infBox(inf, inf, -inf, -inf);
+
+    rect2d r = infBox;
+    r |= vec2(1, 2);
+    check_equal(r.tl, vec2(1, 2));
+    check_equal(r.br, vec2(1, 2));
+    r |= vec2(4, 8);
+    check_equal(r.tl, vec2(1, 2));
+    check_equal(r.br, vec2(4, 8));
+
+    r = infBox;
+    r |= vec2(-1, -2);
+    check_equal(r.tl, vec2(-1, -2));
+    check_equal(r.br, vec2(-1, -2));
+    r |= vec2(-4, -8);
+    check_equal(r.tl, vec2(-4, -8));
+    check_equal(r.br, vec2(-1, -2));
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
 
 int main(int, char **)
 {
     tst_vec2();
     tst_mat4();
     tst_mat4_vecx();
+    tst_rect2d();
+    tst_rect2d_intersect();
 
     return 0;
 }

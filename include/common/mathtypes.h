@@ -393,7 +393,7 @@ public:
         if (p.x < tl.x) tl.x = p.x;
         if (p.y < tl.y) tl.y = p.y;
         if (p.x > br.x) br.x = p.x;
-        if (p.y > br.y) br.y = p.x;
+        if (p.y > br.y) br.y = p.y;
         return *this;
     }
 
