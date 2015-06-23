@@ -263,6 +263,13 @@ public:
     {
     }
 
+    TransformNode(const mat4 &matrix, float projectionDepth = 0)
+        : Node(TransformNodeType)
+        , m_matrix(matrix)
+        , m_projectionDepth(projectionDepth)
+    {
+    }
+
     const mat4 &matrix() const { return m_matrix; }
     void setMatrix(const mat4 &m) { m_matrix = m; }
 

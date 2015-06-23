@@ -138,10 +138,66 @@ public:
         checkPixel(r-1, b, vec4(0, 0, 0, 1));
         checkPixel(r, b-1, vec4(0, 0, 0, 1));
         checkPixel(r-1, b-1, vec4(0, 0, 0, 1));
-
     }
 
     const char *name() const override { return "LayersOnViewportEdge"; }
+};
+
+class OpacityLayers : public StaticRenderTest
+{
+public:
+    const char *name() const override { return "OpacityLayers"; }
+    Node *build() override {
+        Node *root = new Node();
+
+        *root
+
+            // Two rectangles stacked on top of each other, no opacity bleed-through
+            << &(*new OpacityNode(0.5)
+                 << new RectangleNode(rect2d::fromXywh(10, 10, 10, 10), vec4(1, 0, 0, 1))
+                 << new RectangleNode(rect2d::fromXywh(11, 11, 10, 10), vec4(0, 0, 1, 1))
+                )
+
+            // Two rectangles stacked on top of each other, positioned with a transform node, no opacity bleed-through
+            << &(*new TransformNode(mat4::translate2D(20, 10))
+                 << &(*new OpacityNode(0.5)
+                      << &(*new TransformNode(mat4::translate2D(1, 1))
+                           << new RectangleNode(rect2d::fromXywh(0, 0, 10, 10), vec4(0, 1, 0, 1))
+                          )
+                      << &(*new TransformNode(mat4::translate2D(2, 2))
+                           << new RectangleNode(rect2d::fromXywh(0, 0, 10, 10), vec4(1, 0, 0, 1))
+                          )
+                     )
+                )
+
+            // Nested layers
+            << &(*new OpacityNode(0.8)
+                 << &(*new OpacityNode(0.8)
+                      << new RectangleNode(rect2d::fromXywh(100, 10, 10, 10), vec4(1, 0, 0, 1))
+                      << new RectangleNode(rect2d::fromXywh(101, 11, 10, 10), vec4(0, 0, 1, 1))
+                     )
+                )
+
+            ;
+
+        return root;
+    }
+
+    void check() override {
+        checkPixel(10, 10, vec4(0.5, 0, 0, 1));
+        checkPixel(11, 10, vec4(0.5, 0, 0, 1));
+        checkPixel(10, 11, vec4(0.5, 0, 0, 1));
+        checkPixel(11, 11, vec4(0, 0, 0.5, 1));
+        checkPixel(11, 12, vec4(0, 0, 0.5, 1));
+        checkPixel(12, 11, vec4(0, 0, 0.5, 1));
+
+        checkPixel(21, 11, vec4(0, 0.5, 0, 1));
+        checkPixel(22, 11, vec4(0, 0.5, 0, 1));
+        checkPixel(21, 12, vec4(0, 0.5, 0, 1));
+        checkPixel(22, 12, vec4(0.5, 0, 0, 1));
+        checkPixel(23, 12, vec4(0.5, 0, 0, 1));
+        checkPixel(22, 13, vec4(0.5, 0, 0, 1));
+    }
 };
 
 int main(int argc, char *argv[])
@@ -149,7 +205,8 @@ int main(int argc, char *argv[])
     TestBase testBase;
     testBase.leaveRunning = true;
     // testBase.addTest(new ColorsAndPositions());
-    testBase.addTest(new LayersOnViewportEdge());
+    // testBase.addTest(new LayersOnViewportEdge());
+    testBase.addTest(new OpacityLayers());
 
     std::unique_ptr<Backend> backend(Backend::get());
     std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));
