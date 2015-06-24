@@ -388,6 +388,11 @@ void OpenGLRenderer::build(Node *n)
             v[3] = box.br;
             m_vertexIndex += 4;
 
+            // We're a nested layer, accumulate the layered bounding box into
+            // the stored one..
+            if (storedLayered)
+                storedBox |= m_layerBoundingBox;
+
             m_layerBoundingBox = storedBox;
             if (m_render3d) {
                 // Let the opacity layer's z be the average of all its children..
@@ -565,27 +570,27 @@ bool OpenGLRenderer::render()
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
     memset(m_elements, 0, elementCount * sizeof(Element));
-    // cout << "render: " << m_numTextureNodes << " layers, "
-    //                    << m_numRectangleNodes << " rects, "
-    //                    << m_numTransformNodes << " xforms, "
-    //                    << m_numTransformNodesWith3d << " xforms3D, "
-    //                    << m_numLayeredNodes << " opacites, "
-    //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
-    //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
-    //                    << endl;
+    cout << "render: " << m_numTextureNodes << " layers, "
+                       << m_numRectangleNodes << " rects, "
+                       << m_numTransformNodes << " xforms, "
+                       << m_numTransformNodesWith3d << " xforms3D, "
+                       << m_numLayeredNodes << " opacites, "
+                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+                       << endl;
     build(sceneRoot());
     assert(elementCount > 0);
     assert(m_elementIndex == elementCount);
-    // for (unsigned i=0; i<m_elementIndex; ++i) {
-    //     const Element &e = m_elements[i];
-    //     cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
-    //          << (e.projection ? "projection " : "")
-    //          << "vboOffset=" << setw(5) << e.vboOffset << " "
-    //          << "groupSize=" << setw(3) << e.groupSize << " "
-    //          << "z=" << e.z << " " << endl;
-    // }
-    // for (unsigned i=0; i<m_vertexIndex; ++i)
-    //     cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << endl;
+    for (unsigned i=0; i<m_elementIndex; ++i) {
+        const Element &e = m_elements[i];
+        cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
+             << (e.projection ? "projection " : "")
+             << "vboOffset=" << setw(5) << e.vboOffset << " "
+             << "groupSize=" << setw(3) << e.groupSize << " "
+             << "z=" << e.z << " " << endl;
+    }
+    for (unsigned i=0; i<m_vertexIndex; ++i)
+        cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << endl;
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);

@@ -397,6 +397,16 @@ public:
         return *this;
     }
 
+    rect2d &operator|=(const rect2d &r) {
+        (*this) |= r.tl;
+        (*this) |= r.br;
+        return *this;
+    }
+
+    rect2d operator|(const rect2d &r) {
+        return (*this) | r.tl | r.br;
+    }
+
     bool contains(const vec2 &p) const {
         return p.x >= tl.x && p.x <= br.x
             && p.y >= tl.y && p.y <= br.y;
