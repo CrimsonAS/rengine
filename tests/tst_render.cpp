@@ -52,37 +52,37 @@ public:
             float c = i / 10.0;
 
             // Black to primary and secondary
-            checkPixel( 0, i, vec4(c, 0, 0, 1));
-            checkPixel( 1, i, vec4(0, c, 0, 1));
-            checkPixel( 2, i, vec4(0, 0, c, 1));
-            checkPixel( 3, i, vec4(c, c, 0, 1));
-            checkPixel( 4, i, vec4(0, c, c, 1));
-            checkPixel( 5, i, vec4(c, 0, c, 1));
+            check_pixel( 0, i, vec4(c, 0, 0, 1));
+            check_pixel( 1, i, vec4(0, c, 0, 1));
+            check_pixel( 2, i, vec4(0, 0, c, 1));
+            check_pixel( 3, i, vec4(c, c, 0, 1));
+            check_pixel( 4, i, vec4(0, c, c, 1));
+            check_pixel( 5, i, vec4(c, 0, c, 1));
 
             // primary and secondary to white
-            checkPixel( 6, i, vec4(1, c, c, 1));
-            checkPixel( 7, i, vec4(c, 1, c, 1));
-            checkPixel( 8, i, vec4(c, c, 1, 1));
-            checkPixel( 9, i, vec4(1, 1, c, 1));
-            checkPixel(10, i, vec4(c, 1, 1, 1));
-            checkPixel(11, i, vec4(1, c, 1, 1));
+            check_pixel( 6, i, vec4(1, c, c, 1));
+            check_pixel( 7, i, vec4(c, 1, c, 1));
+            check_pixel( 8, i, vec4(c, c, 1, 1));
+            check_pixel( 9, i, vec4(1, 1, c, 1));
+            check_pixel(10, i, vec4(c, 1, 1, 1));
+            check_pixel(11, i, vec4(1, c, 1, 1));
 
             // alpha fade on top of black
-            checkPixel(12, i, vec4(c, 0, 0, 1));
-            checkPixel(13, i, vec4(0, c, 0, 1));
-            checkPixel(14, i, vec4(0, 0, c, 1));
-            checkPixel(15, i, vec4(c, c, 0, 1));
-            checkPixel(16, i, vec4(0, c, c, 1));
-            checkPixel(17, i, vec4(c, 0, c, 1));
+            check_pixel(12, i, vec4(c, 0, 0, 1));
+            check_pixel(13, i, vec4(0, c, 0, 1));
+            check_pixel(14, i, vec4(0, 0, c, 1));
+            check_pixel(15, i, vec4(c, c, 0, 1));
+            check_pixel(16, i, vec4(0, c, c, 1));
+            check_pixel(17, i, vec4(c, 0, c, 1));
 
             // alpha fade on top of white
             float ci = 1.0 - c;
-            checkPixel(18, i, vec4( 1, ci, ci, 1));
-            checkPixel(19, i, vec4(ci,  1, ci, 1));
-            checkPixel(20, i, vec4(ci, ci,  1, 1));
-            checkPixel(21, i, vec4( 1,  1, ci, 1));
-            checkPixel(22, i, vec4(ci,  1,  1, 1));
-            checkPixel(23, i, vec4( 1, ci,  1, 1));
+            check_pixel(18, i, vec4( 1, ci, ci, 1));
+            check_pixel(19, i, vec4(ci,  1, ci, 1));
+            check_pixel(20, i, vec4(ci, ci,  1, 1));
+            check_pixel(21, i, vec4( 1,  1, ci, 1));
+            check_pixel(22, i, vec4(ci,  1,  1, 1));
+            check_pixel(23, i, vec4( 1, ci,  1, 1));
         }
     }
 
@@ -116,28 +116,28 @@ public:
         int b = size.y - 1;
 
         // Top/left 50% red
-        checkPixel(0, 0, vec4(0.5, 0, 0, 1));
-        checkPixel(1, 0, vec4(0.0, 0, 0, 1));
-        checkPixel(1, 1, vec4(0.0, 0, 0, 1));
-        checkPixel(0, 1, vec4(0.0, 0, 0, 1));
+        check_pixel(0, 0, vec4(0.5, 0, 0, 1));
+        check_pixel(1, 0, vec4(0.0, 0, 0, 1));
+        check_pixel(1, 1, vec4(0.0, 0, 0, 1));
+        check_pixel(0, 1, vec4(0.0, 0, 0, 1));
 
         // Top/right 25% green
-        checkPixel(r,   0, vec4(0, 0.25, 0, 1));
-        checkPixel(r-1, 0, vec4(0.0, 0, 0, 1));
-        checkPixel(r,   1, vec4(0.0, 0, 0, 1));
-        checkPixel(r-1, 1, vec4(0.0, 0, 0, 1));
+        check_pixel(r,   0, vec4(0, 0.25, 0, 1));
+        check_pixel(r-1, 0, vec4(0.0, 0, 0, 1));
+        check_pixel(r,   1, vec4(0.0, 0, 0, 1));
+        check_pixel(r-1, 1, vec4(0.0, 0, 0, 1));
 
         // Bottom/left 75% blue
-        checkPixel(0, b,   vec4(0, 0, 0.75, 1));
-        checkPixel(1, b,   vec4(0, 0, 0, 1));
-        checkPixel(0, b-1, vec4(0, 0, 0, 1));
-        checkPixel(1, b-1, vec4(0, 0, 0, 1));
+        check_pixel(0, b,   vec4(0, 0, 0.75, 1));
+        check_pixel(1, b,   vec4(0, 0, 0, 1));
+        check_pixel(0, b-1, vec4(0, 0, 0, 1));
+        check_pixel(1, b-1, vec4(0, 0, 0, 1));
 
         // Top/right 50% white
-        checkPixel(r, b,  vec4(0.5, 0.5, 0.5, 1));
-        checkPixel(r-1, b, vec4(0, 0, 0, 1));
-        checkPixel(r, b-1, vec4(0, 0, 0, 1));
-        checkPixel(r-1, b-1, vec4(0, 0, 0, 1));
+        check_pixel(r, b,  vec4(0.5, 0.5, 0.5, 1));
+        check_pixel(r-1, b, vec4(0, 0, 0, 1));
+        check_pixel(r, b-1, vec4(0, 0, 0, 1));
+        check_pixel(r-1, b-1, vec4(0, 0, 0, 1));
     }
 
     const char *name() const override { return "LayersOnViewportEdge"; }
@@ -159,7 +159,7 @@ public:
                 )
 
             // Two rectangles stacked on top of each other, positioned with a transform node, no opacity bleed-through
-            << &(*new TransformNode(mat4::translate2D(20, 10))
+            << &(*new TransformNode(mat4::translate2D(30, 10))
                  << &(*new OpacityNode(0.5)
                       << &(*new TransformNode(mat4::translate2D(1, 1))
                            << new RectangleNode(rect2d::fromXywh(0, 0, 10, 10), vec4(0, 1, 0, 1))
@@ -184,28 +184,37 @@ public:
     }
 
     void check() override {
-        checkPixel(10, 10, vec4(0.5, 0, 0, 1));
-        checkPixel(11, 10, vec4(0.5, 0, 0, 1));
-        checkPixel(10, 11, vec4(0.5, 0, 0, 1));
-        checkPixel(11, 11, vec4(0, 0, 0.5, 1));
-        checkPixel(11, 12, vec4(0, 0, 0.5, 1));
-        checkPixel(12, 11, vec4(0, 0, 0.5, 1));
+        check_pixelsOutside(rect2d::fromXywh(10, 10, 11, 11), vec4(0, 0, 0, 1));
+        check_pixel(10, 10, vec4(0.5, 0, 0, 1));
+        check_pixel(11, 10, vec4(0.5, 0, 0, 1));
+        check_pixel(10, 11, vec4(0.5, 0, 0, 1));
+        check_pixel(11, 11, vec4(0, 0, 0.5, 1));
+        check_pixel(11, 12, vec4(0, 0, 0.5, 1));
+        check_pixel(12, 11, vec4(0, 0, 0.5, 1));
 
-        checkPixel(21, 11, vec4(0, 0.5, 0, 1));
-        checkPixel(22, 11, vec4(0, 0.5, 0, 1));
-        checkPixel(21, 12, vec4(0, 0.5, 0, 1));
-        checkPixel(22, 12, vec4(0.5, 0, 0, 1));
-        checkPixel(23, 12, vec4(0.5, 0, 0, 1));
-        checkPixel(22, 13, vec4(0.5, 0, 0, 1));
+        check_pixelsOutside(rect2d::fromXywh(31, 11, 11, 11), vec4(0, 0, 0, 1));
+        check_pixel(31, 11, vec4(0, 0.5, 0, 1));
+        check_pixel(32, 11, vec4(0, 0.5, 0, 1));
+        check_pixel(31, 12, vec4(0, 0.5, 0, 1));
+        check_pixel(32, 12, vec4(0.5, 0, 0, 1));
+        check_pixel(33, 12, vec4(0.5, 0, 0, 1));
+        check_pixel(32, 13, vec4(0.5, 0, 0, 1));
+
+        check_pixelsOutside(rect2d::fromXywh(100, 10, 11, 11), vec4(0, 0, 0, 1));
+        check_pixel(100, 10, vec4(0.64, 0, 0, 1));
+        check_pixel(101, 11, vec4(0, 0, 0.64, 1));
+        check_pixel(110, 20, vec4(0, 0, 0.64, 1));
+        check_pixel(110, 10, vec4(0, 0, 0, 1));
+        check_pixel(100, 20, vec4(0, 0, 0, 1));
     }
 };
 
 int main(int argc, char *argv[])
 {
     TestBase testBase;
-    testBase.leaveRunning = true;
-    // testBase.addTest(new ColorsAndPositions());
-    // testBase.addTest(new LayersOnViewportEdge());
+    // testBase.leaveRunning = true;
+    testBase.addTest(new ColorsAndPositions());
+    testBase.addTest(new LayersOnViewportEdge());
     testBase.addTest(new OpacityLayers());
 
     std::unique_ptr<Backend> backend(Backend::get());

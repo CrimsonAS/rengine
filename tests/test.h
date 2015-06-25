@@ -83,30 +83,55 @@ inline bool fuzzy_equals(const vec4 &a, const vec4 &b, float threshold = 0.0001f
         assert((a) == (b));                                                     \
     }
 
+#define check_pixel(x, y, expected) \
+    assert(x >= 0);                                   \
+    assert(x < m_w);                                  \
+    assert(y >= 0);                                   \
+    assert(y < m_h);                                  \
+    if (!fuzzy_equals(pixel(x,y), expected, 0.01)) { \
+        cout << "pixels differ: (" << dec << x << "," << y << ")=" << pixel(x,y) << "; expected=" << expected << endl; \
+        assert(false); \
+    } \
+
+#define check_pixelsOutside(r, expectedColor)     \
+    {                                             \
+        float x1 = r.tl.x;                        \
+        float x2 = r.br.x - 1;                    \
+        float y1 = r.tl.y;                        \
+        float y2 = r.br.y - 1;                    \
+                                                  \
+        /* corners */                             \
+        check_pixel(x1-1, y1-1, expectedColor);   \
+        check_pixel(x2+1, y1-1, expectedColor);   \
+        check_pixel(x1-1, y2+1, expectedColor);   \
+        check_pixel(x2+1, y2+1, expectedColor);   \
+        /* borders */                             \
+        for (float x=x1; x<=x2; ++x) {            \
+            check_pixel(x, y1-1, expectedColor);  \
+            check_pixel(x, y2+1, expectedColor);  \
+        }                                         \
+        for (float y=y1; y<=y2; ++y) {            \
+            check_pixel(x1-1, y, expectedColor);  \
+            check_pixel(x2+1, y, expectedColor);  \
+        }                                         \
+    }
+
+
 class StaticRenderTest {
 public:
     virtual Node *build() = 0;
     virtual void check() = 0;
 
-    bool checkPixel(int x, int y, const vec4 &expected, float errorMargin=0.01)
-    {
+    vec4 pixel(int x, int y) {
         assert(x >= 0);
         assert(x < m_w);
         assert(y >= 0);
         assert(y < m_h);
-
         unsigned pixel = m_pixels[y * m_w + x];
-        vec4 color = vec4((pixel & 0x000000ff) >> 0,
+        return vec4((pixel & 0x000000ff) >> 0,
                           (pixel & 0x0000ff00) >> 8,
                           (pixel & 0x00ff0000) >> 16,
                           (pixel & 0xff000000) >> 24) / 255.0;
-
-        if (!fuzzy_equals(color, expected, errorMargin)) {
-            cout << "pixels differ: (" << x << "," << y << ")=" << color << "; expected=" << expected << endl;
-            assert(false);
-        }
-
-        return true;
     }
 
     Surface *surface() const { return m_surface; }
@@ -120,7 +145,7 @@ public:
 
     virtual const char *name() const = 0;
 
-private:
+protected:
     int m_w;
     int m_h;
     unsigned *m_pixels;

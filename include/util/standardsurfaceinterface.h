@@ -33,6 +33,9 @@ public:
         // Create the scene graph; update if it already exists..
         m_renderer->setSceneRoot(update(m_renderer->sceneRoot()));
 
+        if (!m_renderer->sceneRoot())
+            return;
+
         // Advance the animations just before rendering..
         m_animationManager.tick();
 

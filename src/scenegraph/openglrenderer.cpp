@@ -415,14 +415,14 @@ void OpenGLRenderer::build(Node *n)
 
 }
 
-// static int recursion;
+static int recursion;
 
 void OpenGLRenderer::renderToLayer(Element *e)
 {
-    // string space;
-    // for (int i=0; i<recursion; ++i)
-    //     space += "    ";
-    // cout << "- doing layered rendering for: element=" << e << " node=" << e->node << endl;
+    string space;
+    for (int i=0; i<recursion; ++i)
+        space += "    ";
+    // cout << space << "- doing layered rendering for: element=" << e << " node=" << e->node << endl;
     assert(e->layered);
 
     // Store current state...
@@ -430,16 +430,19 @@ void OpenGLRenderer::renderToLayer(Element *e)
     bool storedLayered = m_layered;
     GLuint storedFbo = m_fbo;
     mat4 storedProjection = m_proj;
+    vec2 storedSize = m_surfaceSize;
 
     m_render3d |= e->projection;
     m_layered = true;
 
     // Create the FBO
     rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
-    // cout << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
+    // cout << space << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
 
     int w = devRect.width();
     int h = devRect.height();
+    m_surfaceSize = vec2(w, h);
+
     e->texture = m_texturePool.acquire();
     glBindTexture(GL_TEXTURE_2D, e->texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -466,17 +469,15 @@ void OpenGLRenderer::renderToLayer(Element *e)
              * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
     m_matrixState = UpdateAllPrograms;
 
-    // cout << space << "- rect=" << devRect << " texture=" << e->texture << " fbo=" << m_fbo
+    // cout << space << " ---> rect=" << devRect << " texture=" << e->texture << " fbo=" << m_fbo
     //      << " status=" << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << " ok=" << GL_FRAMEBUFFER_COMPLETE
     //      << " " << m_proj << endl;
 
-    glViewport(0, 0, w, h);
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     render(e + 1, e + e->groupSize + 1);
 
     // Reset the GL state..
-    glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, storedFbo);
@@ -487,6 +488,9 @@ void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d = stored3d;
     m_layered = storedLayered;
     m_proj = storedProjection;
+    m_matrixState = UpdateAllPrograms;
+    m_surfaceSize = storedSize;
+
     // cout << space << "- layer is completed..." << endl;
 }
 
@@ -507,15 +511,18 @@ void OpenGLRenderer::render(Element *first, Element *last)
         while (e < last) {
             if (e->layered) {
                 // cout << space << "- needs layering: " << e << endl;
-                // ++recursion;
+                ++recursion;
                 renderToLayer(e);
-                // --recursion;
+                --recursion;
                 e = e + e->groupSize + 1;
             } else {
                 ++e;
             }
         }
     }
+
+    //
+    glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
 
     Element *e = first;
     while (e < last) {
@@ -570,27 +577,27 @@ bool OpenGLRenderer::render()
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
     memset(m_elements, 0, elementCount * sizeof(Element));
-    cout << "render: " << m_numTextureNodes << " layers, "
-                       << m_numRectangleNodes << " rects, "
-                       << m_numTransformNodes << " xforms, "
-                       << m_numTransformNodesWith3d << " xforms3D, "
-                       << m_numLayeredNodes << " opacites, "
-                       << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
-                       << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
-                       << endl;
+    // cout << "render: " << m_numTextureNodes << " layers, "
+    //                    << m_numRectangleNodes << " rects, "
+    //                    << m_numTransformNodes << " xforms, "
+    //                    << m_numTransformNodesWith3d << " xforms3D, "
+    //                    << m_numLayeredNodes << " opacites, "
+    //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
+    //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
+    //                    << endl;
     build(sceneRoot());
     assert(elementCount > 0);
     assert(m_elementIndex == elementCount);
-    for (unsigned i=0; i<m_elementIndex; ++i) {
-        const Element &e = m_elements[i];
-        cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
-             << (e.projection ? "projection " : "")
-             << "vboOffset=" << setw(5) << e.vboOffset << " "
-             << "groupSize=" << setw(3) << e.groupSize << " "
-             << "z=" << e.z << " " << endl;
-    }
-    for (unsigned i=0; i<m_vertexIndex; ++i)
-        cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << endl;
+    // for (unsigned i=0; i<m_elementIndex; ++i) {
+    //     const Element &e = m_elements[i];
+    //     cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
+    //          << (e.projection ? "projection " : "")
+    //          << "vboOffset=" << setw(5) << e.vboOffset << " "
+    //          << "groupSize=" << setw(3) << e.groupSize << " "
+    //          << "z=" << e.z << " " << endl;
+    // }
+    // for (unsigned i=0; i<m_vertexIndex; ++i)
+    //     cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << endl;
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
@@ -601,7 +608,6 @@ bool OpenGLRenderer::render()
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec2), m_vertices, GL_STATIC_DRAW);
 
     m_surfaceSize = targetSurface()->size();
-    glViewport(0, 0, m_surfaceSize.x, m_surfaceSize.y);
 
     vec4 c = fillColor();
     glClearColor(c.x, c.y, c.z, c.w);
