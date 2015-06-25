@@ -78,7 +78,8 @@ protected:
 class SurfaceInterface
 {
 public:
-    virtual ~SurfaceInterface() {}
+    SurfaceInterface() : m_surface(0) { }
+    virtual ~SurfaceInterface() { }
 
     /*!
         Reimplement this function get notified when it is time to
