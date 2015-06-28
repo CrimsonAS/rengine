@@ -47,6 +47,24 @@ struct ColorFilterNode_hue{
     }
 };
 
+struct ColorFilterNode_contrast {
+    void operator()(double contrast, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_contrast(contrast));
+    }
+};
+
+struct ColorFilterNode_invert {
+    void operator()(double invert, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_invert(invert));
+    }
+};
+
+struct ColorFilterNode_sepia {
+    void operator()(double sepia, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_sepia(sepia));
+    }
+};
+
 class MyWindow : public StandardSurfaceInterface
 {
 public:
@@ -74,14 +92,14 @@ public:
 
         Node *root = new Node();
 
-        float pos = 100;
+        float pos = 10;
 
-        Node *unfiltered = createSubtree(100, 100);
+        Node *unfiltered = createSubtree(10, pos);
         root->append(unfiltered);
 
         { // desaturate
             pos += 100;
-            Node *tree = createSubtree(100, pos);
+            Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_saturation(0.2));
             root->append(tree);
@@ -97,16 +115,30 @@ public:
 
         { // grayscale
             pos += 100;
-            Node *tree = createSubtree(100, pos);
+            Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_grayscale());
             root->append(tree);
+        }
 
+        { // sepia
+            pos += 100;
+            Node *tree = createSubtree(10, pos);
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setDirection(Animation::Alternate);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1;
+            anim->keyFrames.addValues<double, ColorFilterNode_sepia>() << 0 << 1;
+            animationManager()->startAnimation(anim);
         }
 
         { // brightness
             pos += 100;
-            Node *tree = createSubtree(100, pos);
+            Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_brightness(0.3));
             root->append(tree);
@@ -122,7 +154,7 @@ public:
 
         { // hue shift
             pos += 100;
-            Node *tree = createSubtree(100, pos);
+            Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_hue(1.0));
             root->append(tree);
@@ -133,7 +165,36 @@ public:
             anim->keyFrames.times() << 0 << 1.0;
             anim->keyFrames.addValues<double, ColorFilterNode_hue>() << 0 << 3.14152 * 2;
             animationManager()->startAnimation(anim);
+        }
 
+        { // contrast
+            pos += 100;
+            Node *tree = createSubtree(10, pos);
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setDirection(Animation::Alternate);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1.0;
+            anim->keyFrames.addValues<double, ColorFilterNode_contrast>() << 0 << 2;
+            animationManager()->startAnimation(anim);
+        }
+
+        { // invert
+            pos += 100;
+            Node *tree = createSubtree(10, pos);
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setDirection(Animation::Alternate);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1.0;
+            anim->keyFrames.addValues<double, ColorFilterNode_invert>() << 0 << 1;
+            animationManager()->startAnimation(anim);
         }
 
         return root;

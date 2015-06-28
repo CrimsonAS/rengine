@@ -107,5 +107,31 @@ inline mat4 colorMatrix_grayscale()
     return colorMatrix_saturation(0);
 }
 
+inline mat4 colorMatrix_contrast(float c)
+{
+    float t = (1.0 - c) / 2.0;
+    return mat4(c, 0, 0, t,
+                0, c, 0, t,
+                0, 0, c, t,
+                0, 0, 0, 1);
+}
+
+/*!
+    inverts the colors. Ideal range for v is 0 to 1.
+ */
+inline mat4 colorMatrix_invert(float v)
+{
+    return colorMatrix_contrast(1.0 - v * 2.0);
+}
+
+inline mat4 colorMatrix_sepia(float v)
+{
+    const float iv = 1.0 - v;
+    return mat4(iv + v * 0.393 , v * 0.769, v * 0.189, 0,
+                v * 0.393, iv + v * 0.686, v * 0.168, 0,
+                v * 0.272, v * 0.534, iv + v * 0.131, 0,
+                0, 0, 0, 1);
+}
+
 
 RENGINE_END_NAMESPACE
