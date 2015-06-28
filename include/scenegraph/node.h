@@ -39,7 +39,8 @@ public:
         RectangleNodeType,
         LayerNodeType,
         TransformNodeType,
-        OpacityNodeType
+        OpacityNodeType,
+        ColorFilterNodeType
     };
 
     /*!
@@ -227,8 +228,6 @@ private:
     unsigned m_preprocess : 1;
 };
 
-
-
 class OpacityNode : public Node {
 public:
     enum { StaticType = OpacityNodeType };
@@ -294,24 +293,8 @@ public:
     {
     }
 
-    // float x() const { return m_geometry.tl.x; }
-    // float y() const { return m_geometry.tl.y; }
-    // vec2 position() const { return m_geometry.tl; }
-    // void setPosition(float x, float y) { setPosition(vec2(x, y)); }
-    // void setPosition(const vec2 &pos) { m_geometry.setPosition(pos); }
-
-    // float width() const { return m_geometry.width(); }
-    // float height() const { return m_geometry.height(); }
-    // vec2 size() const { return m_geometry.size(); }
-    // void setSize(float w, float h) { setSize(vec2(w, h)); }
-    // void setSize(const vec2 &size) { m_geometry.setSize(size); }
-
-    // void setGeometry(float x, float y, float w, float h) {
-    //     setPosition(x, y);
-    //     setSize(w, h);
-    // }
-
     const rect2d &geometry() const { return m_geometry; }
+    void setGeometry(const rect2d &rect) { m_geometry = rect; }
 
     const vec4 &color() const { return m_color; }
     void setColor(const vec4 &color) {
@@ -359,6 +342,21 @@ public:
 
 private:
     Layer *m_layer;
+};
+
+class ColorFilterNode : public Node {
+public:
+    enum { StaticType = ColorFilterNodeType };
+    ColorFilterNode()
+        : Node(ColorFilterNodeType)
+    {
+    }
+
+    void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
+    const mat4 &colorMatrix() const { return m_colorMatrix; }
+
+private:
+    mat4 m_colorMatrix;
 };
 
 RENGINE_END_NAMESPACE

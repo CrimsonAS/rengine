@@ -71,7 +71,7 @@ RENGINE_GLSL_HEADER
 uniform lowp sampler2D t;                       \n\
 varying highp vec2 vT;                          \n\
 void main() {                                   \n\
-    gl_FragColor = texture2D(t, vT) + vec4(0.1);            \n\
+    gl_FragColor = texture2D(t, vT);            \n\
 }                                               \n\
 ";
 
@@ -83,6 +83,17 @@ uniform lowp float alpha;                       \n\
 varying highp vec2 vT;                          \n\
 void main() {                                   \n\
     gl_FragColor = texture2D(t, vT) * alpha;    \n\
+}                                               \n\
+";
+
+static const char *fsh_es_layer_colorFilter =
+RENGINE_GLSL_HEADER
+"\
+uniform lowp sampler2D t;                       \n\
+uniform lowp mat4 CM;                           \n\
+varying highp vec2 vT;                          \n\
+void main() {                                   \n\
+    gl_FragColor = CM * texture2D(t, vT);       \n\
 }                                               \n\
 ";
 
@@ -173,6 +184,14 @@ void OpenGLRenderer::initialize()
         prog_solid.color = prog_solid.resolve("color");
     }
 
+    { // Color filter shader..
+        vector<const char *> attrs;
+        attrs.push_back("aV");
+        attrs.push_back("aT");
+        prog_colorFilter.initialize(vsh_es_layer, fsh_es_layer_colorFilter, attrs);
+        prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
+    }
+
 #ifdef RENGINE_LOG_INFO
     static bool logged = false;
     if (!logged) {
@@ -212,6 +231,17 @@ void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
     ensureMatrixUpdated(UpdateSolidProgram, &prog_solid);
     glUniform4f(prog_solid.color, c.x * c.w, c.y * c.w, c.z * c.w, c.w);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+void OpenGLRenderer::drawColorFilterQuad(unsigned offset, GLuint texId, const mat4 &matrix)
+{
+    activateShader(&prog_colorFilter);
+    ensureMatrixUpdated(UpdateColorFilterProgram, &prog_colorFilter);
+    glUniformMatrix4fv(prog_colorFilter.colorMatrix, 1, true, matrix.m);
+    // cout << prog_colorFilter.colorMatrix << matrix;
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glBindTexture(GL_TEXTURE_2D, texId);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -269,13 +299,25 @@ void OpenGLRenderer::prepass(Node *n)
 {
     n->preprocess();
     switch (n->type()) {
-    case Node::OpacityNodeType: ++m_numLayeredNodes; break;
-    case Node::LayerNodeType: ++m_numTextureNodes; break;
-    case Node::RectangleNodeType: ++m_numRectangleNodes; break;
+    case Node::LayerNodeType:
+        ++m_numTextureNodes;
+        break;
+    case Node::RectangleNodeType:
+        ++m_numRectangleNodes;
+        break;
     case Node::TransformNodeType:
         ++m_numTransformNodes;
         if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
             ++m_numTransformNodesWith3d;
+        break;
+    // All layered nodes take this path..
+    case Node::ColorFilterNodeType:
+        if (!static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity())
+            ++m_numLayeredNodes;
+        break;
+    case Node::OpacityNodeType:
+        if (static_cast<OpacityNode *>(n)->opacity() < 1.0f)
+            ++m_numLayeredNodes;
         break;
     default:
         // ignore...
@@ -355,22 +397,27 @@ void OpenGLRenderer::build(Node *n)
         }
     } return;
 
+    // all layered node types take this code path
+    case Node::ColorFilterNodeType:
     case Node::OpacityNodeType: {
-        OpacityNode *on = static_cast<OpacityNode *>(n);
+        bool useLayer =
+            (n->type() == Node::OpacityNodeType && static_cast<OpacityNode *>(n)->opacity() < 1.0f)
+            || (n->type() == Node::ColorFilterNodeType && !static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity());
 
         bool storedLayered = m_layered;
         Element *e = 0;
         rect2d storedBox = m_layerBoundingBox;
-        if (on->opacity() < 1.0) {
+
+        if (useLayer) {
             m_layered = true;
             e = m_elements + m_elementIndex++;
-            e->node = on;
+            e->node = n;
             e->projection = m_render3d;
             e->layered = true;
             const float inf = numeric_limits<float>::infinity();
             m_layerBoundingBox = rect2d(inf, inf, -inf, -inf);
         }
-        // cout << " -- building opacitynode into " << e << endl;
+        // cout << " -- building layered node into " << e << endl;
 
         for (auto c : n->children())
             build(c);
@@ -539,9 +586,13 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::LayerNodeType) {
             // cout << space << "---> texture quad, vbo=" << e->vboOffset << endl;
             drawTextureQuad(e->vboOffset, static_cast<LayerNode *>(e->node)->layer()->textureId());
-        } else if (e->layered) {
+        } else if (e->node->type() == Node::OpacityNodeType && e->layered) {
             // cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
-            drawTextureQuad(e->vboOffset, e->texture, Node::from<OpacityNode>(e->node)->opacity());
+            drawTextureQuad(e->vboOffset, e->texture, static_cast<OpacityNode *>(e->node)->opacity());
+            m_texturePool.release(e->texture);
+        } else if (e->node->type() == Node::ColorFilterNodeType && e->layered) {
+            // cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
+            drawColorFilterQuad(e->vboOffset, e->texture, static_cast<ColorFilterNode *>(e->node)->colorMatrix());
             m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);

@@ -40,6 +40,7 @@ void tst_node_cast()
     check_true(tst_node_cast_helper<LayerNode>());
     check_true(tst_node_cast_helper<TransformNode>());
     check_true(tst_node_cast_helper<RectangleNode>());
+    check_true(tst_node_cast_helper<ColorFilterNode>());
 
     cout << __FUNCTION__ << ": ok" << endl;
 }

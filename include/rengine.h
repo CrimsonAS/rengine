@@ -58,6 +58,7 @@ RENGINE_END_NAMESPACE
 
 #include "util/standardsurfaceinterface.h"
 #include "util/maindefine.h"
+#include "util/colormatrix.h"
 
 
 
