@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <cmath>
+
 RENGINE_BEGIN_NAMESPACE
 
 
@@ -36,21 +38,47 @@ RENGINE_BEGIN_NAMESPACE
 
 inline mat4 colorMatrix_hue(float radians)
 {
-    return mat4(1, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 1);
-}
+    float mag = sqrt(2.0);
+    const float xrs = 1.0 / mag;
+    const float xrc = 1.0 / mag;
+    mat4 mx(1, 0, 0, 0,
+            0, xrc, -xrs, 0,
+            0, xrs, xrc, 0,
+            0, 0, 0, 1);
+    const mat4 imx(1, 0, 0, 0,
+                   0, xrc, xrs, 0,
+                   0, -xrs, xrc, 0,
+                   0, 0, 0, 1);
 
-inline mat4 colorMatrix_grayscale()
-{
-    const float r = RENGINE_LUMINANCE_RED;
-    const float g = RENGINE_LUMINANCE_GREEN;
-    const float b = RENGINE_LUMINANCE_BLUE;
-    return mat4(r, g, b, 0,
-                r, g, b, 0,
-                r, g, b, 0,
-                0, 0, 0, 1);
+    mag = sqrt(3.0);
+    const float yrs = -1.0/mag;
+    const float yrc = sqrt(2.0)/mag;
+    mat4 my(yrc, 0, yrs, 0,
+            0, 1, 0, 0,
+            -yrs, 0, yrc, 0,
+            0, 0, 0, 1);
+    const mat4 imy(yrc, 0, -yrs, 0,
+                   0, 1, 0, 0,
+                   yrs, 0, yrc, 0,
+                   0, 0, 0, 1);
+
+    const mat4 M = my * mx;
+    const vec3 l = M * vec3(RENGINE_LUMINANCE_RED, RENGINE_LUMINANCE_GREEN, RENGINE_LUMINANCE_BLUE);
+    const float zsx = l.x / l.z;
+    const float zsy = l.y / l.z;
+    mat4 sz(1, 0, 0, 0,
+            0, 1, 0, 0,
+            zsx, zsy, 1, 0,
+            0, 0, 0, 1);
+    mat4 isz(1, 0, 0, 0,
+             0, 1, 0, 0,
+             -zsx, -zsy, 1, 0,
+             0, 0, 0, 1);
+
+    const mat4 mz = mat4::rotateAroundZ(radians);
+
+
+    return imx * imy * mz * isz * M * sz;
 }
 
 inline mat4 colorMatrix_brightness(float v)
@@ -73,5 +101,11 @@ inline mat4 colorMatrix_saturation(float s)
                 ilr, ilg, ilb + s, 0,
                 0, 0, 0, 1);
 }
+
+inline mat4 colorMatrix_grayscale()
+{
+    return colorMatrix_saturation(0);
+}
+
 
 RENGINE_END_NAMESPACE

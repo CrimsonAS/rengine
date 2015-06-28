@@ -10,7 +10,7 @@ using namespace std;
 
 RENGINE_BEGIN_NAMESPACE
 
-Layer *rengine_loadImage(Renderer *renderer, const char *file)
+inline Layer *rengine_loadImage(Renderer *renderer, const char *file)
 {
     // read the image...
     int w, h, n;

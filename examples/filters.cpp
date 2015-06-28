@@ -24,9 +24,28 @@
 */
 
 #include "rengine.h"
+#include "examples.h"
 
 using namespace rengine;
 using namespace std;
+
+struct ColorFilterNode_saturation {
+    void operator()(double saturation, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_saturation(saturation));
+    }
+};
+
+struct ColorFilterNode_brightness {
+    void operator()(double brightness, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_brightness(brightness));
+    }
+};
+
+struct ColorFilterNode_hue{
+    void operator()(double hue, ColorFilterNode *node) {
+        node->setColorMatrix(colorMatrix_hue(hue));
+    }
+};
 
 class MyWindow : public StandardSurfaceInterface
 {
@@ -36,12 +55,13 @@ public:
         return
             &(*new TransformNode(mat4::translate2D(dx, dy))
               << &(*new ColorFilterNode()
-                   << new RectangleNode(rect2d::fromXywh(  0, 0, 90, 90), vec4(1, 0, 0, 1))
-                   << new RectangleNode(rect2d::fromXywh(100, 0, 90, 90), vec4(1, 1, 0, 1))
-                   << new RectangleNode(rect2d::fromXywh(200, 0, 90, 90), vec4(0, 1, 0, 1))
-                   << new RectangleNode(rect2d::fromXywh(300, 0, 90, 90), vec4(0, 1, 1, 1))
-                   << new RectangleNode(rect2d::fromXywh(400, 0, 90, 90), vec4(0, 0, 1, 1))
-                   << new RectangleNode(rect2d::fromXywh(500, 0, 90, 90), vec4(1, 0, 1, 1))
+                   << new RectangleNode(rect2d::fromXywh(  0, 0, 90, 90), vec4(0.8, 0.1, 0.1, 1))
+                   << new RectangleNode(rect2d::fromXywh(100, 0, 90, 90), vec4(0.8, 0.8, 0.1, 1))
+                   << new RectangleNode(rect2d::fromXywh(200, 0, 90, 90), vec4(0.1, 0.8, 0.1, 1))
+                   << new RectangleNode(rect2d::fromXywh(300, 0, 90, 90), vec4(0.1, 0.8, 0.8, 1))
+                   << new RectangleNode(rect2d::fromXywh(400, 0, 90, 90), vec4(0.1, 0.1, 0.8, 1))
+                   << new RectangleNode(rect2d::fromXywh(500, 0, 90, 90), vec4(0.8, 0.1, 0.8, 1))
+                   << new LayerNode(rect2d::fromXywh(600, 0, 90, 90), m_layer)
                   )
              );
     }
@@ -49,6 +69,8 @@ public:
     Node *update(Node *old) {
         if (old)
             return old;
+
+        m_layer = rengine_loadImage(renderer(), "walker.png");
 
         Node *root = new Node();
 
@@ -63,6 +85,14 @@ public:
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_saturation(0.2));
             root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setDirection(Animation::Alternate);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1;
+            anim->keyFrames.addValues<double, ColorFilterNode_saturation>() << 0 << 1;
+            animationManager()->startAnimation(anim);
         }
 
         { // grayscale
@@ -71,6 +101,7 @@ public:
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_grayscale());
             root->append(tree);
+
         }
 
         { // brightness
@@ -79,6 +110,14 @@ public:
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_brightness(0.3));
             root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setDirection(Animation::Alternate);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1.0;
+            anim->keyFrames.addValues<double, ColorFilterNode_brightness>() << 0 << 1;
+            animationManager()->startAnimation(anim);
         }
 
         { // hue shift
@@ -87,13 +126,20 @@ public:
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
             node->setColorMatrix(colorMatrix_hue(1.0));
             root->append(tree);
+
+            AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
+            anim->setDuration(3);
+            anim->setIterations(-1);
+            anim->keyFrames.times() << 0 << 1.0;
+            anim->keyFrames.addValues<double, ColorFilterNode_hue>() << 0 << 3.14152 * 2;
+            animationManager()->startAnimation(anim);
+
         }
-
-
-
 
         return root;
     }
+
+    Layer *m_layer;
 };
 
 RENGINE_MAIN(MyWindow)
