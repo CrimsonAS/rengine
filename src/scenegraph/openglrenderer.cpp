@@ -209,7 +209,7 @@ void OpenGLRenderer::initialize()
         cout << "OpenGL" << endl
              << " - Renderer .........: " << glGetString(GL_RENDERER) << endl;
         cout << " - Version ..........: " << glGetString(GL_VERSION) << endl;
-        cout << " - R/G/B/A ..........: " << r << " " << g << " " << " " << b << " " << a << endl;
+        cout << " - R/G/B/A ..........: " << r << " " << g << " " << b << " " << a << endl;
         cout << " - Depth/Stencil ....: " << d << " " << s << endl;
         cout << " - Samples ..........: " << samples << endl;
         cout << " - Max Texture Size .: " << maxTexSize << endl;
