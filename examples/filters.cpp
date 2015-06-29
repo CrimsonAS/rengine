@@ -109,7 +109,7 @@ public:
             anim->setDirection(Animation::Alternate);
             anim->setIterations(-1);
             anim->keyFrames.times() << 0 << 1;
-            anim->keyFrames.addValues<double, ColorFilterNode_saturation>() << 0 << 1;
+            anim->keyFrames.addValues<double, ColorFilterNode_saturation>() << 0 << 4;
             animationManager()->startAnimation(anim);
         }
 
@@ -148,7 +148,7 @@ public:
             anim->setDirection(Animation::Alternate);
             anim->setIterations(-1);
             anim->keyFrames.times() << 0 << 1.0;
-            anim->keyFrames.addValues<double, ColorFilterNode_brightness>() << 0 << 1;
+            anim->keyFrames.addValues<double, ColorFilterNode_brightness>() << 0 << 4;
             animationManager()->startAnimation(anim);
         }
 

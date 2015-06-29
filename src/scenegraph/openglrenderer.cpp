@@ -189,6 +189,7 @@ void OpenGLRenderer::initialize()
         attrs.push_back("aV");
         attrs.push_back("aT");
         prog_colorFilter.initialize(vsh_es_layer, fsh_es_layer_colorFilter, attrs);
+        prog_colorFilter.matrix = prog_solid.resolve("m");
         prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
     }
 
