@@ -325,7 +325,7 @@ void OpenGLRenderer::prepass(Node *n)
         break;
     }
 
-    for (auto c : n->children())
+    for (Node *c = n->child(); c; c = c->sibling())
         prepass(c);
 }
 
@@ -386,7 +386,7 @@ void OpenGLRenderer::build(Node *n)
         mat4 old = *m;
         *m = *m * tn->matrix();
 
-        for (auto c : n->children())
+        for (Node *c = n->child(); c; c = c->sibling())
             build(c);
 
         // restore previous state
@@ -420,7 +420,7 @@ void OpenGLRenderer::build(Node *n)
         }
         // cout << " -- building layered node into " << e << endl;
 
-        for (auto c : n->children())
+        for (Node *c = n->child(); c; c = c->sibling())
             build(c);
 
         if (e) {
@@ -457,7 +457,7 @@ void OpenGLRenderer::build(Node *n)
         break;
     }
 
-    for (auto c : n->children())
+    for (Node *c = n->child(); c; c = c->sibling())
         build(c);
 
 

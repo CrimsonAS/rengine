@@ -45,7 +45,15 @@ void tst_node_cast()
     cout << __FUNCTION__ << ": ok" << endl;
 }
 
-
+static void dumpToList_prefix(Node *n, std::vector<Node *> &list)
+{
+    list.push_back(n);
+    Node *c = n->child();
+    while (c) {
+        dumpToList_prefix(c, list);
+        c = c->sibling();
+    }
+}
 
 void tst_node_addRemoveParent()
 {
@@ -78,12 +86,17 @@ void tst_node_addRemoveParent()
     check_equal(n12.parent(), &n1);
     check_equal(n21.parent(), &n2);
 
-    // check children
-    check_equal(n.children().at(0), &n1);
-    check_equal(n.children().at(1), &n2);
-    check_equal(n1.children().at(0), &n11);
-    check_equal(n1.children().at(1), &n12);
-    check_equal(n2.children().at(0), &n21);
+    // check the tree
+    std::vector<Node *> dump;
+    dumpToList_prefix(&n, dump);
+    check_equal(dump.at(0), &n);
+    check_equal(dump.at(1), &n1);
+    check_equal(dump.at(2), &n11);
+    check_equal(dump.at(3), &n12);
+    check_equal(dump.at(4), &n2);
+    check_equal(dump.at(5), &n21);
+    dump.clear();
+
 
     /* move n21 to the front of n1's children
                 n
@@ -96,10 +109,14 @@ void tst_node_addRemoveParent()
     n1.prepend(&n21);
     check_equal(n2.childCount(), 0);
     check_equal(n1.childCount(), 3);
-    check_equal(n1.children().at(0), &n21);
-    check_equal(n1.children().at(1), &n11);
-    check_equal(n1.children().at(2), &n12);
     check_equal(n21.parent(), &n1);
+    dumpToList_prefix(&n, dump);
+    check_equal(dump.at(0), &n);
+    check_equal(dump.at(1), &n1);
+    check_equal(dump.at(2), &n21);
+    check_equal(dump.at(3), &n11);
+    check_equal(dump.at(4), &n12);
+    check_equal(dump.at(5), &n2);
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
@@ -121,45 +138,45 @@ void tst_node_addRemoveParent()
 //     cout << __FUNCTION__ << ": ok" << endl;
 // }
 
-static  void tst_node_injectEvict()
-{
-    Node root;
-    Node n1;
-    Node n2;
-    Node n11;
-    Node n12;
-    Node n21;
-    Node n22;
-    Node injected;
+// static  void tst_node_injectEvict()
+// {
+//     Node root;
+//     Node n1;
+//     Node n2;
+//     Node n11;
+//     Node n12;
+//     Node n21;
+//     Node n22;
+//     Node injected;
 
-    root << &n1 << &n2;
-    n1 << &n11 << &n12;
-    n2 << &n21 << &n22;
+//     root << &n1 << &n2;
+//     n1 << &n11 << &n12;
+//     n2 << &n21 << &n22;
 
-    injected.injectAbove(&n1);
-    check_equal(2, root.childCount());
-    check_equal(1, injected.childCount());
-    check_equal(root.children().at(0), &injected);
-    check_equal(&root, injected.parent());
-    check_equal(n1.parent(), &injected);
-    check_equal(n11.parent(), &n1);
-    check_equal(n12.parent(), &n1);
-    check_equal(n21.parent(), &n2);
-    check_equal(n22.parent(), &n2);
+//     injected.injectAbove(&n1);
+//     check_equal(2, root.childCount());
+//     check_equal(1, injected.childCount());
+//     check_equal(root.children().at(0), &injected);
+//     check_equal(&root, injected.parent());
+//     check_equal(n1.parent(), &injected);
+//     check_equal(n11.parent(), &n1);
+//     check_equal(n12.parent(), &n1);
+//     check_equal(n21.parent(), &n2);
+//     check_equal(n22.parent(), &n2);
 
-    injected.evict();
-    check_equal(injected.parent(), 0);
-    check_equal(injected.childCount(), 0);
-    check_equal(2, root.childCount());
-    check_equal(root.children().at(0), &n1);
-    check_equal(n1.parent(), &root);
-    check_equal(n11.parent(), &n1);
-    check_equal(n12.parent(), &n1);
-    check_equal(n21.parent(), &n2);
-    check_equal(n22.parent(), &n2);
+//     injected.evict();
+//     check_equal(injected.parent(), 0);
+//     check_equal(injected.childCount(), 0);
+//     check_equal(2, root.childCount());
+//     check_equal(root.children().at(0), &n1);
+//     check_equal(n1.parent(), &root);
+//     check_equal(n11.parent(), &n1);
+//     check_equal(n12.parent(), &n1);
+//     check_equal(n21.parent(), &n2);
+//     check_equal(n22.parent(), &n2);
 
-    cout << __FUNCTION__ << ": ok" << endl;
-}
+//     cout << __FUNCTION__ << ": ok" << endl;
+// }
 
 
 int main(int, char **)
@@ -167,7 +184,7 @@ int main(int, char **)
     tst_node_cast();
     tst_node_addRemoveParent();
     // tst_rectanglenode_geometry();
-    tst_node_injectEvict();
+    // tst_node_injectEvict();
 
     return 0;
 }

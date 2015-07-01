@@ -48,6 +48,9 @@ public:
      */
     Node(Type type = BasicNodeType)
         : m_parent(0)
+        , m_child(0)
+        , m_lastChild(0)
+        , m_sibling(0)
         , m_type(type)
         , m_preprocess(false)
     {
@@ -61,8 +64,19 @@ public:
     virtual ~Node() {
         if (m_parent)
             m_parent->remove(this);
-        while (!m_children.empty())
-            delete m_children.back();
+        while (m_child)
+            delete m_child;
+    }
+
+    /*!
+     * Searches this node's list of children and returns true if \a child is a
+     * child of this node.
+     */
+    bool hasChild(Node *child) {
+        Node *n = m_child;
+        while (n && n != child)
+            n = n->m_sibling;
+        return n;
     }
 
     /*!
@@ -72,8 +86,18 @@ public:
      * or is already a child of this node.
      */
     void append(Node *child) {
-        assert(std::find(m_children.begin(), m_children.end(), child) == m_children.end());
-        m_children.push_back(child);
+        assert(!hasChild(child));
+        assert(child->m_parent == 0);
+        assert(child->m_sibling == 0);
+        if (!m_lastChild) {
+            assert(!m_child);
+            m_child = child;
+            m_lastChild = child;
+        } else {
+            assert(m_child);
+            m_lastChild->m_sibling = child;
+            m_lastChild = child;
+        }
         child->setParent(this);
     }
 
@@ -86,8 +110,18 @@ public:
      * or is already a child of this node.
      */
     void prepend(Node *child) {
-        assert(std::find(m_children.begin(), m_children.end(), child) == m_children.end());
-        m_children.insert(m_children.begin(), child);
+        assert(!hasChild(child));
+        assert(child->m_parent == 0);
+        assert(child->m_sibling == 0);
+        if (!m_child) {
+            assert(!m_lastChild);
+            m_child = child;
+            m_lastChild = child;
+        } else {
+            assert(m_lastChild);
+            child->m_sibling = m_child;
+            m_child = child;
+        }
         child->setParent(this);
     }
 
@@ -98,64 +132,87 @@ public:
      * this node.
      */
     void remove(Node *child) {
-        assert(std::find(m_children.begin(), m_children.end(), child) != m_children.end());
-        m_children.erase(std::find(m_children.begin(), m_children.end(), child));
+        assert(child);
+        assert(hasChild(child));
+
+        if (m_child == child) {
+            m_child = m_child->m_sibling;
+            if (child == m_lastChild)
+                m_lastChild = 0;
+        } else {
+            Node *n = m_child;
+            while (n->m_sibling != child) {
+                n = n->m_sibling;
+                assert(n);
+            }
+            n->m_sibling = child->m_sibling;
+            if (child == m_lastChild) {
+                m_lastChild = n;
+                assert(n->m_sibling == 0);
+            }
+        }
         child->setParent(0);
     }
 
-    /*!
-     * Injects this node into the tree above \a node. This ndoe becomes a
-     * parent for \a node and will have the same order in the original parent's child list.
-     */
-    void injectAbove(Node *node) {
-        assert(node);
-        assert(node->parent());
-        assert(!parent());
+    // /*!
+    //  * Injects this node into the tree above \a node. This ndoe becomes a
+    //  * parent for \a node and will have the same order in the original parent's child list.
+    //  */
+    // void injectAbove(Node *node) {
+    //     assert(node);
+    //     assert(node->parent());
+    //     assert(!parent());
 
-        // Attach ourselves to the node's parent
-        Node *p = node->parent();
-        auto pos = std::find(p->m_children.begin(), p->m_children.end(), node);
-        assert(pos != p->m_children.end());
-        *pos = this;
-        m_parent = p;
+    //     // Attach ourselves to the node's parent
+    //     Node *p = node->parent();
+    //     auto pos = std::find(p->m_children.begin(), p->m_children.end(), node);
+    //     assert(pos != p->m_children.end());
+    //     *pos = this;
+    //     m_parent = p;
 
-        // attach node to ourselves
-        m_children.push_back(node);
-        node->m_parent = this;
-    }
+    //     // attach node to ourselves
+    //     m_children.push_back(node);
+    //     node->m_parent = this;
+    // }
 
-    /*!
-     * Removes this node from the tree and assigns all of its children to this
-     * node's parent.
-     */
-    void evict() {
-        assert(parent());
-        Node *p = parent();
-        auto pos = std::find(p->m_children.begin(), m_children.end(), this);
-        assert(pos != p->m_children.end());
-        pos = p->m_children.erase(pos);
-        for (auto i : m_children) {
-            pos = p->m_children.insert(pos, i);
-            i->m_parent = p;
-        }
-        m_children.clear();
-        m_parent = 0;
-    }
+    // /*!
+    //  * Removes this node from the tree and assigns all of its children to this
+    //  * node's parent.
+    //  */
+    // void evict() {
+    //     assert(parent());
+    //     Node *p = parent();
+    //     auto pos = std::find(p->m_children.begin(), m_children.end(), this);
+    //     assert(pos != p->m_children.end());
+    //     pos = p->m_children.erase(pos);
+    //     for (auto i : m_children) {
+    //         pos = p->m_children.insert(pos, i);
+    //         i->m_parent = p;
+    //     }
+    //     m_children.clear();
+    //     m_parent = 0;
+    // }
 
     /*!
      * Returns the number of children in this node
      */
-    int childCount() const { return m_children.size(); }
-
-    /*!
-     * Returns this node's list of children.
-     */
-    const std::vector<Node *> &children() const { return m_children; }
+    int childCount() const {
+        int c = 0;
+        Node *n = m_child;
+        while (n) {
+            ++c;
+            n = n->m_sibling;
+        }
+        return c;
+    }
 
     /*!
      * Returns this node's parent node.
      */
     Node *parent() const { return m_parent; }
+
+    Node *sibling() const { return m_sibling; }
+    Node *child() const { return m_child; }
 
     /*!
      * Returns this node's type.
@@ -200,10 +257,12 @@ public:
         default: std::cout << "Node(type=" << n->type() << ")"; break;
         }
         std::cout << "(" << n << ") parent=" << n->parent() << " childCount=" << n->childCount() << std::endl;
-        for (auto child : n->children())
+        Node *child = n->m_child;
+        while (child) {
             dump(child, level + 1);
+            child = child->m_sibling;
+        }
     }
-
 
 
 protected:
@@ -222,7 +281,9 @@ private:
     }
 
     Node *m_parent;
-    std::vector<Node *> m_children;
+    Node *m_child;
+    Node *m_lastChild;
+    Node *m_sibling;
 
     Type m_type : 4;
     unsigned m_preprocess : 1;
@@ -248,7 +309,6 @@ public:
 private:
     float m_opacity;
 };
-
 
 
 class TransformNode : public Node

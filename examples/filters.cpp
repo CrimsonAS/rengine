@@ -100,7 +100,7 @@ public:
         { // desaturate
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             node->setColorMatrix(colorMatrix_saturation(0.2));
             root->append(tree);
 
@@ -116,7 +116,7 @@ public:
         { // grayscale
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             node->setColorMatrix(colorMatrix_grayscale());
             root->append(tree);
         }
@@ -124,7 +124,7 @@ public:
         { // sepia
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
@@ -139,7 +139,7 @@ public:
         { // brightness
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             node->setColorMatrix(colorMatrix_brightness(0.3));
             root->append(tree);
 
@@ -155,7 +155,7 @@ public:
         { // hue shift
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             node->setColorMatrix(colorMatrix_hue(1.0));
             root->append(tree);
 
@@ -170,7 +170,7 @@ public:
         { // contrast
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
@@ -185,7 +185,7 @@ public:
         { // invert
             pos += 100;
             Node *tree = createSubtree(10, pos);
-            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->children().at(0));
+            ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
