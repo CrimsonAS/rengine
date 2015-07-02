@@ -12,7 +12,8 @@ public:
 
     ~StandardSurfaceInterface()
     {
-        delete m_renderer->sceneRoot();
+        if (m_renderer->sceneRoot())
+            m_renderer->sceneRoot()->destroy();
         delete m_renderer;
     }
 
