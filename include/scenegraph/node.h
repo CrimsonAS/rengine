@@ -53,6 +53,7 @@ public:
         , m_sibling(0)
         , m_type(type)
         , m_preprocess(false)
+        , m_poolAllocated(false)
     {
     }
 
@@ -65,7 +66,7 @@ public:
         if (m_parent)
             m_parent->remove(this);
         while (m_child)
-            delete m_child;
+            m_child->destroy();
     }
 
     /*!
@@ -264,11 +265,14 @@ public:
         }
     }
 
+    RENGINE_ALLOCATION_POOL_DECLARATION(Node);
+
+    void __mark_as_pool_allocated() { m_poolAllocated = true; }
+    bool __is_pool_allocated() const { return m_poolAllocated; }
 
 protected:
     virtual void onPreprocess() { }
 
-private:
     /*!
      * Sets this node's parent to \a p. This function is for internal use
      * only. Use append/prepend/remove from  public API.
@@ -287,6 +291,7 @@ private:
 
     Type m_type : 4;
     unsigned m_preprocess : 1;
+    unsigned m_poolAllocated : 1;
 };
 
 class OpacityNode : public Node {
@@ -305,6 +310,8 @@ public:
 
     float opacity() const { return m_opacity; }
     void setOpacity(float opacity) { m_opacity = opacity; }
+
+    RENGINE_ALLOCATION_POOL_DECLARATION(OpacityNode);
 
 private:
     float m_opacity;
@@ -335,6 +342,7 @@ public:
     float projectionDepth() const { return m_projectionDepth; }
     void setProjectionDepth(float d) { m_projectionDepth = d; }
 
+    RENGINE_ALLOCATION_POOL_DECLARATION(TransformNode);
 private:
     mat4 m_matrix;
     float m_projectionDepth;
@@ -365,6 +373,7 @@ public:
         m_color.w = std::max(std::min(m_color.w, 1.0f), 0.0f);
     }
 
+    RENGINE_ALLOCATION_POOL_DECLARATION(RectangleNode);
 protected:
     RectangleNode(Type type) : Node(type) { }
     RectangleNode(Type type, const rect2d &geometry, const vec4 &color = vec4())
@@ -400,6 +409,7 @@ public:
     Layer *layer() const { return m_layer; }
     void setLayer(Layer *layer) { m_layer = layer; }
 
+    RENGINE_ALLOCATION_POOL_DECLARATION(LayerNode);
 private:
     Layer *m_layer;
 };
@@ -415,8 +425,11 @@ public:
     void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
     const mat4 &colorMatrix() const { return m_colorMatrix; }
 
+    RENGINE_ALLOCATION_POOL_DECLARATION(ColorFilterNode);
 private:
     mat4 m_colorMatrix;
 };
+
+
 
 RENGINE_END_NAMESPACE

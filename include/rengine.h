@@ -23,6 +23,7 @@ class Node;
 class OpacityNode;
 class LayerNode;
 class TransformNode;
+class ColorFilterNode;
 class Renderer;
 class Layer;
 class OpenGLRenderer;
@@ -40,6 +41,7 @@ class Backend;
 RENGINE_END_NAMESPACE
 
 #include "common/mathtypes.h"
+#include "common/allocationpool.h"
 
 #include "windowsystem/surface.h"
 

@@ -26,6 +26,7 @@
 #pragma once
 
 #include <assert.h>
+#include <iostream>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -63,15 +64,25 @@ public:
         assert(m_memory);
         assert(m_free);
         assert(m_free[m_nextFree] < m_poolSize);
+
+        // std::cout << "AllocationPool::allocate: memory=" << m_memory
+        //           << ", free=" << m_free
+        //           << ", nextFree=" << m_nextFree
+        //           << ", free[nextFree]=" << m_free[m_nextFree] << std::endl;
+
         T *t = m_memory + m_free[m_nextFree++];
+        // std::cout << " --> t=" << (void *) t
+        //           << ", nextFree=" << m_nextFree
+        //           << ", free[nextFree]=" << m_free[m_nextFree] << std::endl;
+
         return new (t) T();
     }
 
     void deallocate(T *t) {
         assert(m_memory);
         assert(m_free);
-        assert(t >= m_memory);
         assert(m_nextFree > 0);
+        assert(isAlloctated(t));
 
         unsigned pos = t - m_memory;
 
@@ -82,7 +93,7 @@ public:
         t->~T();
     }
 
-    bool isExhausted() const { return m_nextFree >= m_poolSize - 1; }
+    bool isExhausted() const { return m_nextFree >= m_poolSize; }
     bool isAlloctated(T *t) const { return unsigned(t - m_memory) < m_poolSize; }
 
 private:
@@ -92,21 +103,25 @@ private:
     unsigned m_poolSize;
 };
 
-#define RENGINE_ALLOCATION_POOL(Type, Count) Type::__allocation_pool_##Type.setMemory(alloca(Count * sizeof(Type)), Count)
+#define RENGINE_ALLOCATION_POOL(Type, Count) \
+    Type::__allocation_pool_##Type.setMemory(alloca(Count * (sizeof(Type) + sizeof(unsigned))), Count)
 
 #define RENGINE_ALLOCATION_POOL_DECLARATION(Type)     \
     static AllocationPool<Type> __allocation_pool_##Type;   \
     static Type *create() {                                 \
         if (__allocation_pool_##Type.isExhausted())         \
             return new Type();                              \
-        else                                                \
-            return __allocation_pool_##Type.allocate();     \
+        else  {                                             \
+            Type *t = __allocation_pool_##Type.allocate();  \
+            t->__mark_as_pool_allocated();                  \
+            return t;                                       \
+        }                                                   \
     }                                                       \
-    static void destroy(Type *t) {                          \
-        if (__allocation_pool_##Type.isAlloctated(t))       \
-            __allocation_pool_##Type.deallocate(t);         \
+    virtual void destroy() {                                \
+        if (__is_pool_allocated())                          \
+            __allocation_pool_##Type.deallocate(this);      \
         else                                                \
-            delete t;                                       \
+            delete this;                                    \
     }
 
 #define RENGINE_ALLOCATION_POOL_DEFINITION(Type)             \

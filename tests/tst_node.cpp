@@ -122,6 +122,28 @@ void tst_node_addRemoveParent()
 }
 
 
+void tst_node_allocator()
+{
+    RENGINE_ALLOCATION_POOL(Node, 16);
+
+    // void *mem = alloca(1600 * sizeof(Node));
+    // void *mem = malloc(sizeof(Node));
+    // Node *n = new (mem) Node();
+    Node *n = Node::create();
+
+// ?    Node *n = new (Node::__allocation_pool_Node.m_memory) Node();
+
+    cout << "got back pointer" << n << endl;
+    check_true(n != 0);
+
+    // free(mem);
+
+    n->destroy();
+
+    cout << __FUNCTION__ << ": ok" << endl;
+}
+
+
 // void tst_rectanglenode_geometry()
 // {
 //     LayerNode layerNode;
@@ -185,6 +207,8 @@ int main(int, char **)
     tst_node_addRemoveParent();
     // tst_rectanglenode_geometry();
     // tst_node_injectEvict();
+
+    tst_node_allocator();
 
     return 0;
 }

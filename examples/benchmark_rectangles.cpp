@@ -6,9 +6,9 @@ class Rectangles : public StandardSurfaceInterface
 public:
     Node *update(Node *root) {
         if (root)
-            delete root;
+            root->destroy();
 
-        root = new Node();
+        root = Node::create();
 
         vec2 size = surface()->size();
 
@@ -26,7 +26,10 @@ public:
                        (rand() % 100)/100.0,
                        (rand() % 100)/100.0,
                        0.9);
-            *root << new RectangleNode(rect2d::fromXywh(rand() % w, rand() % h, rw, rh), color);
+            RectangleNode *rect = RectangleNode::create();
+            rect->setGeometry(rect2d::fromXywh(rand() % w, rand() % h, rw, rh));
+            rect->setColor(color);
+            *root << rect;
         }
 
         surface()->requestRender();
@@ -35,4 +38,15 @@ public:
     }
 };
 
-RENGINE_MAIN(Rectangles)
+int main(int argc, char **argv) {
+
+    RENGINE_ALLOCATION_POOL(RectangleNode, 1024);
+    RENGINE_ALLOCATION_POOL(Node, 64);
+
+    std::unique_ptr<Backend> backend(Backend::get());
+    Rectangles iface;
+    Surface *surface = backend->createSurface(&iface);
+    surface->show();
+    backend->run();
+    return 0;
+}
