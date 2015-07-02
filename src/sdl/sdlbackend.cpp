@@ -54,7 +54,7 @@ public:
 #endif
     }
 
-    void quit() { cout << __PRETTY_FUNCTION__ << "; not implemented..." << endl; }
+    void quit() { SDL_Quit(); }
     void run();
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
