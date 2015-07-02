@@ -4,44 +4,44 @@ class ColorsAndPositions : public StaticRenderTest
 {
 public:
     Node *build() override {
-        Node *root = new Node();
+        Node *root = Node::create();
 
         // White background to blend against..
-        *root << new RectangleNode(rect2d::fromXywh(18, 0, 6, 11), vec4(1, 1, 1, 1));
+        *root << RectangleNode::create(rect2d::fromXywh(18, 0, 6, 11), vec4(1, 1, 1, 1));
 
         for (int i=0; i<=10; ++i) {
             float c = i / 10.0;
             // black to primary and secondary colors
-            *root << new RectangleNode(rect2d::fromXywh( 0, i, 1, 1), vec4(c, 0, 0, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 1, i, 1, 1), vec4(0, c, 0, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 2, i, 1, 1), vec4(0, 0, c, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 3, i, 1, 1), vec4(c, c, 0, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 4, i, 1, 1), vec4(0, c, c, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 5, i, 1, 1), vec4(c, 0, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 0, i, 1, 1), vec4(c, 0, 0, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 1, i, 1, 1), vec4(0, c, 0, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 2, i, 1, 1), vec4(0, 0, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 3, i, 1, 1), vec4(c, c, 0, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 4, i, 1, 1), vec4(0, c, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 5, i, 1, 1), vec4(c, 0, c, 1));
 
             // primary and secondary colors to white
-            *root << new RectangleNode(rect2d::fromXywh( 6, i, 1, 1), vec4(1, c, c, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 7, i, 1, 1), vec4(c, 1, c, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 8, i, 1, 1), vec4(c, c, 1, 1));
-            *root << new RectangleNode(rect2d::fromXywh( 9, i, 1, 1), vec4(1, 1, c, 1));
-            *root << new RectangleNode(rect2d::fromXywh(10, i, 1, 1), vec4(c, 1, 1, 1));
-            *root << new RectangleNode(rect2d::fromXywh(11, i, 1, 1), vec4(1, c, 1, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 6, i, 1, 1), vec4(1, c, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 7, i, 1, 1), vec4(c, 1, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 8, i, 1, 1), vec4(c, c, 1, 1));
+            *root << RectangleNode::create(rect2d::fromXywh( 9, i, 1, 1), vec4(1, 1, c, 1));
+            *root << RectangleNode::create(rect2d::fromXywh(10, i, 1, 1), vec4(c, 1, 1, 1));
+            *root << RectangleNode::create(rect2d::fromXywh(11, i, 1, 1), vec4(1, c, 1, 1));
 
             // fade prim/sec colors on top of black
-            *root << new RectangleNode(rect2d::fromXywh(12, i, 1, 1), vec4(1, 0, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(13, i, 1, 1), vec4(0, 1, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(14, i, 1, 1), vec4(0, 0, 1, c));
-            *root << new RectangleNode(rect2d::fromXywh(15, i, 1, 1), vec4(1, 1, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(16, i, 1, 1), vec4(0, 1, 1, c));
-            *root << new RectangleNode(rect2d::fromXywh(17, i, 1, 1), vec4(1, 0, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(12, i, 1, 1), vec4(1, 0, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(13, i, 1, 1), vec4(0, 1, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(14, i, 1, 1), vec4(0, 0, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(15, i, 1, 1), vec4(1, 1, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(16, i, 1, 1), vec4(0, 1, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(17, i, 1, 1), vec4(1, 0, 1, c));
 
             // fade prim/sec colors on top of white (rect added before loop)
-            *root << new RectangleNode(rect2d::fromXywh(18, i, 1, 1), vec4(1, 0, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(19, i, 1, 1), vec4(0, 1, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(20, i, 1, 1), vec4(0, 0, 1, c));
-            *root << new RectangleNode(rect2d::fromXywh(21, i, 1, 1), vec4(1, 1, 0, c));
-            *root << new RectangleNode(rect2d::fromXywh(22, i, 1, 1), vec4(0, 1, 1, c));
-            *root << new RectangleNode(rect2d::fromXywh(23, i, 1, 1), vec4(1, 0, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(18, i, 1, 1), vec4(1, 0, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(19, i, 1, 1), vec4(0, 1, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(20, i, 1, 1), vec4(0, 0, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(21, i, 1, 1), vec4(1, 1, 0, c));
+            *root << RectangleNode::create(rect2d::fromXywh(22, i, 1, 1), vec4(0, 1, 1, c));
+            *root << RectangleNode::create(rect2d::fromXywh(23, i, 1, 1), vec4(1, 0, 1, c));
         }
 
         return root;
@@ -94,16 +94,16 @@ class LayersOnViewportEdge : public StaticRenderTest
 public:
     Node *build() override {
         vec2 size = surface()->size();
-        Node *root = new Node();
+        Node *root = Node::create();
         *root
             // Top-left, 50% red
-            << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(-1, -1, 2, 2), vec4(1, 0, 0, 1)))
+            << &(*OpacityNode::create(0.5) << RectangleNode::create(rect2d::fromXywh(-1, -1, 2, 2), vec4(1, 0, 0, 1)))
             // Top-right, 25% green
-            << &(*new OpacityNode(0.25) << new RectangleNode(rect2d::fromXywh(size.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
+            << &(*OpacityNode::create(0.25) << RectangleNode::create(rect2d::fromXywh(size.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
             // Bottom-left, 75% blue
-            << &(*new OpacityNode(0.75) << new RectangleNode(rect2d::fromXywh(-1, size.y-1, 2, 2), vec4(0, 0, 1, 1)))
+            << &(*OpacityNode::create(0.75) << RectangleNode::create(rect2d::fromXywh(-1, size.y-1, 2, 2), vec4(0, 0, 1, 1)))
             // Bottom-right,
-            << &(*new OpacityNode(0.5) << new RectangleNode(rect2d::fromXywh(size.x-1, size.y-1, 2, 2), vec4(1, 1, 1, 1)))
+            << &(*OpacityNode::create(0.5) << RectangleNode::create(rect2d::fromXywh(size.x-1, size.y-1, 2, 2), vec4(1, 1, 1, 1)))
             ;
 
         return root;
@@ -148,33 +148,33 @@ class OpacityLayers : public StaticRenderTest
 public:
     const char *name() const override { return "OpacityLayers"; }
     Node *build() override {
-        Node *root = new Node();
+        Node *root = Node::create();
 
         *root
 
             // Two rectangles stacked on top of each other, no opacity bleed-through
-            << &(*new OpacityNode(0.5)
-                 << new RectangleNode(rect2d::fromXywh(10, 10, 10, 10), vec4(1, 0, 0, 1))
-                 << new RectangleNode(rect2d::fromXywh(11, 11, 10, 10), vec4(0, 0, 1, 1))
+            << &(*OpacityNode::create(0.5)
+                 << RectangleNode::create(rect2d::fromXywh(10, 10, 10, 10), vec4(1, 0, 0, 1))
+                 << RectangleNode::create(rect2d::fromXywh(11, 11, 10, 10), vec4(0, 0, 1, 1))
                 )
 
             // Two rectangles stacked on top of each other, positioned with a transform node, no opacity bleed-through
-            << &(*new TransformNode(mat4::translate2D(30, 10))
-                 << &(*new OpacityNode(0.5)
-                      << &(*new TransformNode(mat4::translate2D(1, 1))
-                           << new RectangleNode(rect2d::fromXywh(0, 0, 10, 10), vec4(0, 1, 0, 1))
+            << &(*TransformNode::create(mat4::translate2D(30, 10))
+                 << &(*OpacityNode::create(0.5)
+                      << &(*TransformNode::create(mat4::translate2D(1, 1))
+                           << RectangleNode::create(rect2d::fromXywh(0, 0, 10, 10), vec4(0, 1, 0, 1))
                           )
-                      << &(*new TransformNode(mat4::translate2D(2, 2))
-                           << new RectangleNode(rect2d::fromXywh(0, 0, 10, 10), vec4(1, 0, 0, 1))
+                      << &(*TransformNode::create(mat4::translate2D(2, 2))
+                           << RectangleNode::create(rect2d::fromXywh(0, 0, 10, 10), vec4(1, 0, 0, 1))
                           )
                      )
                 )
 
             // Nested layers
-            << &(*new OpacityNode(0.8)
-                 << &(*new OpacityNode(0.8)
-                      << new RectangleNode(rect2d::fromXywh(100, 10, 10, 10), vec4(1, 0, 0, 1))
-                      << new RectangleNode(rect2d::fromXywh(101, 11, 10, 10), vec4(0, 0, 1, 1))
+            << &(*OpacityNode::create(0.8)
+                 << &(*OpacityNode::create(0.8)
+                      << RectangleNode::create(rect2d::fromXywh(100, 10, 10, 10), vec4(1, 0, 0, 1))
+                      << RectangleNode::create(rect2d::fromXywh(101, 11, 10, 10), vec4(0, 0, 1, 1))
                      )
                 )
 

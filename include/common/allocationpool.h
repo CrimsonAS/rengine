@@ -106,7 +106,8 @@ private:
 #define RENGINE_ALLOCATION_POOL(Type, Count) \
     Type::__allocation_pool_##Type.setMemory(alloca(Count * (sizeof(Type) + sizeof(unsigned))), Count)
 
-#define RENGINE_ALLOCATION_POOL_DECLARATION(Type)     \
+#define RENGINE_ALLOCATION_POOL_DECLARATION(Type)           \
+    friend class AllocationPool<Type>;                      \
     static AllocationPool<Type> __allocation_pool_##Type;   \
     static Type *create() {                                 \
         if (__allocation_pool_##Type.isExhausted())         \

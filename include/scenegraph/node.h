@@ -44,32 +44,6 @@ public:
     };
 
     /*!
-     * Node constructor...
-     */
-    Node(Type type = BasicNodeType)
-        : m_parent(0)
-        , m_child(0)
-        , m_lastChild(0)
-        , m_sibling(0)
-        , m_type(type)
-        , m_preprocess(false)
-        , m_poolAllocated(false)
-    {
-    }
-
-    /*!
-     * Node destructor.
-     *
-     * A Node will delete all its children when the destructor runs.
-     */
-    virtual ~Node() {
-        if (m_parent)
-            m_parent->remove(this);
-        while (m_child)
-            m_child->destroy();
-    }
-
-    /*!
      * Searches this node's list of children and returns true if \a child is a
      * child of this node.
      */
@@ -274,6 +248,34 @@ protected:
     virtual void onPreprocess() { }
 
     /*!
+     * Node constructor...
+     */
+    Node(Type type = BasicNodeType)
+        : m_parent(0)
+        , m_child(0)
+        , m_lastChild(0)
+        , m_sibling(0)
+        , m_type(type)
+        , m_preprocess(false)
+        , m_poolAllocated(false)
+    {
+    }
+
+    /*!
+     * Node destructor.
+     *
+     * A Node will delete all its children when the destructor runs.
+     */
+    virtual ~Node() {
+        if (m_parent)
+            m_parent->remove(this);
+        while (m_child)
+            m_child->destroy();
+    }
+
+
+
+    /*!
      * Sets this node's parent to \a p. This function is for internal use
      * only. Use append/prepend/remove from  public API.
      *
@@ -297,23 +299,25 @@ protected:
 class OpacityNode : public Node {
 public:
     enum { StaticType = OpacityNodeType };
-    OpacityNode()
-        : Node(OpacityNodeType)
-        , m_opacity(1.0f)
-    {
-    }
-    OpacityNode(float opacity)
-        : Node(OpacityNodeType)
-        , m_opacity(opacity)
-    {
-    }
 
     float opacity() const { return m_opacity; }
     void setOpacity(float opacity) { m_opacity = opacity; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(OpacityNode);
 
-private:
+    static OpacityNode *create(float opacity) {
+        auto node = create();
+        node->setOpacity(opacity);
+        return node;
+    }
+
+protected:
+    OpacityNode()
+        : Node(OpacityNodeType)
+        , m_opacity(1.0f)
+    {
+    }
+
     float m_opacity;
 };
 
@@ -323,19 +327,6 @@ class TransformNode : public Node
 public:
     enum { StaticType = TransformNodeType };
 
-    TransformNode()
-        : Node(TransformNodeType)
-        , m_projectionDepth(0)
-    {
-    }
-
-    TransformNode(const mat4 &matrix, float projectionDepth = 0)
-        : Node(TransformNodeType)
-        , m_matrix(matrix)
-        , m_projectionDepth(projectionDepth)
-    {
-    }
-
     const mat4 &matrix() const { return m_matrix; }
     void setMatrix(const mat4 &m) { m_matrix = m; }
 
@@ -343,7 +334,21 @@ public:
     void setProjectionDepth(float d) { m_projectionDepth = d; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(TransformNode);
-private:
+
+    static TransformNode *create(const mat4 &matrix, float projectionDepth = 0) {
+        auto node = create();
+        node->setMatrix(matrix);
+        node->setProjectionDepth(projectionDepth);
+        return node;
+    }
+
+protected:
+    TransformNode()
+        : Node(TransformNodeType)
+        , m_projectionDepth(0)
+    {
+    }
+
     mat4 m_matrix;
     float m_projectionDepth;
 };
@@ -352,14 +357,6 @@ private:
 class RectangleNode : public Node {
 public:
     enum { StaticType = RectangleNodeType };
-
-    RectangleNode() : Node(RectangleNodeType) { }
-    RectangleNode(const rect2d &geometry, const vec4 &color)
-        : Node(RectangleNodeType)
-        , m_geometry(geometry)
-        , m_color(color)
-    {
-    }
 
     const rect2d &geometry() const { return m_geometry; }
     void setGeometry(const rect2d &rect) { m_geometry = rect; }
@@ -374,59 +371,73 @@ public:
     }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(RectangleNode);
-protected:
-    RectangleNode(Type type) : Node(type) { }
-    RectangleNode(Type type, const rect2d &geometry, const vec4 &color = vec4())
-        : Node(type)
-        , m_geometry(geometry)
-        , m_color(color)
-    {
+
+    static RectangleNode *create(const rect2d &geometry, const vec4 &color = vec4()) {
+        auto node = create();
+        node->setGeometry(geometry);
+        node->setColor(color);
+        return node;
     }
 
-private:
+protected:
+    RectangleNode(Type type = RectangleNodeType) : Node(type) { }
+
     rect2d m_geometry;
     vec4 m_color;
 };
 
 
-// ### TODO: because layer node is a rectangle node it also has color. Does
-// ### that really make sense?
-class LayerNode : public RectangleNode {
+class LayerNode : public Node {
 public:
     enum { StaticType = LayerNodeType };
+    const Layer *layer() const { return m_layer; }
+    void setLayer(const Layer *layer) { m_layer = layer; }
+
+    const rect2d &geometry() const { return m_geometry; }
+    void setGeometry(const rect2d &rect) { m_geometry = rect; }
+
+
+    RENGINE_ALLOCATION_POOL_DECLARATION(LayerNode);
+
+    static LayerNode *create(const rect2d &geometry, const Layer *layer) {
+        auto node = create();
+        node->setGeometry(geometry);
+        node->setLayer(layer);
+        return node;
+    }
+
+protected:
     LayerNode()
-        : RectangleNode(LayerNodeType)
+        : Node(LayerNodeType)
         , m_layer(0)
     {
     }
 
-    LayerNode(const rect2d &geometry, Layer *layer)
-        : RectangleNode(LayerNodeType, geometry)
-        , m_layer(layer)
-    {
-    }
-
-    Layer *layer() const { return m_layer; }
-    void setLayer(Layer *layer) { m_layer = layer; }
-
-    RENGINE_ALLOCATION_POOL_DECLARATION(LayerNode);
-private:
-    Layer *m_layer;
+    const Layer *m_layer;
+    rect2d m_geometry;
 };
 
 class ColorFilterNode : public Node {
 public:
     enum { StaticType = ColorFilterNodeType };
-    ColorFilterNode()
-        : Node(ColorFilterNodeType)
-    {
-    }
 
     void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
     const mat4 &colorMatrix() const { return m_colorMatrix; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(ColorFilterNode);
-private:
+
+    ColorFilterNode *create(const mat4 &matrix) {
+        auto node = create();
+        node->setColorMatrix(matrix);
+        return node;
+    }
+
+protected:
+    ColorFilterNode()
+        : Node(ColorFilterNodeType)
+    {
+    }
+
     mat4 m_colorMatrix;
 };
 

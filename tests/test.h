@@ -165,7 +165,7 @@ public:
 
     Node *update(Node *root) {
         if (root)
-            delete root;
+            root->destroy();
 
         if (tests.empty())
             return 0;

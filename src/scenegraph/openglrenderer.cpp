@@ -334,12 +334,14 @@ void OpenGLRenderer::build(Node *n)
     switch (n->type()) {
     case Node::LayerNodeType:
     case Node::RectangleNodeType: {
-        RectangleNode *rn = static_cast<RectangleNode *>(n);
+        const rect2d &geometry = n->type() == Node::LayerNodeType
+                                 ? static_cast<LayerNode *>(n)->geometry()
+                                 : static_cast<RectangleNode *>(n)->geometry();
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
-        const vec2 &p1 = rn->geometry().tl;
-        const vec2 &p2 = rn->geometry().br;
+        const vec2 &p1 = geometry.tl;
+        const vec2 &p2 = geometry.br;
         vec2 *v = m_vertices + m_vertexIndex;
 
         // cout << " -- building rect from " << p1 << " " << p2 << " into " << m_vertices << " " << e << endl;

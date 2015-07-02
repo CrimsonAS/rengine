@@ -23,14 +23,14 @@ public:
         m_layer = rengine_loadImage(renderer(), "walker.png");
 
         // Root has origin in screen center
-        TransformNode *root = new TransformNode();
+        TransformNode *root = TransformNode::create();
         root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));
 
-        TransformNode *xnode = new TransformNode();
+        TransformNode *xnode = TransformNode::create();
         xnode->setProjectionDepth(1000);
         xnode->setMatrix(mat4::rotateAroundX(-0.15));
 
-        TransformNode *rotationNode = new TransformNode();
+        TransformNode *rotationNode = TransformNode::create();
         xnode->append(rotationNode);
 
         const int count = 20;
@@ -39,20 +39,20 @@ public:
             float w = s.x * 0.1;
             float h = s.y * 0.2;
 
-            TransformNode *tn = new TransformNode();
+            TransformNode *tn = TransformNode::create();
 
             tn->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
                           * mat4::translate(s.x * 0.33, 0, 0)
                           * mat4::rotateAroundY(M_PI/2.0));
 
-            *tn << new RectangleNode(rect2d::fromXywh(-w/2, -h/2, w, h), vec4(c, 0.5, 1-c, 0.8));
+            *tn << RectangleNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), vec4(c, 0.5, 1-c, 0.8));
             rotationNode->append(tn);
 
-            TransformNode *depthAdjustment = new TransformNode();
+            TransformNode *depthAdjustment = TransformNode::create();
             depthAdjustment->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
                                        * mat4::translate(s.x * 0.33 + 2, 0, 0)
                                        * mat4::rotateAroundY(M_PI/2.0));
-            *depthAdjustment << new LayerNode(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
+            *depthAdjustment << LayerNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
             rotationNode->append(depthAdjustment);
         }
 

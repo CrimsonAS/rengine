@@ -71,15 +71,15 @@ public:
 
     Node *createSubtree(float dx, float dy) {
         return
-            &(*new TransformNode(mat4::translate2D(dx, dy))
-              << &(*new ColorFilterNode()
-                   << new RectangleNode(rect2d::fromXywh(  0, 0, 90, 90), vec4(0.8, 0.1, 0.1, 1))
-                   << new RectangleNode(rect2d::fromXywh(100, 0, 90, 90), vec4(0.8, 0.8, 0.1, 1))
-                   << new RectangleNode(rect2d::fromXywh(200, 0, 90, 90), vec4(0.1, 0.8, 0.1, 1))
-                   << new RectangleNode(rect2d::fromXywh(300, 0, 90, 90), vec4(0.1, 0.8, 0.8, 1))
-                   << new RectangleNode(rect2d::fromXywh(400, 0, 90, 90), vec4(0.1, 0.1, 0.8, 1))
-                   << new RectangleNode(rect2d::fromXywh(500, 0, 90, 90), vec4(0.8, 0.1, 0.8, 1))
-                   << new LayerNode(rect2d::fromXywh(600, 0, 90, 90), m_layer)
+            &(*TransformNode::create(mat4::translate2D(dx, dy))
+              << &(*ColorFilterNode::create()
+                   << RectangleNode::create(rect2d::fromXywh(  0, 0, 90, 90), vec4(0.8, 0.1, 0.1, 1))
+                   << RectangleNode::create(rect2d::fromXywh(100, 0, 90, 90), vec4(0.8, 0.8, 0.1, 1))
+                   << RectangleNode::create(rect2d::fromXywh(200, 0, 90, 90), vec4(0.1, 0.8, 0.1, 1))
+                   << RectangleNode::create(rect2d::fromXywh(300, 0, 90, 90), vec4(0.1, 0.8, 0.8, 1))
+                   << RectangleNode::create(rect2d::fromXywh(400, 0, 90, 90), vec4(0.1, 0.1, 0.8, 1))
+                   << RectangleNode::create(rect2d::fromXywh(500, 0, 90, 90), vec4(0.8, 0.1, 0.8, 1))
+                   << LayerNode::create(rect2d::fromXywh(600, 0, 90, 90), m_layer)
                   )
              );
     }
@@ -90,7 +90,7 @@ public:
 
         m_layer = rengine_loadImage(renderer(), "walker.png");
 
-        Node *root = new Node();
+        Node *root = Node::create();
 
         float pos = 10;
 
