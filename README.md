@@ -15,8 +15,10 @@ support HTML/CSS style layer composition. That means:
    primitives for it)
  - only textures and solids
  - "dumb" 3D support
+   - at least for now..
+   - Sort center of layers front to back and render them (like chrome does)
  - replacable backends to handle windowsystem/eventloop/input
- - optional backend code to hardware compositor
+   - optional backend code to hardware compositor
  - optional frontend to wayland to provide window surfaces as layers
    - application protocol to create and run animations
    - server-side pannables
@@ -28,7 +30,8 @@ Now go look at something else...
 
 Optional dependences include:
 
- - Qt: for the Qt based backend (currently a hard dependency and only working backend)
+ - Qt: for the Qt based backend
+ - SDL2: for the SDL 2 based backend, enable using 'cmake -DRENGINE_USE_SDL=on'
  - Wayland: For the wayland based front end (currently not implented)
 
 
@@ -38,15 +41,13 @@ todo
 lots and lots...
  - OpenGL renderer
    - antialiased edges -> rely on MSAA for now, though this is slow on intel chips
-   - layer flattening under opacity and filter nodes
-      -> special case single layer flattening and apply filter directly?
-      -> special case non-overlapping opacity rendering to void fbo
    - filter nodes (maybe drop blur/dropshadow for now since they are expensive as hell)
       -> provide effects both as 'live' in the tree and 'static' as a means of producing a Layer instance.
    - caching of non-changing flattened subtrees to improve performance
  - add more properties to LayerNode
    - opacity
    - border and rounded edges? -> lets not for now...
+
 
 overview of the dependencies between source directories
 -------------------------------------------------------
