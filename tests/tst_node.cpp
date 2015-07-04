@@ -41,6 +41,8 @@ void tst_node_cast()
     check_true(tst_node_cast_helper<TransformNode>());
     check_true(tst_node_cast_helper<RectangleNode>());
     check_true(tst_node_cast_helper<ColorFilterNode>());
+    check_true(tst_node_cast_helper<BlurNode>());
+    check_true(tst_node_cast_helper<ShadowNode>());
 
     cout << __FUNCTION__ << ": ok" << endl;
 }
@@ -129,23 +131,28 @@ void tst_node_addRemoveParent()
 }
 
 
+
 void tst_node_allocator()
 {
     RENGINE_ALLOCATION_POOL(Node, 16);
 
-    // void *mem = alloca(1600 * sizeof(Node));
-    // void *mem = malloc(sizeof(Node));
-    // Node *n = (mem) Node::create();
+    // Create the node
     Node *n = Node::create();
-
-// ?    Node *n = (Node::__allocation_pool_Node.m_memory) Node::create();
-
-    cout << "got back pointer" << n << endl;
     check_true(n != 0);
+    check_true(n->__is_pool_allocated())
 
-    // free(mem);
-
+    // Make sure destructors are called..
+    bool written = false;
+    class OtherNode : public Node {
+    public:
+        bool *m_write;
+        OtherNode(bool *write) : m_write(write) { }
+        ~OtherNode() { *m_write = true; }
+    };
+    n->append(new OtherNode(&written));
     n->destroy();
+    check_true(written);
+
 
     cout << __FUNCTION__ << ": ok" << endl;
 }

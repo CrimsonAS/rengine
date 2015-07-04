@@ -40,7 +40,9 @@ public:
         LayerNodeType,
         TransformNodeType,
         OpacityNodeType,
-        ColorFilterNodeType
+        ColorFilterNodeType,
+        BlurNodeType,
+        ShadowNodeType,
     };
 
     /*!
@@ -439,6 +441,53 @@ protected:
     }
 
     mat4 m_colorMatrix;
+};
+
+class BlurNode : public Node {
+public:
+    enum { StaticType = BlurNodeType };
+
+    void setRadius(int radius) { m_radius = radius; }
+    int radius() const { return m_radius; }
+
+    RENGINE_ALLOCATION_POOL_DECLARATION(BlurNode);
+
+    BlurNode *create(int radius) {
+        auto node = create();
+        node->setRadius(radius);
+        return node;
+    }
+
+protected:
+    BlurNode() : Node(BlurNodeType), m_radius(3) { }
+
+    int m_radius;
+};
+
+class ShadowNode : public Node {
+public:
+    enum { StaticType = ShadowNodeType };
+
+    void setRadius(int radius) { m_radius = radius; }
+    int radius() const { return m_radius; }
+
+    void setOffset(const vec2 &offset) { m_offset = offset; }
+    const vec2 &offset() const { return m_offset; }
+
+    RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode);
+
+    ShadowNode *create(int radius, const vec2 &offset) {
+        auto node = create();
+        node->setRadius(radius);
+        node->setOffset(offset);
+        return node;
+    }
+
+protected:
+    ShadowNode() : Node(ShadowNodeType), m_radius(3), m_offset(5, 5) { }
+
+    int m_radius;
+    vec2 m_offset;
 };
 
 
