@@ -157,23 +157,6 @@ void tst_node_allocator()
     cout << __FUNCTION__ << ": ok" << endl;
 }
 
-
-// void tst_rectanglenode_geometry()
-// {
-//     LayerNode layerNode;
-
-//     layerNode.setPosition(1, 2);
-//     layerNode.setSize(3, 4);
-//     check_equal(layerNode.x(), 1);
-//     check_equal(layerNode.y(), 2);
-//     check_equal(layerNode.width(), 3);
-//     check_equal(layerNode.height(), 4);
-//     check_equal(layerNode.position(), vec2(1, 2));
-//     check_equal(layerNode.size(), vec2(3, 4));
-
-//     cout << __FUNCTION__ << ": ok" << endl;
-// }
-
 // static  void tst_node_injectEvict()
 // {
 //     Node root;
