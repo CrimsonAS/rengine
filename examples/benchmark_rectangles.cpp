@@ -39,14 +39,8 @@ public:
 };
 
 int main(int argc, char **argv) {
-
     RENGINE_ALLOCATION_POOL(RectangleNode, 1024);
     RENGINE_ALLOCATION_POOL(Node, 64);
-
-    std::unique_ptr<Backend> backend(Backend::get());
-    Rectangles iface;
-    Surface *surface = backend->createSurface(&iface);
-    surface->show();
-    backend->run();
+    rengine_main<Rectangles>(argc, argv);
     return 0;
 }

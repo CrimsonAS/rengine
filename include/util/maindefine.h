@@ -18,5 +18,13 @@ RENGINE_END_NAMESPACE
 
 #define RENGINE_MAIN(InterfaceName)                     \
 int main(int argc, char **argv) {                       \
+    RENGINE_ALLOCATION_POOL(Node, 256);                 \
+    RENGINE_ALLOCATION_POOL(TransformNode, 256);        \
+    RENGINE_ALLOCATION_POOL(RectangleNode, 256);        \
+    RENGINE_ALLOCATION_POOL(LayerNode, 256);            \
+    RENGINE_ALLOCATION_POOL(OpacityNode, 64);           \
+    RENGINE_ALLOCATION_POOL(ColorFilterNode, 16);       \
+    RENGINE_ALLOCATION_POOL(BlurNode, 16);              \
+    RENGINE_ALLOCATION_POOL(ShadowNode, 16);            \
     return RENGINE_NAMESPACE_PREFIX rengine_main<InterfaceName>(argc, argv);     \
 }

@@ -452,7 +452,7 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(BlurNode);
 
-    BlurNode *create(int radius) {
+    static BlurNode *create(int radius) {
         auto node = create();
         node->setRadius(radius);
         return node;
@@ -474,9 +474,12 @@ public:
     void setOffset(const vec2 &offset) { m_offset = offset; }
     const vec2 &offset() const { return m_offset; }
 
+    void setColor(const vec4 &color) { m_color = color; }
+    const vec4 &color() const { return m_color; }
+
     RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode);
 
-    ShadowNode *create(int radius, const vec2 &offset) {
+    static ShadowNode *create(int radius, const vec2 &offset) {
         auto node = create();
         node->setRadius(radius);
         node->setOffset(offset);
@@ -484,10 +487,11 @@ public:
     }
 
 protected:
-    ShadowNode() : Node(ShadowNodeType), m_radius(3), m_offset(5, 5) { }
+    ShadowNode() : Node(ShadowNodeType), m_radius(3), m_offset(5, 5), m_color(0.5) { }
 
     int m_radius;
     vec2 m_offset;
+    vec4 m_color;
 };
 
 
