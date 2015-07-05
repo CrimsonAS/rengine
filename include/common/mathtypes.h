@@ -56,6 +56,11 @@ struct vec2 {
         y += o.y;
         return *this;
     }
+    vec2 &operator-=(const vec2 &o) {
+        x -= o.x;
+        y -= o.y;
+        return *this;
+    }
     vec2 &operator=(float v) {
         x = v;
         y = v;
@@ -91,6 +96,12 @@ struct vec3 {
         z += o.z;
         return *this;
     }
+    vec3 &operator-=(const vec3 &o) {
+        x -= o.x;
+        y -= o.y;
+        z -= o.z;
+        return *this;
+    }
     vec3 &operator=(float v) {
         x = v;
         y = v;
@@ -123,6 +134,13 @@ struct vec4 {
         y += o.y;
         z += o.z;
         w += o.w;
+        return *this;
+    }
+    vec4 &operator-=(const vec4 &o) {
+        x -= o.x;
+        y -= o.y;
+        z -= o.z;
+        w -= o.w;
         return *this;
     }
     vec4 &operator=(float v) {

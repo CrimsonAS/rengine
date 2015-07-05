@@ -132,7 +132,7 @@ void main() {                                                       \n\
         result += w * texture2D(t, vT + float(i) * step);           \n\
         totalWeight += w;                                           \n\
     }                                                               \n\
-    gl_FragColor = result / totalWeight;                            \n\
+    gl_FragColor = result / totalWeight + 0.1;                      \n\
 }                                                                   \n\
 ";
 
@@ -300,15 +300,10 @@ void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacit
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &direction)
+void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &step)
 {
     activateShader(&prog_blur);
     ensureMatrixUpdated(UpdateBlurProgram, &prog_blur);
-
-    vec2 size = m_vertices[offset + 3] - m_vertices[offset];
-    assert(size.x > 0);
-    assert(size.y > 0);
-    vec2 step = direction / size;
 
     glUniform1i(prog_blur.radius, radius);
     glUniform2f(prog_blur.step, step.x, step.y);
@@ -529,13 +524,25 @@ void OpenGLRenderer::build(Node *n)
 
 }
 
-static int recursion;
+static void rengine_create_texture(int id, int w, int h)
+{
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+}
+
+
+// static int recursion;
 
 void OpenGLRenderer::renderToLayer(Element *e)
 {
-    string space;
-    for (int i=0; i<recursion; ++i)
-        space += "    ";
+    // string space;
+    // for (int i=0; i<recursion; ++i)
+    //     space += "    ";
     // cout << space << "- doing layered rendering for: element=" << e << " node=" << e->node << endl;
     assert(e->layered);
 
@@ -551,22 +558,23 @@ void OpenGLRenderer::renderToLayer(Element *e)
 
     // Create the FBO
     rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
+    assert(devRect.width() >= 0);
+    assert(devRect.height() >= 0);
     // cout << space << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
 
-    int w = devRect.width();
-    int h = devRect.height();
-    assert(w >= 0);
-    assert(h >= 0);
-    m_surfaceSize = vec2(w, h);
+    BlurNode *blur = Node::from<BlurNode>(e->node);
+    if (blur) {
+        if (blur->radius() > 0) {
+            vec2 padding(blur->radius());
+            devRect.tl.x -= blur->radius();
+            devRect.br.x += blur->radius();
+        }
+    }
+
+    m_surfaceSize = devRect.size();
 
     e->texture = m_texturePool.acquire();
-    glBindTexture(GL_TEXTURE_2D, e->texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    rengine_create_texture(e->texture, devRect.width(), devRect.height());
 
     glGenFramebuffers(1, &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
@@ -575,7 +583,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
 #ifndef NDEBUG
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         cerr << "OpenGLRenderer::renderToLayer: FBO failed, devRect=" << devRect
-             << ", dim=" << w << "x" << h << ", tex=" << e->texture << ", fbo=" << m_fbo << ", error="
+             << ", dim=" << devRect.width() << "x" << devRect.height() << ", tex=" << e->texture << ", fbo=" << m_fbo << ", error="
              << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
         assert(false);
     }
@@ -584,7 +592,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
     // Render the layered group
     m_proj = mat4::scale2D(1.0, -1.0)
              * mat4::translate2D(-1.0, 1.0)
-             * mat4::scale2D(2.0f / w, -2.0f / h)
+             * mat4::scale2D(2.0f / devRect.width(), -2.0f / devRect.height())
              * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
     m_matrixState = UpdateAllPrograms;
 
@@ -595,6 +603,21 @@ void OpenGLRenderer::renderToLayer(Element *e)
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     render(e + 1, e + e->groupSize + 1);
+
+    if (blur) {
+        devRect.tl.y -= blur->radius();
+        devRect.br.y += blur->radius();
+        int tmpTex = e->texture;
+        e->texture = m_texturePool.acquire();
+        rengine_create_texture(tmpTex, devRect.width(), devRect.height());
+        m_proj = mat4::scale2D(1.0, -1.0)
+                 * mat4::translate2D(-1.0, 1.0)
+                 * mat4::scale2D(2.0f / devRect.width(), -2.0f / devRect.height())
+                 * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
+        m_matrixState = UpdateAllPrograms;
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
+        drawBlurQuad(e->vboOffset, tmpTex, blur->radius(), vec2(1 / devRect.width(), 0));
+    }
 
     // Reset the GL state..
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
@@ -630,9 +653,9 @@ void OpenGLRenderer::render(Element *first, Element *last)
         while (e < last) {
             if (e->layered) {
                 // cout << space << "- needs layering: " << e << endl;
-                ++recursion;
+                // ++recursion;
                 renderToLayer(e);
-                --recursion;
+                // --recursion;
                 e = e + e->groupSize + 1;
             } else {
                 ++e;
@@ -669,7 +692,7 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 1));
+            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 0));
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;

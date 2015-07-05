@@ -18,7 +18,7 @@ public:
         mat4 matrix = mat4::translate2D(w2, h2)
                  * mat4::scale2D(s2, s2);
         return &(*TransformNode::create(matrix)
-                 << &(*BlurNode::create(30)
+                 << &(*BlurNode::create(15)
                        << RectangleNode::create(rect2d::fromXywh(0.15, -0.5,  0.3, 0.3), vec4(1, 0, 0, 1))
                        << RectangleNode::create(rect2d::fromXywh(0.15, -0.15, 0.3, 0.3), vec4(0, 1, 0, 1))
                        << RectangleNode::create(rect2d::fromXywh(0.15,  0.2,  0.3, 0.3), vec4(0, 0, 1, 1))
