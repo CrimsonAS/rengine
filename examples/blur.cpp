@@ -20,11 +20,11 @@ public:
         BlurNode *blurNode = BlurNode::create();
 
         AnimationClosure<BlurNode> *a = new AnimationClosure<BlurNode>(blurNode);
-        a->setDuration(3);
+        a->setDuration(2);
         a->setDirection(Animation::Alternate);
         a->setIterations(-1);
         a->keyFrames.times() << 0 << 1;
-        a->keyFrames.addValues<float, BlurNode_setRadius>() << 0 << 20;
+        a->keyFrames.addValues<float, BlurNode_setRadius>() << 0 << 100;
         animationManager()->startAnimation(a);
 
         mat4 matrix = mat4::translate2D(w2, h2)

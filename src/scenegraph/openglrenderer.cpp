@@ -142,6 +142,7 @@ OpenGLRenderer::OpenGLRenderer()
     , m_numRectangleNodes(0)
     , m_numTransformNodes(0)
     , m_numTransformNodesWith3d(0)
+    , m_additionalQuads(0)
     , m_vertexIndex(0)
     , m_elementIndex(0)
     , m_vertices(0)
@@ -373,8 +374,10 @@ void OpenGLRenderer::prepass(Node *n)
             ++m_numLayeredNodes;
         break;
     case Node::BlurNodeType:
-        if (static_cast<BlurNode *>(n)->radius() > 0)
+        if (static_cast<BlurNode *>(n)->radius() > 0) {
             ++m_numLayeredNodes;
+            ++m_additionalQuads;
+        }
         break;
     default:
         // ignore...
@@ -497,6 +500,16 @@ void OpenGLRenderer::build(Node *n)
             v[3] = box.br;
             m_vertexIndex += 4;
 
+            if (BlurNode *blurNode = Node::from<BlurNode>(n)) {
+                vec2 tl = box.tl - vec2(blurNode->radius());
+                vec2 br = box.br + vec2(blurNode->radius());
+                v[4] = vec2(tl.x, tl.y);
+                v[5] = vec2(tl.x, br.y);
+                v[6] = vec2(br.x, tl.y);
+                v[7] = vec2(br.x, br.y);
+                m_vertexIndex += 4;
+            }
+
             // We're a nested layer, accumulate the layered bounding box into
             // the stored one..
             if (storedLayered)
@@ -556,20 +569,16 @@ void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d |= e->projection;
     m_layered = true;
 
+    unsigned extraOffset = 0;
+    BlurNode *blurNode = Node::from<BlurNode>(e->node);
+    if (blurNode)
+        extraOffset = 4;
+
     // Create the FBO
-    rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
+    rect2d devRect(m_vertices[e->vboOffset + extraOffset], m_vertices[e->vboOffset + extraOffset + 3]);
     assert(devRect.width() >= 0);
     assert(devRect.height() >= 0);
     // cout << space << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
-
-    BlurNode *blur = Node::from<BlurNode>(e->node);
-    if (blur) {
-        if (blur->radius() > 0) {
-            vec2 padding(blur->radius());
-            devRect.tl.x -= blur->radius();
-            devRect.br.x += blur->radius();
-        }
-    }
 
     m_surfaceSize = devRect.size();
 
@@ -604,21 +613,12 @@ void OpenGLRenderer::renderToLayer(Element *e)
     glClear(GL_COLOR_BUFFER_BIT);
     render(e + 1, e + e->groupSize + 1);
 
-    if (blur) {
-        devRect.tl.y -= blur->radius();
-        devRect.br.y += blur->radius();
+    if (blurNode) {
         int tmpTex = e->texture;
         e->texture = m_texturePool.acquire();
         rengine_create_texture(e->texture, devRect.width(), devRect.height());
-        m_proj = mat4::scale2D(1.0, -1.0)
-                 * mat4::translate2D(-1.0, 1.0)
-                 * mat4::scale2D(2.0f / devRect.width(), -2.0f / devRect.height())
-                 * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
-        m_matrixState = UpdateAllPrograms;
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
-        glViewport(0, 0, devRect.width(), devRect.height());
-
-        drawBlurQuad(e->vboOffset, tmpTex, blur->radius(), vec2(1 / devRect.width(), 0));
+        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), vec2(1 / devRect.width(), 0));
     }
 
     // Reset the GL state..
@@ -694,8 +694,8 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            float height = m_vertices[e->vboOffset + 3].y - m_vertices[e->vboOffset].y;
-            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 1/height));
+            float height = m_vertices[e->vboOffset + 4 + 3].y - m_vertices[e->vboOffset + 4].y;
+            drawBlurQuad(e->vboOffset + 4, e->texture, blurNode->radius(), vec2(0, 1/height));
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
@@ -718,11 +718,15 @@ bool OpenGLRenderer::render()
     m_numRectangleNodes = 0;
     m_numTransformNodes = 0;
     m_numTransformNodesWith3d = 0;
+    m_additionalQuads = 0;
     m_vertexIndex = 0;
     m_elementIndex = 0;
     prepass(sceneRoot());
 
-    unsigned vertexCount = (m_numTextureNodes + m_numLayeredNodes + m_numRectangleNodes) * 4;
+    unsigned vertexCount = (m_numTextureNodes
+                            + m_numLayeredNodes
+                            + m_numRectangleNodes
+                            + m_additionalQuads) * 4;
     if (vertexCount == 0)
         return true;
 

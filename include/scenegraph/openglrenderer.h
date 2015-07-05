@@ -134,6 +134,7 @@ public:
     unsigned m_numRectangleNodes;
     unsigned m_numTransformNodes;
     unsigned m_numTransformNodesWith3d;
+    unsigned m_additionalQuads;
 
     unsigned m_vertexIndex;
     unsigned m_elementIndex;
