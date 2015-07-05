@@ -97,6 +97,45 @@ void main() {                                   \n\
 }                                               \n\
 ";
 
+// ### Naive implementation with a lot of room for improvement...
+//
+// Compatibility wise, there are several older and lower-end chips that do not
+// support using a uniform in a loop-condition. This is not mandated by the
+// GLSL spec, so it won't work everywhere.
+//
+// Long-term, the implementation should be done like this.. The spec mandates
+// at least 8 varyings, so with that we can pre-generate up to 8 sample
+// points. We can further rely on linear sampling to make two samples in one
+// go using the correct weights. Based on that, we can create unique shaders
+// 1, 2, 3, 4, 5, 6 and 7 samples. That corresponds to 3x3 to 15x15 blur
+// kernels. If more are needed, we can run the blur filter multiple times as
+// multiple passes of the right deviation is equivalent to one larger blur.
+// The loop could be unrolled in each case and the weights precomputed, so the
+// frag shader only grabs a sample from a known location, multiplies the
+// weight and sums it all up.
+
+
+static const char *fsh_es_layer_blur =
+RENGINE_GLSL_HEADER
+"\
+uniform lowp sampler2D t;                                           \n\
+uniform highp vec2 step;                                            \n\
+uniform highp float sigma;                                          \n\
+uniform int radius;                                                 \n\
+varying highp vec2 vT;                                              \n\
+void main() {                                                       \n\
+    highp vec4 result = vec4(0);                                    \n\
+    highp float totalWeight = 0.0;                                  \n\
+    for (int i=-radius; i<=radius; ++i) {                           \n\
+        float x = float(i);                                         \n\
+        float w = exp(-(x * x) / (2.0 * sigma * sigma));            \n\
+        result += w * texture2D(t, vT + float(i) * step);           \n\
+        totalWeight += w;                                           \n\
+    }                                                               \n\
+    gl_FragColor = result / totalWeight;                            \n\
+}                                                                   \n\
+";
+
 OpenGLRenderer::OpenGLRenderer()
     : m_numLayeredNodes(0)
     , m_numTextureNodes(0)
@@ -159,39 +198,38 @@ void OpenGLRenderer::initialize()
     // Create the vertex coordinate buffer
     glGenBuffers(1, &m_vertexBuffer);
 
-    { // Default layer shader
-        vector<const char *> attrs;
-        attrs.push_back("aV");
-        attrs.push_back("aT");
-        prog_layer.initialize(vsh_es_layer, fsh_es_layer, attrs);
-        prog_layer.matrix = prog_layer.resolve("m");
-    }
+    vector<const char *> attrsVT;
+    attrsVT.push_back("aV");
+    attrsVT.push_back("aT");
 
-    { // Alpha layer shader
-        vector<const char *> attrs;
-        attrs.push_back("aV");
-        attrs.push_back("aT");
-        prog_alphaLayer.initialize(vsh_es_layer, fsh_es_layer_alpha, attrs);
-        prog_alphaLayer.matrix = prog_alphaLayer.resolve("m");
-        prog_alphaLayer.alpha = prog_alphaLayer.resolve("alpha");
-    }
+    vector<const char *> attrsV;
+    attrsV.push_back("aV");
 
-    { // Solid color shader...
-        vector<const char *> attrs;
-        attrs.push_back("aV");
-        prog_solid.initialize(vsh_es_solid, fsh_es_solid, attrs);
-        prog_solid.matrix = prog_solid.resolve("m");
-        prog_solid.color = prog_solid.resolve("color");
-    }
+    // Default layer shader
+    prog_layer.initialize(vsh_es_layer, fsh_es_layer, attrsVT);
+    prog_layer.matrix = prog_layer.resolve("m");
 
-    { // Color filter shader..
-        vector<const char *> attrs;
-        attrs.push_back("aV");
-        attrs.push_back("aT");
-        prog_colorFilter.initialize(vsh_es_layer, fsh_es_layer_colorFilter, attrs);
-        prog_colorFilter.matrix = prog_solid.resolve("m");
-        prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
-    }
+    // Alpha layer shader
+    prog_alphaLayer.initialize(vsh_es_layer, fsh_es_layer_alpha, attrsVT);
+    prog_alphaLayer.matrix = prog_alphaLayer.resolve("m");
+    prog_alphaLayer.alpha = prog_alphaLayer.resolve("alpha");
+
+    // Solid color shader...
+    prog_solid.initialize(vsh_es_solid, fsh_es_solid, attrsV);
+    prog_solid.matrix = prog_solid.resolve("m");
+    prog_solid.color = prog_solid.resolve("color");
+
+    // Color filter shader..
+    prog_colorFilter.initialize(vsh_es_layer, fsh_es_layer_colorFilter, attrsVT);
+    prog_colorFilter.matrix = prog_solid.resolve("m");
+    prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
+
+    // Blur shader
+    prog_blur.initialize(vsh_es_layer, fsh_es_layer_blur, attrsVT);
+    prog_blur.matrix = prog_blur.resolve("m");
+    prog_blur.step = prog_blur.resolve("step");
+    prog_blur.radius = prog_blur.resolve("radius");
+    prog_blur.sigma = prog_blur.resolve("sigma");
 
 #ifdef RENGINE_LOG_INFO
     static bool logged = false;
@@ -262,6 +300,25 @@ void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacit
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
+void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &direction)
+{
+    activateShader(&prog_blur);
+    ensureMatrixUpdated(UpdateBlurProgram, &prog_blur);
+
+    vec2 size = m_vertices[offset + 3] - m_vertices[offset];
+    assert(size.x > 0);
+    assert(size.y > 0);
+    vec2 step = direction / size;
+
+    glUniform1i(prog_blur.radius, radius);
+    glUniform2f(prog_blur.step, step.x, step.y);
+    glUniform1f(prog_blur.sigma, 0.3 * radius + 0.8);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 void OpenGLRenderer::activateShader(const Program *shader)
 {
     if (shader == m_activeShader)
@@ -318,6 +375,10 @@ void OpenGLRenderer::prepass(Node *n)
         break;
     case Node::OpacityNodeType:
         if (static_cast<OpacityNode *>(n)->opacity() < 1.0f)
+            ++m_numLayeredNodes;
+        break;
+    case Node::BlurNodeType:
+        if (static_cast<BlurNode *>(n)->radius() > 0)
             ++m_numLayeredNodes;
         break;
     default:
@@ -401,11 +462,14 @@ void OpenGLRenderer::build(Node *n)
     } return;
 
     // all layered node types take this code path
+    case Node::BlurNodeType:
     case Node::ColorFilterNodeType:
     case Node::OpacityNodeType: {
+
         bool useLayer =
             (n->type() == Node::OpacityNodeType && static_cast<OpacityNode *>(n)->opacity() < 1.0f)
-            || (n->type() == Node::ColorFilterNodeType && !static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity());
+            || (n->type() == Node::ColorFilterNodeType && !static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity())
+            || (n->type() == Node::BlurNodeType && static_cast<BlurNode *>(n)->radius() > 0);
 
         bool storedLayered = m_layered;
         Element *e = 0;
@@ -491,11 +555,16 @@ void OpenGLRenderer::renderToLayer(Element *e)
 
     int w = devRect.width();
     int h = devRect.height();
+    assert(w >= 0);
+    assert(h >= 0);
     m_surfaceSize = vec2(w, h);
 
     e->texture = m_texturePool.acquire();
     glBindTexture(GL_TEXTURE_2D, e->texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
@@ -597,6 +666,10 @@ void OpenGLRenderer::render(Element *first, Element *last)
             // cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             drawColorFilterQuad(e->vboOffset, e->texture, static_cast<ColorFilterNode *>(e->node)->colorMatrix());
             m_texturePool.release(e->texture);
+        } else if (e->node->type() == Node::BlurNodeType && e->layered) {
+            // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
+            BlurNode *blurNode = static_cast<BlurNode *>(e->node);
+            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 1));
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;

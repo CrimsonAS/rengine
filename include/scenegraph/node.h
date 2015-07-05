@@ -447,12 +447,12 @@ class BlurNode : public Node {
 public:
     enum { StaticType = BlurNodeType };
 
-    void setRadius(int radius) { m_radius = radius; }
-    int radius() const { return m_radius; }
+    void setRadius(unsigned radius) { m_radius = radius; }
+    unsigned radius() const { return m_radius; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(BlurNode);
 
-    static BlurNode *create(int radius) {
+    static BlurNode *create(unsigned radius) {
         auto node = create();
         node->setRadius(radius);
         return node;
@@ -461,15 +461,15 @@ public:
 protected:
     BlurNode() : Node(BlurNodeType), m_radius(3) { }
 
-    int m_radius;
+    unsigned m_radius;
 };
 
 class ShadowNode : public Node {
 public:
     enum { StaticType = ShadowNodeType };
 
-    void setRadius(int radius) { m_radius = radius; }
-    int radius() const { return m_radius; }
+    void setRadius(unsigned radius) { m_radius = radius; }
+    unsigned radius() const { return m_radius; }
 
     void setOffset(const vec2 &offset) { m_offset = offset; }
     const vec2 &offset() const { return m_offset; }
@@ -479,7 +479,7 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode);
 
-    static ShadowNode *create(int radius, const vec2 &offset) {
+    static ShadowNode *create(unsigned radius, const vec2 &offset) {
         auto node = create();
         node->setRadius(radius);
         node->setOffset(offset);
@@ -489,7 +489,7 @@ public:
 protected:
     ShadowNode() : Node(ShadowNodeType), m_radius(3), m_offset(5, 5), m_color(0.5) { }
 
-    int m_radius;
+    unsigned m_radius;
     vec2 m_offset;
     vec4 m_color;
 };

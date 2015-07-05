@@ -85,6 +85,7 @@ public:
         UpdateLayerProgram          = 0x02,
         UpdateAlphaLayerProgram     = 0x04,
         UpdateColorFilterProgram    = 0x08,
+        UpdateBlurProgram     = 0x10,
         UpdateAllPrograms           = 0xffffffff
     };
 
@@ -102,6 +103,7 @@ public:
     void drawColorQuad(unsigned bufferOffset, const vec4 &color);
     void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0);
     void drawColorFilterQuad(unsigned bufferOffset, GLuint texId, const mat4 &cm);
+    void drawBlurQuad(unsigned bufferOffset, GLuint texId, int radius, const vec2 &direction);
     void activateShader(const Program *shader);
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
@@ -121,6 +123,11 @@ public:
     struct ColorFilterProgram : public Program {
         int colorMatrix;
     } prog_colorFilter;
+    struct BlurProgram : public Program {
+        int step;
+        int radius;
+        int sigma;
+    } prog_blur;
 
     unsigned m_numLayeredNodes;
     unsigned m_numTextureNodes;
