@@ -132,7 +132,7 @@ void main() {                                                       \n\
         result += w * texture2D(t, vT + float(i) * step);           \n\
         totalWeight += w;                                           \n\
     }                                                               \n\
-    gl_FragColor = result / totalWeight + 0.1;                      \n\
+    gl_FragColor = result / totalWeight;                            \n\
 }                                                                   \n\
 ";
 
@@ -609,13 +609,15 @@ void OpenGLRenderer::renderToLayer(Element *e)
         devRect.br.y += blur->radius();
         int tmpTex = e->texture;
         e->texture = m_texturePool.acquire();
-        rengine_create_texture(tmpTex, devRect.width(), devRect.height());
+        rengine_create_texture(e->texture, devRect.width(), devRect.height());
         m_proj = mat4::scale2D(1.0, -1.0)
                  * mat4::translate2D(-1.0, 1.0)
                  * mat4::scale2D(2.0f / devRect.width(), -2.0f / devRect.height())
                  * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
         m_matrixState = UpdateAllPrograms;
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
+        glViewport(0, 0, devRect.width(), devRect.height());
+
         drawBlurQuad(e->vboOffset, tmpTex, blur->radius(), vec2(1 / devRect.width(), 0));
     }
 
@@ -692,7 +694,8 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 0));
+            float height = m_vertices[e->vboOffset + 3].y - m_vertices[e->vboOffset].y;
+            drawBlurQuad(e->vboOffset, e->texture, blurNode->radius(), vec2(0, 1/height));
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;

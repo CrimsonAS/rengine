@@ -26,4 +26,10 @@ struct OpacityNode_setOpacity {
     }
 };
 
+struct BlurNode_setRadius {
+    void operator()(float radius, BlurNode *node) {
+        node->setRadius(int(radius));
+    }
+};
+
 RENGINE_END_NAMESPACE
