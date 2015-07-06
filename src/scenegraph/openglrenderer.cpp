@@ -124,12 +124,14 @@ uniform highp float sigma;                                          \n\
 uniform int radius;                                                 \n\
 varying highp vec2 vT;                                              \n\
 void main() {                                                       \n\
+    highp vec2 rs = float(radius) * step;                           \n\
+    highp vec2 tc = (vT - rs) / (1.0 - 2.0 *rs);                    \n\
     highp vec4 result = vec4(0);                                    \n\
     highp float totalWeight = 0.0;                                  \n\
     for (int i=-radius; i<=radius; ++i) {                           \n\
         float x = float(i);                                         \n\
         float w = exp(-(x * x) / (2.0 * sigma * sigma));            \n\
-        result += w * texture2D(t, vT + float(i) * step);           \n\
+        result += w * texture2D(t, tc + float(i) * step);           \n\
         totalWeight += w;                                           \n\
     }                                                               \n\
     gl_FragColor = result / totalWeight;                            \n\
@@ -376,7 +378,7 @@ void OpenGLRenderer::prepass(Node *n)
     case Node::BlurNodeType:
         if (static_cast<BlurNode *>(n)->radius() > 0) {
             ++m_numLayeredNodes;
-            ++m_additionalQuads;
+            m_additionalQuads += 2;
         }
         break;
     default:
@@ -501,13 +503,19 @@ void OpenGLRenderer::build(Node *n)
             m_vertexIndex += 4;
 
             if (BlurNode *blurNode = Node::from<BlurNode>(n)) {
-                vec2 tl = box.tl - vec2(blurNode->radius());
-                vec2 br = box.br + vec2(blurNode->radius());
-                v[4] = vec2(tl.x, tl.y);
-                v[5] = vec2(tl.x, br.y);
-                v[6] = vec2(br.x, tl.y);
-                v[7] = vec2(br.x, br.y);
-                m_vertexIndex += 4;
+                float t1 = box.tl.y - 1;
+                float b1 = box.br.y + 1;
+                vec2 tlr = box.tl - vec2(blurNode->radius());
+                vec2 brr = box.br + vec2(blurNode->radius());
+                v[ 4] = vec2(tlr.x, t1);
+                v[ 5] = vec2(tlr.x, b1);
+                v[ 6] = vec2(brr.x, t1);
+                v[ 7] = vec2(brr.x, b1);
+                v[ 8] = vec2(tlr.x, tlr.y);
+                v[ 9] = vec2(tlr.x, brr.y);
+                v[10] = vec2(brr.x, tlr.y);
+                v[11] = vec2(brr.x, brr.y);
+                m_vertexIndex += 8;
             }
 
             // We're a nested layer, accumulate the layered bounding box into
@@ -569,15 +577,17 @@ void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d |= e->projection;
     m_layered = true;
 
-    unsigned extraOffset = 0;
     BlurNode *blurNode = Node::from<BlurNode>(e->node);
-    if (blurNode)
-        extraOffset = 4;
 
     // Create the FBO
-    rect2d devRect(m_vertices[e->vboOffset + extraOffset], m_vertices[e->vboOffset + extraOffset + 3]);
+    rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
     assert(devRect.width() >= 0);
     assert(devRect.height() >= 0);
+    if (blurNode) {
+        devRect.tl -= 1.0f;
+        devRect.br += 1.0f;
+    }
+
     // cout << space << " ---> from " << e->vboOffset << " " << m_vertices[e->vboOffset] << " " << m_vertices[e->vboOffset+3] << endl;
 
     m_surfaceSize = devRect.size();
@@ -616,10 +626,17 @@ void OpenGLRenderer::renderToLayer(Element *e)
     if (blurNode) {
         int tmpTex = e->texture;
         e->texture = m_texturePool.acquire();
-        rengine_create_texture(e->texture, devRect.width(), devRect.height());
+        rect2d expandedWidth(m_vertices[e->vboOffset + 4], m_vertices[e->vboOffset + 4 + 3]);
+        m_proj = mat4::scale2D(1.0, -1.0)
+                 * mat4::translate2D(-1.0, 1.0)
+                 * mat4::scale2D(2.0f / expandedWidth.width(), -2.0f / expandedWidth.height())
+                 * mat4::translate2D(-expandedWidth.tl.x, -expandedWidth.tl.y);
+        m_matrixState = UpdateAllPrograms;
+        rengine_create_texture(e->texture, expandedWidth.width(), expandedWidth.height());
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), vec2(1 / devRect.width(), 0));
+        glViewport(0, 0, expandedWidth.width(), expandedWidth.height());
+        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), vec2(1/expandedWidth.width(), 0));
         m_texturePool.release(tmpTex);
     }
 
@@ -696,8 +713,10 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            float height = m_vertices[e->vboOffset + 4 + 3].y - m_vertices[e->vboOffset + 4].y;
-            drawBlurQuad(e->vboOffset + 4, e->texture, blurNode->radius(), vec2(0, 1/height));
+            float height = m_vertices[e->vboOffset + 8 + 3].y - m_vertices[e->vboOffset + 8].y;
+            // float width = m_vertices[e->vboOffset + 8 + 3].x - m_vertices[e->vboOffset + 8].x;
+            // cout << " - radius: " << blurNode->radius() << " size=" << width << "x" << height << endl;
+            drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), vec2(0, 1/height));
             m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
