@@ -618,7 +618,9 @@ void OpenGLRenderer::renderToLayer(Element *e)
         e->texture = m_texturePool.acquire();
         rengine_create_texture(e->texture, devRect.width(), devRect.height());
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
         drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), vec2(1 / devRect.width(), 0));
+        m_texturePool.release(tmpTex);
     }
 
     // Reset the GL state..
@@ -696,6 +698,7 @@ void OpenGLRenderer::render(Element *first, Element *last)
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
             float height = m_vertices[e->vboOffset + 4 + 3].y - m_vertices[e->vboOffset + 4].y;
             drawBlurQuad(e->vboOffset + 4, e->texture, blurNode->radius(), vec2(0, 1/height));
+            m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
