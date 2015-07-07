@@ -105,7 +105,7 @@ public:
         cout << "QtBackend::Surface created with interface=" << iface << endl;
 #endif
         QSurfaceFormat format;
-        format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
+        format.setSamples(0); // ### TODO: make this settable a bit more conveniently...
 
         window.setFormat(format);
         window.setSurfaceType(QSurface::OpenGLSurface);

@@ -110,12 +110,14 @@ attribute highp vec2 aV;                                            \n\
 attribute highp vec2 aT;                                            \n\
 uniform highp mat4 m;                                               \n\
 uniform int radius;                                                 \n\
-uniform highp vec2 step;                                            \n\
+uniform highp vec4 dims;                                            \n\
 varying highp vec2 vT;                                              \n\
 void main() {                                                       \n\
     gl_Position = m * vec4(aV, 0, 1);                               \n\
-    highp vec2 rs = float(radius) * step;                           \n\
-    vT = (aT - rs) / (1.0 - 2.0 *rs);                               \n\
+    highp vec2 aw = dims.xy;                               \n\
+    highp vec2 cw = dims.zw;                              \n\
+    highp vec2 diff = (aw - cw) / aw;                     \n\
+    vT = (aT - diff/2.0) * (aw / cw);                                           \n\
 }                                                                   \n\
 ";
 
@@ -123,6 +125,7 @@ static const char *fsh_es_layer_blur =
 RENGINE_GLSL_HEADER
 "\
 uniform lowp sampler2D t;                                                       \n\
+uniform highp vec4 dims;                                                        \n\
 uniform highp vec2 step;                                                        \n\
 uniform highp float sigma;                                                      \n\
 uniform int radius;                                                             \n\
@@ -143,9 +146,26 @@ void main() {                                                                   
         weights += w;                                                           \n\
     }                                                                           \n\
     gl_FragColor = result / weights;                                            \n\
-    gl_FragColor = texture2D(t, vT);                     \n\
 }                                                                               \n\
 ";
+
+/*
+
+    highp float r = float(radius);                                              \n\
+    highp float weights = 0.5 * gauss(r);                                       \n\
+    highp vec4 result = weights * texture2D(t, vT - float(radius) * step);      \n\
+    for (int i=-radius+1; i<=radius; i+=2) {                                    \n\
+        highp float p1 = float(i);                                              \n\
+        highp float w1 = gauss(p1);                                             \n\
+        highp float p2 = float(i+1);                                            \n\
+        highp float w2 = gauss(p2);                                             \n\
+        highp float w = w1 + w2;                                                \n\
+        highp float p = (p1 * w1 + p2 * w2) / w;                                \n\
+        result += w * texture2D(t, vT + p * step);                              \n\
+        weights += w;                                                           \n\
+    }                                                                           \n\
+    gl_FragColor = result / weights;                                            \n\
+*/
 
 OpenGLRenderer::OpenGLRenderer()
     : m_numLayeredNodes(0)
@@ -239,9 +259,10 @@ void OpenGLRenderer::initialize()
     // Blur shader
     prog_blur.initialize(vsh_es_layer_blur, fsh_es_layer_blur, attrsVT);
     prog_blur.matrix = prog_blur.resolve("m");
-    prog_blur.step = prog_blur.resolve("step");
+    prog_blur.dims = prog_blur.resolve("dims");
     prog_blur.radius = prog_blur.resolve("radius");
     prog_blur.sigma = prog_blur.resolve("sigma");
+    prog_blur.step = prog_blur.resolve("step");
 
 #ifdef RENGINE_LOG_INFO
     static bool logged = false;
@@ -312,15 +333,16 @@ void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacit
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &step)
+void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step)
 {
     activateShader(&prog_blur);
     ensureMatrixUpdated(UpdateBlurProgram, &prog_blur);
 
     glUniform1i(prog_blur.radius, radius);
-    glUniform2f(prog_blur.step, step.x, step.y);
+    glUniform4f(prog_blur.dims, renderSize.x, renderSize.y, textureSize.x, textureSize.y);
     float sigma = 0.3 * radius + 0.8;
     glUniform1f(prog_blur.sigma, sigma * sigma * 2.0);
+    glUniform2f(prog_blur.step, step.x, step.y);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
     glBindTexture(GL_TEXTURE_2D, texId);
@@ -624,7 +646,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
              * mat4::translate2D(-devRect.tl.x, -devRect.tl.y);
     m_matrixState = UpdateAllPrograms;
 
-    // cout << space << " ---> rect=" << devRect << " texture=" << e->texture << " fbo=" << m_fbo
+    // cout << " ---> rect=" << devRect << " texture=" << e->texture << " fbo=" << m_fbo
     //      << " status=" << hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << " ok=" << GL_FRAMEBUFFER_COMPLETE
     //      << " " << m_proj << endl;
 
@@ -645,7 +667,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glViewport(0, 0, expandedWidth.width(), expandedWidth.height());
-        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), vec2(1/expandedWidth.width(), 0));
+        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), expandedWidth.size(), devRect.size(), vec2(1/expandedWidth.width(), 0));
         m_texturePool.release(tmpTex);
     }
 
@@ -722,10 +744,10 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            float height = m_vertices[e->vboOffset + 8 + 3].y - m_vertices[e->vboOffset + 8].y;
-            // float width = m_vertices[e->vboOffset + 8 + 3].x - m_vertices[e->vboOffset + 8].x;
-            // cout << " - radius: " << blurNode->radius() << " size=" << width << "x" << height << endl;
-            drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), vec2(0, 0/height));
+            vec2 textureSize = m_vertices[e->vboOffset + 4 + 3] - m_vertices[e->vboOffset + 4] + 2.0;
+            vec2 renderSize = m_vertices[e->vboOffset + 8 + 3] - m_vertices[e->vboOffset + 8];
+            // cout << " - radius: " << blurNode->radius() << " textureSize=" << textureSize << ", renderSize=" << renderSize << endl;
+            drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), renderSize, textureSize, vec2(0, 1/renderSize.y));
             m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
