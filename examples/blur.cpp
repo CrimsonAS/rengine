@@ -24,7 +24,7 @@ public:
         a->setDirection(Animation::Alternate);
         a->setIterations(-1);
         a->keyFrames.times() << 0 << 1;
-        a->keyFrames.addValues<float, BlurNode_setRadius>() << 0 << 100;
+        a->keyFrames.addValues<float, BlurNode_setRadius>() << 0 << 7;
         animationManager()->startAnimation(a);
 
         mat4 matrix = mat4::translate2D(w2, h2)

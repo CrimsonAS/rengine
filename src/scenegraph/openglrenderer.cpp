@@ -100,42 +100,48 @@ void main() {                                   \n\
 // ### Naive implementation with a lot of room for improvement...
 //
 // Compatibility wise, there are several older and lower-end chips that do not
-// support using a uniform in a loop-condition. This is not mandated by the
+// support using a uniform in a loop condition. This is not mandated by the
 // GLSL spec, so it won't work everywhere.
-//
-// Long-term, the implementation should be done like this.. The spec mandates
-// at least 8 varyings, so with that we can pre-generate up to 8 sample
-// points. We can further rely on linear sampling to make two samples in one
-// go using the correct weights. Based on that, we can create unique shaders
-// 1, 2, 3, 4, 5, 6 and 7 samples. That corresponds to 3x3 to 15x15 blur
-// kernels. If more are needed, we can run the blur filter multiple times as
-// multiple passes of the right deviation is equivalent to one larger blur.
-// The loop could be unrolled in each case and the weights precomputed, so the
-// frag shader only grabs a sample from a known location, multiplies the
-// weight and sums it all up.
 
+static const char *vsh_es_layer_blur =
+RENGINE_GLSL_HEADER
+"\
+attribute highp vec2 aV;                                            \n\
+attribute highp vec2 aT;                                            \n\
+uniform highp mat4 m;                                               \n\
+uniform int radius;                                                 \n\
+uniform highp vec2 step;                                            \n\
+varying highp vec2 vT;                                              \n\
+void main() {                                                       \n\
+    gl_Position = m * vec4(aV, 0, 1);                               \n\
+    highp vec2 rs = float(radius) * step;                           \n\
+    vT = (aT - rs) / (1.0 - 2.0 *rs);                               \n\
+}                                                                   \n\
+";
 
 static const char *fsh_es_layer_blur =
 RENGINE_GLSL_HEADER
 "\
-uniform lowp sampler2D t;                                           \n\
-uniform highp vec2 step;                                            \n\
-uniform highp float sigma;                                          \n\
-uniform int radius;                                                 \n\
-varying highp vec2 vT;                                              \n\
-void main() {                                                       \n\
-    highp vec2 rs = float(radius) * step;                           \n\
-    highp vec2 tc = (vT - rs) / (1.0 - 2.0 *rs);                    \n\
-    highp vec4 result = vec4(0);                                    \n\
-    highp float totalWeight = 0.0;                                  \n\
-    for (int i=-radius; i<=radius; ++i) {                           \n\
-        float x = float(i);                                         \n\
-        float w = exp(-(x * x) / (2.0 * sigma * sigma));            \n\
-        result += w * texture2D(t, tc + float(i) * step);           \n\
-        totalWeight += w;                                           \n\
-    }                                                               \n\
-    gl_FragColor = result / totalWeight;                            \n\
-}                                                                   \n\
+uniform lowp sampler2D t;                                                       \n\
+uniform highp vec2 step;                                                        \n\
+uniform highp float sigma;                                                      \n\
+uniform int radius;                                                             \n\
+varying highp vec2 vT;                                                          \n\
+void main() {                                                                   \n\
+    highp float weights = 0.5 * exp(-float(radius*radius) / sigma);             \n\
+    highp vec4 result = weights * texture2D(t, vT - float(radius) * step);      \n\
+    for (int i=-radius+1; i<=radius; i+=2) {                                     \n\
+        highp float p1 = float(i);                                              \n\
+        highp float w1 = exp(-(p1 * p1) / sigma);                               \n\
+        highp float p2 = float(i+1);                                            \n\
+        highp float w2 = exp(-(p2 * p2) / sigma);                               \n\
+        highp float w = w1 + w2;                                                \n\
+        highp float p = (p1 * w1 + p2 * w2) / w;                                \n\
+        result += w * texture2D(t, vT + float(i) * step);                       \n\
+        weights += w;                                                           \n\
+    }                                                                           \n\
+    gl_FragColor = result / weights;                                            \n\
+}                                                                               \n\
 ";
 
 OpenGLRenderer::OpenGLRenderer()
@@ -228,7 +234,7 @@ void OpenGLRenderer::initialize()
     prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
 
     // Blur shader
-    prog_blur.initialize(vsh_es_layer, fsh_es_layer_blur, attrsVT);
+    prog_blur.initialize(vsh_es_layer_blur, fsh_es_layer_blur, attrsVT);
     prog_blur.matrix = prog_blur.resolve("m");
     prog_blur.step = prog_blur.resolve("step");
     prog_blur.radius = prog_blur.resolve("radius");
@@ -310,7 +316,8 @@ void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, con
 
     glUniform1i(prog_blur.radius, radius);
     glUniform2f(prog_blur.step, step.x, step.y);
-    glUniform1f(prog_blur.sigma, 0.3 * radius + 0.8);
+    float sigma = 0.3 * radius + 0.8;
+    glUniform1f(prog_blur.sigma, sigma * sigma * 2.0);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
     glBindTexture(GL_TEXTURE_2D, texId);
