@@ -127,20 +127,23 @@ uniform highp vec2 step;                                                        
 uniform highp float sigma;                                                      \n\
 uniform int radius;                                                             \n\
 varying highp vec2 vT;                                                          \n\
+highp float gauss(float x) { return exp(-(x*x)/sigma); }                        \n\
 void main() {                                                                   \n\
-    highp float weights = 0.5 * exp(-float(radius*radius) / sigma);             \n\
+    highp float r = float(radius);                                              \n\
+    highp float weights = 0.5 * gauss(r);                                       \n\
     highp vec4 result = weights * texture2D(t, vT - float(radius) * step);      \n\
-    for (int i=-radius+1; i<=radius; i+=2) {                                     \n\
+    for (int i=-radius+1; i<=radius; i+=2) {                                    \n\
         highp float p1 = float(i);                                              \n\
-        highp float w1 = exp(-(p1 * p1) / sigma);                               \n\
+        highp float w1 = gauss(p1);                                             \n\
         highp float p2 = float(i+1);                                            \n\
-        highp float w2 = exp(-(p2 * p2) / sigma);                               \n\
+        highp float w2 = gauss(p2);                                             \n\
         highp float w = w1 + w2;                                                \n\
         highp float p = (p1 * w1 + p2 * w2) / w;                                \n\
-        result += w * texture2D(t, vT + float(i) * step);                       \n\
+        result += w * texture2D(t, vT + p * step);                              \n\
         weights += w;                                                           \n\
     }                                                                           \n\
     gl_FragColor = result / weights;                                            \n\
+    gl_FragColor = texture2D(t, vT);                     \n\
 }                                                                               \n\
 ";
 
@@ -559,7 +562,6 @@ static void rengine_create_texture(int id, int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 }
 
@@ -723,7 +725,7 @@ void OpenGLRenderer::render(Element *first, Element *last)
             float height = m_vertices[e->vboOffset + 8 + 3].y - m_vertices[e->vboOffset + 8].y;
             // float width = m_vertices[e->vboOffset + 8 + 3].x - m_vertices[e->vboOffset + 8].x;
             // cout << " - radius: " << blurNode->radius() << " size=" << width << "x" << height << endl;
-            drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), vec2(0, 1/height));
+            drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), vec2(0, 0/height));
             m_texturePool.release(e->texture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);

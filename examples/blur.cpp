@@ -17,7 +17,7 @@ public:
         float h2 = size.y / 2.0f;
         float s2 = std::min(w2, h2);
 
-        BlurNode *blurNode = BlurNode::create();
+        BlurNode *blurNode = BlurNode::create(3);
 
         AnimationClosure<BlurNode> *a = new AnimationClosure<BlurNode>(blurNode);
         a->setDuration(2);
@@ -25,7 +25,7 @@ public:
         a->setIterations(-1);
         a->keyFrames.times() << 0 << 1;
         a->keyFrames.addValues<float, BlurNode_setRadius>() << 0 << 7;
-        animationManager()->startAnimation(a);
+        // animationManager()->startAnimation(a);
 
         mat4 matrix = mat4::translate2D(w2, h2)
                  * mat4::scale2D(s2, s2);
