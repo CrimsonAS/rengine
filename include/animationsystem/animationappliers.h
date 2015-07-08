@@ -32,4 +32,10 @@ struct BlurNode_setRadius {
     }
 };
 
+struct ShadowNode_setRadius {
+    void operator()(float radius, ShadowNode *node) {
+        node->setRadius(int(radius));
+    }
+};
+
 RENGINE_END_NAMESPACE

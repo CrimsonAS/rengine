@@ -149,11 +149,21 @@ void main() {                                                                   
 }                                                                               \n\
 ";
 
-/*
-
+static const char *fsh_es_layer_shadow =
+RENGINE_GLSL_HEADER
+"\
+uniform lowp sampler2D t;                                                       \n\
+uniform highp vec4 color;                                                       \n\
+uniform highp vec4 dims;                                                        \n\
+uniform highp vec2 step;                                                        \n\
+uniform highp float sigma;                                                      \n\
+uniform int radius;                                                             \n\
+varying highp vec2 vT;                                                          \n\
+highp float gauss(float x) { return exp(-(x*x)/sigma); }                        \n\
+void main() {                                                                   \n\
     highp float r = float(radius);                                              \n\
     highp float weights = 0.5 * gauss(r);                                       \n\
-    highp vec4 result = weights * texture2D(t, vT - float(radius) * step);      \n\
+    highp float result = weights * texture2D(t, vT - float(radius) * step).a;   \n\
     for (int i=-radius+1; i<=radius; i+=2) {                                    \n\
         highp float p1 = float(i);                                              \n\
         highp float w1 = gauss(p1);                                             \n\
@@ -161,11 +171,12 @@ void main() {                                                                   
         highp float w2 = gauss(p2);                                             \n\
         highp float w = w1 + w2;                                                \n\
         highp float p = (p1 * w1 + p2 * w2) / w;                                \n\
-        result += w * texture2D(t, vT + p * step);                              \n\
+        result += w * texture2D(t, vT + p * step).a;                            \n\
         weights += w;                                                           \n\
     }                                                                           \n\
-    gl_FragColor = result / weights;                                            \n\
-*/
+    gl_FragColor = color * (result / weights);                                  \n\
+}                                                                               \n\
+";
 
 OpenGLRenderer::OpenGLRenderer()
     : m_numLayeredNodes(0)
@@ -264,6 +275,15 @@ void OpenGLRenderer::initialize()
     prog_blur.sigma = prog_blur.resolve("sigma");
     prog_blur.step = prog_blur.resolve("step");
 
+    // Shadow shader
+    prog_shadow.initialize(vsh_es_layer_blur, fsh_es_layer_shadow, attrsVT);
+    prog_shadow.matrix = prog_shadow.resolve("m");
+    prog_shadow.dims = prog_shadow.resolve("dims");
+    prog_shadow.radius = prog_shadow.resolve("radius");
+    prog_shadow.sigma = prog_shadow.resolve("sigma");
+    prog_shadow.step = prog_shadow.resolve("step");
+    prog_shadow.color = prog_shadow.resolve("color");
+
 #ifdef RENGINE_LOG_INFO
     static bool logged = false;
     if (!logged) {
@@ -349,6 +369,23 @@ void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, con
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
+void OpenGLRenderer::drawShadowQuad(unsigned offset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step, const vec4 &color)
+{
+    activateShader(&prog_shadow);
+    ensureMatrixUpdated(UpdateShadowProgram, &prog_shadow);
+
+    glUniform1i(prog_shadow.radius, radius);
+    glUniform4f(prog_shadow.dims, renderSize.x, renderSize.y, textureSize.x, textureSize.y);
+    float sigma = 0.3 * radius + 0.8;
+    glUniform1f(prog_shadow.sigma, sigma * sigma * 2.0);
+    glUniform2f(prog_shadow.step, step.x, step.y);
+    glUniform4f(prog_shadow.color, color.x, color.y, color.z, color.w);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 void OpenGLRenderer::activateShader(const Program *shader)
 {
     if (shader == m_activeShader)
@@ -404,13 +441,19 @@ void OpenGLRenderer::prepass(Node *n)
             ++m_numLayeredNodes;
         break;
     case Node::OpacityNodeType:
-        if (static_cast<OpacityNode *>(n)->opacity() < 1.0f)
+        if (static_cast<OpacityNode *>(n)->opacity() < 1)
             ++m_numLayeredNodes;
         break;
     case Node::BlurNodeType:
         if (static_cast<BlurNode *>(n)->radius() > 0) {
             ++m_numLayeredNodes;
             m_additionalQuads += 2;
+        }
+        break;
+    case Node::ShadowNodeType:
+        if (static_cast<ShadowNode *>(n)->color().w > 0) {
+            ++m_numLayeredNodes;
+            m_additionalQuads += 3;
         }
         break;
     default:
@@ -494,6 +537,7 @@ void OpenGLRenderer::build(Node *n)
     } return;
 
     // all layered node types take this code path
+    case Node::ShadowNodeType:
     case Node::BlurNodeType:
     case Node::ColorFilterNodeType:
     case Node::OpacityNodeType: {
@@ -501,7 +545,8 @@ void OpenGLRenderer::build(Node *n)
         bool useLayer =
             (n->type() == Node::OpacityNodeType && static_cast<OpacityNode *>(n)->opacity() < 1.0f)
             || (n->type() == Node::ColorFilterNodeType && !static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity())
-            || (n->type() == Node::BlurNodeType && static_cast<BlurNode *>(n)->radius() > 0);
+            || (n->type() == Node::BlurNodeType && static_cast<BlurNode *>(n)->radius() > 0)
+            || (n->type() == Node::ShadowNodeType && static_cast<ShadowNode *>(n)->color().w > 0);
 
         bool storedLayered = m_layered;
         Element *e = 0;
@@ -534,11 +579,14 @@ void OpenGLRenderer::build(Node *n)
             v[3] = box.br;
             m_vertexIndex += 4;
 
-            if (BlurNode *blurNode = Node::from<BlurNode>(n)) {
+            if (n->type() == Node::BlurNodeType || n->type() == Node::ShadowNodeType) {
+                float radius = n->type() == Node::BlurNodeType
+                               ? static_cast<BlurNode *>(n)->radius()
+                               : static_cast<ShadowNode *>(n)->radius();
                 float t1 = box.tl.y - 1;
                 float b1 = box.br.y + 1;
-                vec2 tlr = box.tl - vec2(blurNode->radius());
-                vec2 brr = box.br + vec2(blurNode->radius());
+                vec2 tlr = box.tl - vec2(radius);
+                vec2 brr = box.br + vec2(radius);
                 v[ 4] = vec2(tlr.x, t1);
                 v[ 5] = vec2(tlr.x, b1);
                 v[ 6] = vec2(brr.x, t1);
@@ -548,6 +596,13 @@ void OpenGLRenderer::build(Node *n)
                 v[10] = vec2(brr.x, tlr.y);
                 v[11] = vec2(brr.x, brr.y);
                 m_vertexIndex += 8;
+
+                if (n->type() == Node::ShadowNodeType) {
+                    v[12] = box.tl - 1.0;
+                    v[13] = vec2(box.left() - 1, box.bottom() + 1);
+                    v[14] = vec2(box.right() + 1, box.top() - 1);
+                    v[15] = box.br + 1;
+                }
             }
 
             // We're a nested layer, accumulate the layered bounding box into
@@ -608,13 +663,15 @@ void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d |= e->projection;
     m_layered = true;
 
-    BlurNode *blurNode = Node::from<BlurNode>(e->node);
-
     // Create the FBO
-    rect2d devRect(m_vertices[e->vboOffset], m_vertices[e->vboOffset + 3]);
+    rect2d devRect = boundingRectFor(e->vboOffset);
     assert(devRect.width() >= 0);
     assert(devRect.height() >= 0);
-    if (blurNode) {
+
+    BlurNode *blurNode = Node::from<BlurNode>(e->node);
+    ShadowNode *shadowNode = Node::from<ShadowNode>(e->node);
+
+    if (blurNode || shadowNode) {
         devRect.tl -= 1.0f;
         devRect.br += 1.0f;
     }
@@ -654,10 +711,10 @@ void OpenGLRenderer::renderToLayer(Element *e)
     glClear(GL_COLOR_BUFFER_BIT);
     render(e + 1, e + e->groupSize + 1);
 
-    if (blurNode) {
+    if (blurNode || shadowNode) {
         int tmpTex = e->texture;
         e->texture = m_texturePool.acquire();
-        rect2d expandedWidth(m_vertices[e->vboOffset + 4], m_vertices[e->vboOffset + 4 + 3]);
+        rect2d expandedWidth = boundingRectFor(e->vboOffset + 4);
         m_proj = mat4::scale2D(1.0, -1.0)
                  * mat4::translate2D(-1.0, 1.0)
                  * mat4::scale2D(2.0f / expandedWidth.width(), -2.0f / expandedWidth.height())
@@ -667,8 +724,13 @@ void OpenGLRenderer::renderToLayer(Element *e)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
         glClear(GL_COLOR_BUFFER_BIT);
         glViewport(0, 0, expandedWidth.width(), expandedWidth.height());
-        drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), expandedWidth.size(), devRect.size(), vec2(1/expandedWidth.width(), 0));
-        m_texturePool.release(tmpTex);
+        if (blurNode) {
+            drawBlurQuad(e->vboOffset + 4, tmpTex, blurNode->radius(), expandedWidth.size(), devRect.size(), vec2(1/expandedWidth.width(), 0));
+            m_texturePool.release(tmpTex);
+        } else if (shadowNode) {
+            drawShadowQuad(e->vboOffset + 4, tmpTex, shadowNode->radius(), expandedWidth.size(), devRect.size(), vec2(1/expandedWidth.width(), 0), vec4(0, 0, 0, 1));
+            e->sourceTexture = tmpTex;
+        }
     }
 
     // Reset the GL state..
@@ -744,11 +806,26 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            vec2 textureSize = m_vertices[e->vboOffset + 4 + 3] - m_vertices[e->vboOffset + 4];
-            vec2 renderSize = m_vertices[e->vboOffset + 8 + 3] - m_vertices[e->vboOffset + 8];
+            vec2 textureSize = boundingRectFor(e->vboOffset + 4).size();
+            vec2 renderSize = boundingRectFor(e->vboOffset + 8).size();
             // cout << " - radius: " << blurNode->radius() << " textureSize=" << textureSize << ", renderSize=" << renderSize << endl;
             drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), renderSize, textureSize, vec2(0, 1/renderSize.y));
             m_texturePool.release(e->texture);
+        } else if (e->node->type() == Node::ShadowNodeType && e->layered) {
+            // cout << "---> shadow texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
+            ShadowNode *shadowNode = static_cast<ShadowNode *>(e->node);
+            vec2 textureSize = boundingRectFor(e->vboOffset + 4).size();
+            vec2 renderSize = boundingRectFor(e->vboOffset + 8).size();
+            mat4 storedProj = m_proj;
+            m_proj = m_proj * mat4::translate2D(std::round(shadowNode->offset().x), std::round(shadowNode->offset().y));
+            m_matrixState |= UpdateShadowProgram;
+            // cout << " - radius: " << shadowNode->radius() << " textureSize=" << textureSize << ", renderSize=" << renderSize << endl;
+            drawShadowQuad(e->vboOffset + 8, e->texture, shadowNode->radius(), renderSize, textureSize, vec2(0, 1/renderSize.y), shadowNode->color());
+            m_proj = storedProj;
+            m_matrixState |= UpdateShadowProgram;
+            drawTextureQuad(e->vboOffset + 12, e->sourceTexture);
+            m_texturePool.release(e->texture);
+            m_texturePool.release(e->sourceTexture);
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << endl;
@@ -791,7 +868,7 @@ bool OpenGLRenderer::render()
     //                    << m_numRectangleNodes << " rects, "
     //                    << m_numTransformNodes << " xforms, "
     //                    << m_numTransformNodesWith3d << " xforms3D, "
-    //                    << m_numLayeredNodes << " opacites, "
+    //                    << m_numLayeredNodes << " layered nodes (opacity, colorfilter, blur or shadow), "
     //                    << vertexCount * sizeof(vec2) << " bytes (" << vertexCount << " vertices), "
     //                    << elementCount * sizeof(Element) << " bytes (" << elementCount << " elements)"
     //                    << endl;

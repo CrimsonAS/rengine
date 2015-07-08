@@ -68,8 +68,9 @@ public:
         Node *node;
         unsigned vboOffset;         // offset into vbo for flattened, rect and layer nodes
         float z;                    // only valid when 'projection' is set
-        unsigned texture;           // only valid during rendering when 'flattened' is set.
-        unsigned groupSize : 29;    // The size of this group, used with 'projection' and 'flattened'. Packed to ft into 32-bit
+        unsigned texture;           // only valid during rendering when 'layered' is set.
+        unsigned sourceTexture;     // only valid during rendering when 'layered' is set and we have a shadow node
+        unsigned groupSize : 29;    // The size of this group, used with 'projection' and 'layered'. Packed to ft into 32-bit
                                     // The groupSize is the number of nodes inside the group, excluding the parent.
         unsigned projection : 1;    // 3d subtree
         unsigned layered : 1;       // as in flatten the subtree into a single texture, not the Layer class :p
@@ -85,7 +86,8 @@ public:
         UpdateLayerProgram          = 0x02,
         UpdateAlphaLayerProgram     = 0x04,
         UpdateColorFilterProgram    = 0x08,
-        UpdateBlurProgram     = 0x10,
+        UpdateBlurProgram           = 0x10,
+        UpdateShadowProgram         = 0x20,
         UpdateAllPrograms           = 0xffffffff
     };
 
@@ -104,10 +106,12 @@ public:
     void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0);
     void drawColorFilterQuad(unsigned bufferOffset, GLuint texId, const mat4 &cm);
     void drawBlurQuad(unsigned bufferOffset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step);
+    void drawShadowQuad(unsigned bufferOffset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step, const vec4 &color);
     void activateShader(const Program *shader);
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
     void renderToLayer(Element *e);
+    rect2d boundingRectFor(unsigned vertexOffset) const { return rect2d(m_vertices[vertexOffset], m_vertices[vertexOffset + 3]); }
 
     void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
 
@@ -129,6 +133,9 @@ public:
         int sigma;
         int step;
     } prog_blur;
+    struct ShadowProgram : public BlurProgram {
+        int color;
+    } prog_shadow;
 
     unsigned m_numLayeredNodes;
     unsigned m_numTextureNodes;

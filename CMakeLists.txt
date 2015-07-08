@@ -115,6 +115,7 @@ add_rengine_example(layeredopacity)
 add_rengine_example(benchmark_rectangles)
 add_rengine_example(filters)
 add_rengine_example(blur)
+add_rengine_example(shadow)
 
 add_rengine_test(node)
 add_rengine_test(mathtypes)

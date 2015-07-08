@@ -479,10 +479,11 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode);
 
-    static ShadowNode *create(unsigned radius, const vec2 &offset) {
+    static ShadowNode *create(unsigned radius, const vec2 &offset, const vec4 &color) {
         auto node = create();
         node->setRadius(radius);
         node->setOffset(offset);
+        node->setColor(color);
         return node;
     }
 
