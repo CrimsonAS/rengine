@@ -744,7 +744,7 @@ void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->node->type() == Node::BlurNodeType && e->layered) {
             // cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
-            vec2 textureSize = m_vertices[e->vboOffset + 4 + 3] - m_vertices[e->vboOffset + 4] + 2.0;
+            vec2 textureSize = m_vertices[e->vboOffset + 4 + 3] - m_vertices[e->vboOffset + 4];
             vec2 renderSize = m_vertices[e->vboOffset + 8 + 3] - m_vertices[e->vboOffset + 8];
             // cout << " - radius: " << blurNode->radius() << " textureSize=" << textureSize << ", renderSize=" << renderSize << endl;
             drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), renderSize, textureSize, vec2(0, 1/renderSize.y));
