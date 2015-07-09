@@ -125,7 +125,7 @@ struct vec4 {
     vec4(const vec3 &v, float w = 0) : x(v.x), y(v.y), z(v.z), w(w) { }
 
     vec4 operator*(const vec4 &v) const { return vec4(x*v.x, y*v.y, z*v.z, w*v.w); }
-    vec4 operator/(const vec4 &v) const { return vec4(x/v.x, y/v.y, z/v.z, w*v.w); }
+    vec4 operator/(const vec4 &v) const { return vec4(x/v.x, y/v.y, z/v.z, w/v.w); }
     vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
     vec4 operator-(const vec4 &o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
     vec4 operator-() const { return vec4(-x, -y, -z, -w); }
