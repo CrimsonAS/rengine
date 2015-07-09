@@ -10,7 +10,7 @@ public:
 
         renderer()->setFillColor(vec4(1.0, 1.0, 1.0, 1));
 
-        Layer *layer = rengine_loadImage(renderer(), "walker.png");
+        Texture *layer = rengine_loadImage(renderer(), "walker.png");
 
         vec2 size = surface()->size();
         float w2 = size.x / 2.0f;
@@ -37,7 +37,7 @@ public:
                        << RectangleNode::create(rect2d::fromXywh( 0.5, -0.5,  0.3, 0.3), vec4(1, 1, 0, 1))
                        << RectangleNode::create(rect2d::fromXywh( 0.5, -0.15, 0.3, 0.3), vec4(0, 1, 1, 1))
                        << RectangleNode::create(rect2d::fromXywh( 0.5,  0.2,  0.3, 0.3), vec4(1, 0, 1, 1))
-                       << LayerNode::create(rect2d::fromXywh(-0.8, -0.5, 0.65, 1.0), layer)
+                       << TextureNode::create(rect2d::fromXywh(-0.8, -0.5, 0.65, 1.0), layer)
                      )
                 );
   }

@@ -89,7 +89,7 @@ public:
     const char *name() const override { return "ColorsAndPositions"; }
 };
 
-class LayersOnViewportEdge : public StaticRenderTest
+class TexturesOnViewportEdge : public StaticRenderTest
 {
 public:
     Node *build() override {
@@ -140,13 +140,13 @@ public:
         check_pixel(r-1, b-1, vec4(0, 0, 0, 1));
     }
 
-    const char *name() const override { return "LayersOnViewportEdge"; }
+    const char *name() const override { return "TexturesOnViewportEdge"; }
 };
 
-class OpacityLayers : public StaticRenderTest
+class OpacityTextures : public StaticRenderTest
 {
 public:
-    const char *name() const override { return "OpacityLayers"; }
+    const char *name() const override { return "OpacityTextures"; }
     Node *build() override {
         Node *root = Node::create();
 
@@ -212,10 +212,10 @@ public:
 int main(int argc, char *argv[])
 {
     TestBase testBase;
-    // testBase.leaveRunning = true;
+// testBase.leaveRunning = true;
     testBase.addTest(new ColorsAndPositions());
-    testBase.addTest(new LayersOnViewportEdge());
-    testBase.addTest(new OpacityLayers());
+    testBase.addTest(new TexturesOnViewportEdge());
+    testBase.addTest(new OpacityTextures());
 
     std::unique_ptr<Backend> backend(Backend::get());
     std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));

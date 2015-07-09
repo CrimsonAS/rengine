@@ -40,10 +40,10 @@ public:
     virtual ~Renderer() {}
 
     /*!
-        Creates a layer from image data which is compatible with this
+        Creates a texture from image data which is compatible with this
         renderer. The image data is 32-bit RGBA or RGBx, tightly packed.
      */
-    virtual Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data) = 0;
+    virtual Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data) = 0;
 
     Node *sceneRoot() const { return m_sceneRoot; }
     void setSceneRoot(Node *root) { m_sceneRoot = root; }

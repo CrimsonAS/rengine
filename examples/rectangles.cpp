@@ -52,7 +52,7 @@ public:
             depthAdjustment->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
                                        * mat4::translate(s.x * 0.33 + 2, 0, 0)
                                        * mat4::rotateAroundY(M_PI/2.0));
-            *depthAdjustment << LayerNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
+            *depthAdjustment << TextureNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
             rotationNode->append(depthAdjustment);
         }
 
@@ -69,7 +69,7 @@ public:
     }
 
 private:
-    Layer *m_layer;
+    Texture *m_layer;
 };
 
 RENGINE_MAIN(MyWindow)

@@ -10,7 +10,7 @@ using namespace std;
 
 RENGINE_BEGIN_NAMESPACE
 
-inline Layer *rengine_loadImage(Renderer *renderer, const char *file)
+inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
 {
     // read the image...
     int w, h, n;
@@ -38,7 +38,7 @@ inline Layer *rengine_loadImage(Renderer *renderer, const char *file)
             p[2] = (unsigned(p[2]) * a) / 255;
         }
 
-    Layer *layer = renderer->createLayerFromImageData(vec2(w,h), Layer::RGBA_32, data);
+    Texture *layer = renderer->createTextureFromImageData(vec2(w,h), Texture::RGBA_32, data);
     assert(layer);
     STBI_FREE(data);
     return layer;

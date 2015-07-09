@@ -43,7 +43,7 @@ public:
                    << RectangleNode::create(rect2d::fromXywh(300, 0, 90, 90), vec4(0.1, 0.8, 0.8, 1))
                    << RectangleNode::create(rect2d::fromXywh(400, 0, 90, 90), vec4(0.1, 0.1, 0.8, 1))
                    << RectangleNode::create(rect2d::fromXywh(500, 0, 90, 90), vec4(0.8, 0.1, 0.8, 1))
-                   << LayerNode::create(rect2d::fromXywh(600, 0, 90, 90), m_layer)
+                   << TextureNode::create(rect2d::fromXywh(600, 0, 90, 90), m_layer)
                   )
              );
     }
@@ -164,7 +164,7 @@ public:
         return root;
     }
 
-    Layer *m_layer;
+    Texture *m_layer;
 };
 
 RENGINE_MAIN(MyWindow)

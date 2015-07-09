@@ -27,43 +27,53 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-typedef void* BufferHandle;
-
-class Layer {
+class OpenGLTexture : public Texture
+{
 public:
+    OpenGLTexture()
+        : m_id(0)
+        , m_format(RGBA_32)
+    {
+    }
 
-    virtual ~Layer() { }
-
-    enum Format {
-        AlphaFormatMask = 0x1000,
-        RGBA_32 = 1 | AlphaFormatMask,
-        RGBx_32 = 2,
-    };
+    ~OpenGLTexture()
+    {
+        glDeleteTextures(1, &m_id);
+    }
 
     /*!
        The size of the surface in pixels
      */
-    virtual vec2 size() const = 0;
+    vec2 size() const { return m_size; }
 
     /*!
         Returns the format of this surface.
      */
-    virtual Format format() const = 0;
-
-    /*!
-        Returns true if the surface has alpha
-     */
-    bool hasAlpha() const { return (format() & AlphaFormatMask) != 0; }
+    Format format() const { return m_format; }
+    void setFormat(Format format) { m_format = format; }
 
     /*!
         Returns the texture id of the surface
      */
-    virtual GLuint textureId() const = 0;
+    GLuint textureId() const { return m_id; }
 
-    /*!
-        Returns the native buffer handle for this surface.
-     */
-    virtual BufferHandle bufferHandle() const { return 0; }
+    void upload(int width, int height, void *data)
+    {
+        if (m_id == 0) {
+            glGenTextures(1, &m_id);
+            glBindTexture(GL_TEXTURE_2D, m_id);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, m_id);
+        }
+        m_size = vec2(width, height);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    }
+
+private:
+    GLuint m_id;
+    Format m_format;
+    vec2 m_size;
 
 };
 

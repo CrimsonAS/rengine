@@ -37,7 +37,7 @@ public:
     enum Type {
         BasicNodeType = 0,
         RectangleNodeType,
-        LayerNodeType,
+        TextureNodeType,
         TransformNodeType,
         OpacityNodeType,
         ColorFilterNodeType,
@@ -230,7 +230,7 @@ public:
         case Node::OpacityNodeType: std::cout << "OpacityNode"; break;
         case Node::TransformNodeType: std::cout << "TransormNode"; break;
         case Node::RectangleNodeType: std::cout << "RectangleNode"; break;
-        case Node::LayerNodeType: std::cout << "LayerNodeType"; break;
+        case Node::TextureNodeType: std::cout << "TextureNodeType"; break;
         default: std::cout << "Node(type=" << n->type() << ")"; break;
         }
         std::cout << "(" << n << ") parent=" << n->parent() << " childCount=" << n->childCount() << std::endl;
@@ -389,33 +389,33 @@ protected:
 };
 
 
-class LayerNode : public Node {
+class TextureNode : public Node {
 public:
-    enum { StaticType = LayerNodeType };
-    const Layer *layer() const { return m_layer; }
-    void setLayer(const Layer *layer) { m_layer = layer; }
+    enum { StaticType = TextureNodeType };
+    const Texture *layer() const { return m_layer; }
+    void setTexture(const Texture *layer) { m_layer = layer; }
 
     const rect2d &geometry() const { return m_geometry; }
     void setGeometry(const rect2d &rect) { m_geometry = rect; }
 
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(LayerNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode);
 
-    static LayerNode *create(const rect2d &geometry, const Layer *layer) {
+    static TextureNode *create(const rect2d &geometry, const Texture *layer) {
         auto node = create();
         node->setGeometry(geometry);
-        node->setLayer(layer);
+        node->setTexture(layer);
         return node;
     }
 
 protected:
-    LayerNode()
-        : Node(LayerNodeType)
+    TextureNode()
+        : Node(TextureNodeType)
         , m_layer(0)
     {
     }
 
-    const Layer *m_layer;
+    const Texture *m_layer;
     rect2d m_geometry;
 };
 

@@ -73,7 +73,7 @@ public:
         unsigned groupSize : 29;    // The size of this group, used with 'projection' and 'layered'. Packed to ft into 32-bit
                                     // The groupSize is the number of nodes inside the group, excluding the parent.
         unsigned projection : 1;    // 3d subtree
-        unsigned layered : 1;       // as in flatten the subtree into a single texture, not the Layer class :p
+        unsigned layered : 1;       // subtree is flattened into a layer (texture)
         unsigned completed : 1;     // used during the actual rendering to know we're done with it
 
         bool operator<(const Element &e) const { return e.completed || z < e.z; }
@@ -83,8 +83,8 @@ public:
     };
     enum ProgramUpdate {
         UpdateSolidProgram          = 0x01,
-        UpdateLayerProgram          = 0x02,
-        UpdateAlphaLayerProgram     = 0x04,
+        UpdateTextureProgram        = 0x02,
+        UpdateAlphaTextureProgram   = 0x04,
         UpdateColorFilterProgram    = 0x08,
         UpdateBlurProgram           = 0x10,
         UpdateShadowProgram         = 0x20,
@@ -94,7 +94,7 @@ public:
     OpenGLRenderer();
     ~OpenGLRenderer();
 
-    Layer *createLayerFromImageData(const vec2 &size, Layer::Format format, void *data);
+    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data);
     void initialize();
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
@@ -115,12 +115,12 @@ public:
 
     void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
 
-    struct LayerProgram : public Program {
+    struct TextureProgram : public Program {
         int matrix;
     } prog_layer;
-    struct AlphaLayerProgram : public Program {
+    struct AlphaTextureProgram : public Program {
         int alpha;
-    } prog_alphaLayer;
+    } prog_alphaTexture;
     struct SolidProgram : public Program {
         int color;
     } prog_solid;

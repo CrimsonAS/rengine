@@ -21,7 +21,7 @@ int main(int argc, char **argv) {                       \
     RENGINE_ALLOCATION_POOL(Node, 256);                 \
     RENGINE_ALLOCATION_POOL(TransformNode, 256);        \
     RENGINE_ALLOCATION_POOL(RectangleNode, 256);        \
-    RENGINE_ALLOCATION_POOL(LayerNode, 256);            \
+    RENGINE_ALLOCATION_POOL(TextureNode, 256);            \
     RENGINE_ALLOCATION_POOL(OpacityNode, 64);           \
     RENGINE_ALLOCATION_POOL(ColorFilterNode, 16);       \
     RENGINE_ALLOCATION_POOL(BlurNode, 16);              \

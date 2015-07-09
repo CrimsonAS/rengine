@@ -21,13 +21,13 @@ class SurfaceInterface;
 // 'scenegraph' subdir
 class Node;
 class OpacityNode;
-class LayerNode;
+class TextureNode;
 class TransformNode;
 class ColorFilterNode;
 class Renderer;
-class Layer;
+class Texture;
 class OpenGLRenderer;
-class OpenGLTextureLayer;
+class OpenGLTextureTexture;
 class OpenGLShaderProgram;
 
 // 'animation' subdir
@@ -48,11 +48,11 @@ RENGINE_END_NAMESPACE
 
 #include "scenegraph/opengl.h"
 #include "scenegraph/node.h"
-#include "scenegraph/layer.h"
+#include "scenegraph/texture.h"
 #include "scenegraph/renderer.h"
 #include "scenegraph/openglshaderprogram.h"
 #include "scenegraph/openglrenderer.h"
-#include "scenegraph/opengltexturelayer.h"
+#include "scenegraph/opengltexture.h"
 
 #include "animationsystem/animation.h"
 #include "animationsystem/animationappliers.h"

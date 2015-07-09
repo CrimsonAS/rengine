@@ -42,9 +42,9 @@ lots and lots...
  - OpenGL renderer
    - antialiased edges -> rely on MSAA for now, though this is slow on intel chips
    - filter nodes (maybe drop blur/dropshadow for now since they are expensive as hell)
-      -> provide effects both as 'live' in the tree and 'static' as a means of producing a Layer instance.
+      -> provide effects both as 'live' in the tree and 'static' as a means of producing a Texture instance.
    - caching of non-changing flattened subtrees to improve performance
- - add more properties to LayerNode
+ - add more properties to TextureNode
    - opacity
    - border and rounded edges? -> lets not for now...
  - API

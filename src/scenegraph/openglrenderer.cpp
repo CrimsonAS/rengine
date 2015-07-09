@@ -220,9 +220,9 @@ bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned *bytes)
     return true;
 }
 
-Layer *OpenGLRenderer::createLayerFromImageData(const vec2 &size, Layer::Format format, void *data)
+Texture *OpenGLRenderer::createTextureFromImageData(const vec2 &size, Texture::Format format, void *data)
 {
-    OpenGLTextureLayer *layer = new OpenGLTextureLayer();
+    OpenGLTexture *layer = new OpenGLTexture();
     layer->setFormat(format);
     layer->upload(size.x, size.y, data);
     return layer;
@@ -253,9 +253,9 @@ void OpenGLRenderer::initialize()
     prog_layer.matrix = prog_layer.resolve("m");
 
     // Alpha layer shader
-    prog_alphaLayer.initialize(vsh_es_layer, fsh_es_layer_alpha, attrsVT);
-    prog_alphaLayer.matrix = prog_alphaLayer.resolve("m");
-    prog_alphaLayer.alpha = prog_alphaLayer.resolve("alpha");
+    prog_alphaTexture.initialize(vsh_es_layer, fsh_es_layer_alpha, attrsVT);
+    prog_alphaTexture.matrix = prog_alphaTexture.resolve("m");
+    prog_alphaTexture.alpha = prog_alphaTexture.resolve("alpha");
 
     // Solid color shader...
     prog_solid.initialize(vsh_es_solid, fsh_es_solid, attrsV);
@@ -341,11 +341,11 @@ void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacit
 {
     if (opacity == 1) {
         activateShader(&prog_layer);
-        ensureMatrixUpdated(UpdateLayerProgram, &prog_layer);
+        ensureMatrixUpdated(UpdateTextureProgram, &prog_layer);
     } else {
-        activateShader(&prog_alphaLayer);
-        ensureMatrixUpdated(UpdateAlphaLayerProgram, &prog_alphaLayer);
-        glUniform1f(prog_alphaLayer.alpha, opacity);
+        activateShader(&prog_alphaTexture);
+        ensureMatrixUpdated(UpdateAlphaTextureProgram, &prog_alphaTexture);
+        glUniform1f(prog_alphaTexture.alpha, opacity);
     }
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *) (offset * sizeof(vec2)));
@@ -424,7 +424,7 @@ void OpenGLRenderer::prepass(Node *n)
 {
     n->preprocess();
     switch (n->type()) {
-    case Node::LayerNodeType:
+    case Node::TextureNodeType:
         ++m_numTextureNodes;
         break;
     case Node::RectangleNodeType:
@@ -468,10 +468,10 @@ void OpenGLRenderer::prepass(Node *n)
 void OpenGLRenderer::build(Node *n)
 {
     switch (n->type()) {
-    case Node::LayerNodeType:
+    case Node::TextureNodeType:
     case Node::RectangleNodeType: {
-        const rect2d &geometry = n->type() == Node::LayerNodeType
-                                 ? static_cast<LayerNode *>(n)->geometry()
+        const rect2d &geometry = n->type() == Node::TextureNodeType
+                                 ? static_cast<TextureNode *>(n)->geometry()
                                  : static_cast<RectangleNode *>(n)->geometry();
         Element *e = m_elements + m_elementIndex;
         e->node = n;
@@ -542,17 +542,17 @@ void OpenGLRenderer::build(Node *n)
     case Node::ColorFilterNodeType:
     case Node::OpacityNodeType: {
 
-        bool useLayer =
+        bool useTexture =
             (n->type() == Node::OpacityNodeType && static_cast<OpacityNode *>(n)->opacity() < 1.0f)
             || (n->type() == Node::ColorFilterNodeType && !static_cast<ColorFilterNode *>(n)->colorMatrix().isIdentity())
             || (n->type() == Node::BlurNodeType && static_cast<BlurNode *>(n)->radius() > 0)
             || (n->type() == Node::ShadowNodeType && static_cast<ShadowNode *>(n)->color().w > 0);
 
-        bool storedLayered = m_layered;
+        bool storedTextureed = m_layered;
         Element *e = 0;
         rect2d storedBox = m_layerBoundingBox;
 
-        if (useLayer) {
+        if (useTexture) {
             m_layered = true;
             e = m_elements + m_elementIndex++;
             e->node = n;
@@ -567,7 +567,7 @@ void OpenGLRenderer::build(Node *n)
             build(c);
 
         if (e) {
-            m_layered = storedLayered;
+            m_layered = storedTextureed;
             e->groupSize = (m_elements + m_elementIndex) - e - 1;
             // cout << "groupSize of " << e << " is " << e->groupSize << " based on: " << m_elements << " " << m_elementIndex << " " << e << endl;
             e->vboOffset = m_vertexIndex;
@@ -607,7 +607,7 @@ void OpenGLRenderer::build(Node *n)
 
             // We're a nested layer, accumulate the layered bounding box into
             // the stored one..
-            if (storedLayered)
+            if (storedTextureed)
                 storedBox |= m_layerBoundingBox;
 
             m_layerBoundingBox = storedBox;
@@ -655,7 +655,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
 
     // Store current state...
     bool stored3d = m_render3d;
-    bool storedLayered = m_layered;
+    bool storedTextureed = m_layered;
     GLuint storedFbo = m_fbo;
     mat4 storedProjection = m_proj;
     vec2 storedSize = m_surfaceSize;
@@ -742,7 +742,7 @@ void OpenGLRenderer::renderToLayer(Element *e)
     // Reset the old state...
     m_fbo = storedFbo;
     m_render3d = stored3d;
-    m_layered = storedLayered;
+    m_layered = storedTextureed;
     m_proj = storedProjection;
     m_matrixState = UpdateAllPrograms;
     m_surfaceSize = storedSize;
@@ -792,9 +792,9 @@ void OpenGLRenderer::render(Element *first, Element *last)
             // cout << space << "---> rect quad, vbo=" << e->vboOffset
             //      << " " << m_proj * m_vertices[e->vboOffset] << " " << m_proj * m_vertices[e->vboOffset+3] << endl;
             drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
-        } else if (e->node->type() == Node::LayerNodeType) {
+        } else if (e->node->type() == Node::TextureNodeType) {
             // cout << space << "---> texture quad, vbo=" << e->vboOffset << endl;
-            drawTextureQuad(e->vboOffset, static_cast<LayerNode *>(e->node)->layer()->textureId());
+            drawTextureQuad(e->vboOffset, static_cast<TextureNode *>(e->node)->layer()->textureId());
         } else if (e->node->type() == Node::OpacityNodeType && e->layered) {
             // cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << endl;
             drawTextureQuad(e->vboOffset, e->texture, static_cast<OpacityNode *>(e->node)->opacity());
