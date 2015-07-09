@@ -36,7 +36,9 @@ RENGINE_BEGIN_NAMESPACE
 
 // math based on http://www.graficaobscura.com/matrix/index.html
 
-inline mat4 colorMatrix_hue(float radians)
+namespace ColorMatrix {
+
+inline mat4 hue(float radians)
 {
     float mag = sqrt(2.0);
     const float xrs = 1.0 / mag;
@@ -81,12 +83,12 @@ inline mat4 colorMatrix_hue(float radians)
     return imx * imy * mz * isz * M * sz;
 }
 
-inline mat4 colorMatrix_brightness(float v)
+inline mat4 brightness(float v)
 {
     return mat4::scale(v, v, v);
 }
 
-inline mat4 colorMatrix_saturation(float s)
+inline mat4 saturation(float s)
 {
     const float lr = RENGINE_LUMINANCE_RED;
     const float lg = RENGINE_LUMINANCE_GREEN;
@@ -102,12 +104,12 @@ inline mat4 colorMatrix_saturation(float s)
                 0, 0, 0, 1);
 }
 
-inline mat4 colorMatrix_grayscale()
+inline mat4 grayscale()
 {
-    return colorMatrix_saturation(0);
+    return saturation(0);
 }
 
-inline mat4 colorMatrix_contrast(float c)
+inline mat4 contrast(float c)
 {
     float t = (1.0 - c) / 2.0;
     return mat4(c, 0, 0, t,
@@ -119,12 +121,12 @@ inline mat4 colorMatrix_contrast(float c)
 /*!
     inverts the colors. Ideal range for v is 0 to 1.
  */
-inline mat4 colorMatrix_invert(float v)
+inline mat4 invert(float v)
 {
-    return colorMatrix_contrast(1.0 - v * 2.0);
+    return contrast(1.0 - v * 2.0);
 }
 
-inline mat4 colorMatrix_sepia(float v)
+inline mat4 sepia(float v)
 {
     const float iv = 1.0 - v;
     return mat4(iv + v * 0.393 , v * 0.769, v * 0.189, 0,
@@ -133,5 +135,6 @@ inline mat4 colorMatrix_sepia(float v)
                 0, 0, 0, 1);
 }
 
+}
 
 RENGINE_END_NAMESPACE

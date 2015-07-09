@@ -29,42 +29,6 @@
 using namespace rengine;
 using namespace std;
 
-struct ColorFilterNode_saturation {
-    void operator()(double saturation, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_saturation(saturation));
-    }
-};
-
-struct ColorFilterNode_brightness {
-    void operator()(double brightness, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_brightness(brightness));
-    }
-};
-
-struct ColorFilterNode_hue{
-    void operator()(double hue, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_hue(hue));
-    }
-};
-
-struct ColorFilterNode_contrast {
-    void operator()(double contrast, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_contrast(contrast));
-    }
-};
-
-struct ColorFilterNode_invert {
-    void operator()(double invert, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_invert(invert));
-    }
-};
-
-struct ColorFilterNode_sepia {
-    void operator()(double sepia, ColorFilterNode *node) {
-        node->setColorMatrix(colorMatrix_sepia(sepia));
-    }
-};
-
 class MyWindow : public StandardSurfaceInterface
 {
 public:
@@ -101,7 +65,7 @@ public:
             pos += 100;
             Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
-            node->setColorMatrix(colorMatrix_saturation(0.2));
+            node->setColorMatrix(ColorMatrix::saturation(0.2));
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
@@ -117,7 +81,7 @@ public:
             pos += 100;
             Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
-            node->setColorMatrix(colorMatrix_grayscale());
+            node->setColorMatrix(ColorMatrix::grayscale());
             root->append(tree);
         }
 
@@ -140,7 +104,7 @@ public:
             pos += 100;
             Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
-            node->setColorMatrix(colorMatrix_brightness(0.3));
+            node->setColorMatrix(ColorMatrix::brightness(0.3));
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);
@@ -156,7 +120,7 @@ public:
             pos += 100;
             Node *tree = createSubtree(10, pos);
             ColorFilterNode *node = static_cast<ColorFilterNode *>(tree->child());
-            node->setColorMatrix(colorMatrix_hue(1.0));
+            node->setColorMatrix(ColorMatrix::hue(1.0));
             root->append(tree);
 
             AnimationClosure<ColorFilterNode> *anim = new AnimationClosure<ColorFilterNode>(node);

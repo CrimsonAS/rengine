@@ -42,6 +42,7 @@ RENGINE_END_NAMESPACE
 
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
+#include "common/colormatrix.h"
 
 #include "windowsystem/surface.h"
 
@@ -60,7 +61,6 @@ RENGINE_END_NAMESPACE
 
 #include "util/standardsurfaceinterface.h"
 #include "util/maindefine.h"
-#include "util/colormatrix.h"
 
 
 
