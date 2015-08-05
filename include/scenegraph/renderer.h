@@ -83,10 +83,100 @@ public:
     void setFillColor(const vec4 &c) { m_fillColor = c; }
     const vec4 &fillColor() const { return m_fillColor; }
 
+#if 0
+    Texture *createTextureFromSubtree(Node *node, const rect2d &sourceRect);
+    Texture *createTextureWithBlurFromTexture(Texture *texture, int kernelRadius);
+    Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, const vec2 &offset, const vec4 &color);
+    Texture *createTextureWithColorFilterFromTexture(Texture *texture, const mat4 &colorMatrix);
+protected:
+
+    /*!
+        Creates a render target inside the renderer, like an FBO in OpenGL and
+        makes that render target active.
+
+        The render target will have \a size dimensions.
+
+        This function should be used by createTextureFromSubtree and the likes
+        to create temporary render targets.
+
+        This function shall never be called during rendering.
+     */
+    virtual void openRenderTarget(const vec2 &size) = 0;
+
+    /*!
+        Closes the current render target and returns a texture representing it.
+
+        The ownership of the returned texture is transferred to the caller.
+     */
+    virtual Texture *closeRenderTarget() = 0;
+#endif
+
 private:
     Node *m_sceneRoot;
     Surface *m_surface;
     vec4 m_fillColor;
 };
+
+#if 0
+inline Texture *Renderer::createTextureFromSubtree(Node *node, const rect2d &sourceRect)
+{
+    assert(node);
+    assert(!node->parent());
+
+    rect2d rect(floor(sourceRect.tl), ceil(sourceRect.br));
+
+    openRenderTarget(rect.size());
+
+    TransformNode xnode;
+    xnode.setMatrix(mat4::translate2D(-rect.position()));
+    xnode << node;
+
+    Node *oldRoot = sceneRoot();
+    setSceneRoot(&xnode);
+    render();
+    setSceneRoot(oldRoot);
+
+    xnode.remove(node);
+
+    return closeRenderTarget();
+}
+
+inline Texture *createTextureWithBlurFromTexture(Texture *texture, int kernelRadius)
+{
+    assert(kernelRadius > 0);
+    assert(texture);
+
+    BlurNode blurNode;
+    blurNode.setRadius(kernelRadius);
+
+    TextureNode textureNode;
+    textureNode.setTexture(texture);
+    textureNode.setGeometry(rect2d::fromPosSize(vec2(kernelRadius, kernelRadius), texture->size()))
+
+    blurNode.append(&textureNode);
+
+    return createTextureFromSubtree(&blurNode, rect2d(vec2(0, 0), texture->size() + kernelRadius * 2));
+}
+
+inline Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, const vec2 &offset, const vec4 &color)
+{
+    assert(kernelRadius > 0);
+    assert(texture);
+
+    ShadowNode shadowNode;
+    shadowNode.setRadius(kernelRadius);
+    shadowNode.setOffset(offset);
+    shadowNode.setColor(color);
+
+    TextureNode textureNode;
+    textureNode.setTexture(texture);
+    textureNode.setGeometry(rect2d::fromPosSize(vec2(kernelRadius, kernelRadius), texture->size()))
+
+    blurNode.append(&textureNode);
+
+    return createTextureFromSubtree(&blurNode, rect2d(vec2(0, 0), texture->size() + kernelRadius * 2));
+}
+#endif
+
 
 RENGINE_END_NAMESPACE

@@ -311,12 +311,20 @@ struct mat4 {
                     0, 0, 0, 1, Translation2D);
     }
 
+    static mat4 translate2D(const vec2 &d) {
+        return translate2D(d.x, d.y);
+    }
+
 
     static mat4 scale2D(float sx, float sy) {
         return mat4(sx,  0,  0, 0,
                      0, sy,  0, 0,
                      0,  0,  1, 0,
                      0,  0,  0, 1, Scale2D);
+    }
+
+    static mat4 scale2D(const vec2 &s) {
+        return scale2D(s.x, s.y);
     }
 
     static mat4 rotate2D(float radians) {
@@ -438,11 +446,21 @@ public:
 
     vec2 center() const { return (tl + br) / 2.0; }
 
-
-
     vec2 tl;
     vec2 br;
 };
+
+inline vec2 floor(const vec2 &v) { return vec2(std::floor(v.x), std::floor(v.y)); }
+inline vec3 floor(const vec3 &v) { return vec3(std::floor(v.x), std::floor(v.y), std::floor(v.z)); }
+inline vec4 floor(const vec4 &v) { return vec4(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)); }
+
+inline vec2 ceil(const vec2 &v) { return vec2(std::ceil(v.x), std::ceil(v.y)); }
+inline vec3 ceil(const vec3 &v) { return vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
+inline vec4 ceil(const vec4 &v) { return vec4(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w)); }
+
+inline vec2 round(const vec2 &v) { return vec2(std::round(v.x), std::round(v.y)); }
+inline vec3 round(const vec3 &v) { return vec3(std::round(v.x), std::round(v.y), std::round(v.z)); }
+inline vec4 round(const vec4 &v) { return vec4(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w)); }
 
 inline std::ostream &operator<<(std::ostream &o, const vec2 &v) {
     o << "vec2(" << v.x << ", " << v.y << ")";
