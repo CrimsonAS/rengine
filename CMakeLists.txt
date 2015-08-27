@@ -43,14 +43,12 @@ endmacro(add_rengine_test)
 # Resolving libraries
 #
 if (RENGINE_USE_SDL)
-    message("Building with SDL2")
     include(FindPkgConfig)
     pkg_search_module(SDL2 REQUIRED sdl2)
     include_directories(${SDL2_INCLUDE_DIRS})
     # ### TODO: Why is the -L needed here?
     set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib)
 else()
-    message("Building with Qt")
     find_package(Qt5Gui)
 endif()
 
@@ -58,7 +56,6 @@ find_package(OpenGL)
 
 
 if (OPENGL_FOUND)
-    message("OpenGL (Desktop) was detected")
     set(RENGINE_LIBS ${RENGINE_LIBS} ${OPENGL_LIBRARIES})
     add_definitions(-DRENGINE_OPENGL_DESKTOP)
 else()

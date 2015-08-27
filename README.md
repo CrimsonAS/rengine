@@ -43,6 +43,10 @@ lots and lots...
    - border and rounded edges? -> lets not for now...
  - API
    - Be consistent with use of 2D (mat4::translate2D) and 2d (rect2d)
+ - input, both keyboard, touch and mouse
+   - shared input event for touch/pointer
+   - what does the event receiver look like?
+   - How does it fit with the tree
 
 
 overview of the dependencies between source directories
