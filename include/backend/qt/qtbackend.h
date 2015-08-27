@@ -30,28 +30,24 @@
 #include <QOpenGLContext>
 #include <QTimer>
 
-#include "rengine.h"
-
 #if QT_VERSION >= 0x050500
 #define QWINDOW_HAS_REQUEST_UPDATE
 #endif
 
-RENGINE_USE_NAMESPACE;
-using namespace std;
 
 class QtBackend;
 class QtSurface;
 class QtWindow;
 class QtOpenGLContext;
 
-static int argc = 1;
-static const char *argv[] = { "fake_rengine_app" };
-
 class QtBackend : public Backend
 {
+    static int &hack_argc() { static int i = 1; return i; }
+    static char **hack_argv() { static char *v[] = { "rengine_app" }; return v; }
 public:
+
     QtBackend()
-        : app(argc, (char **) argv), exited(false)
+        : app(hack_argc(), hack_argv()), exited(false)
     {
 #ifdef RENGINE_LOG_INFO
         cout << "QtBackend: created..." << endl;
@@ -146,22 +142,13 @@ public:
     SurfaceInterface *iface;
 };
 
-
-
-
-Backend *Backend::get()
-{
-    static QtBackend *singleton = new QtBackend();
-    return singleton;
-}
-
-void QtBackend::processEvents()
+inline void QtBackend::processEvents()
 {
     QCoreApplication::processEvents();
     QCoreApplication::sendPostedEvents(0, QEvent::DeferredDelete);
 }
 
-void QtBackend::run()
+inline void QtBackend::run()
 {
 #ifdef RENGINE_LOG_INFO
     cout << "QtBackend: starting eventloop..." << endl;
@@ -175,14 +162,14 @@ void QtBackend::run()
 #endif
 }
 
-Surface *QtBackend::createSurface(SurfaceInterface *iface)
+inline Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
     QtSurface *s = new QtSurface(iface);
     return s;
 }
 
-Renderer *QtBackend::createRenderer(Surface *surface)
+inline Renderer *QtBackend::createRenderer(Surface *surface)
 {
     assert(surface);
     assert(&static_cast<QtSurface *>(surface)->context == QOpenGLContext::currentContext());
@@ -191,7 +178,7 @@ Renderer *QtBackend::createRenderer(Surface *surface)
     return r;
 }
 
-bool QtWindow::event(QEvent *e)
+inline bool QtWindow::event(QEvent *e)
 {
 #ifdef QWINDOW_HAS_REQUEST_UPDATE
     if (e->type() == QEvent::UpdateRequest) {
@@ -208,15 +195,21 @@ bool QtWindow::event(QEvent *e)
     return QWindow::event(e);
 }
 
-void QtWindow::exposeEvent(QExposeEvent *e)
+inline void QtWindow::exposeEvent(QExposeEvent *e)
 {
     if (isExposed() && isVisible())
         s->iface->onRender();
 }
 
-void QtWindow::resizeEvent(QResizeEvent *e)
+inline void QtWindow::resizeEvent(QResizeEvent *e)
 {
     s->iface->onSizeChange(vec2(width(), height()));
 }
+
+#define RENGINE_DEFINE_BACKEND                         \
+    Backend *Backend::get() {                          \
+        static QtBackend *singleton = new QtBackend(); \
+        return singleton;                              \
+    }                                                  \
 
 

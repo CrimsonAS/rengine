@@ -16,11 +16,6 @@ if (RENGINE_LOG_INFO)
     add_definitions(-DRENGINE_LOG_INFO)
 endif()
 
-option(RENGINE_OPENGL_FTB "OpenGL renders front-to-back" ON)
-if (RENGINE_OPENGL_FTB)
-    add_definitions(-DRENGINE_OPENGL_FTB)
-endif()
-
 option(RENGINE_USE_SDL "SDL Backend" OFF)
 
 
@@ -31,16 +26,14 @@ option(RENGINE_USE_SDL "SDL Backend" OFF)
 macro(add_rengine_example name)
     set(EXAMPLE_NAME "ex_${name}")
     add_executable(${EXAMPLE_NAME} "examples/${name}.cpp")
-    add_dependencies(${EXAMPLE_NAME} rengine)
-    target_link_libraries(${EXAMPLE_NAME} rengine ${RENGINE_LIBS})
+    target_link_libraries(${EXAMPLE_NAME} ${RENGINE_LIBS})
 endmacro(add_rengine_example)
 
 macro(add_rengine_test name)
     set(TEST_NAME "tst_${name}")
     add_executable(${TEST_NAME} "tests/tst_${name}.cpp")
     add_test(${TEST_NAME} ${TEST_NAME})
-    add_dependencies(${TEST_NAME} rengine)
-    target_link_libraries(${TEST_NAME} rengine ${RENGINE_LIBS})
+    target_link_libraries(${TEST_NAME} ${RENGINE_LIBS})
 endmacro(add_rengine_test)
 
 
@@ -88,16 +81,11 @@ enable_testing()
 # librengine.a
 #
 if (RENGINE_USE_SDL)
-    add_library(rengine STATIC
-                src/sdl/sdlbackend.cpp
-               )
+    add_definitions(-DRENGINE_BACKEND_SDL)
     target_link_libraries(rengine ${SDL2_LIBRARIES})
 else()
     # Qt based
-    add_library(rengine STATIC
-                src/qt/qtbackend.cpp
-               )
-    target_link_libraries(rengine Qt5::Gui)
+    add_definitions(-DRENGINE_BACKEND_QT)
 endif()
 
 

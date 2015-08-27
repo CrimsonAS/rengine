@@ -18,6 +18,7 @@ RENGINE_END_NAMESPACE
 
 #define RENGINE_MAIN(InterfaceName)                     \
                                                         \
+    RENGINE_DEFINE_BACKEND                              \
     RENGINE_ALLOCATION_POOL_NODE_DEFINITIONS            \
                                                         \
 int main(int argc, char **argv) {                       \

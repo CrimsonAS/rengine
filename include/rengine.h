@@ -92,5 +92,9 @@ RENGINE_END_NAMESPACE
 #include "object/property.h"
 #include "object/signal.h"
 
+#ifdef RENGINE_BACKEND_QT
+#include "backend/qt/qtbackend.h"
+#endif
+
 
 
