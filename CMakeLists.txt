@@ -91,7 +91,6 @@ if (RENGINE_USE_SDL)
     add_library(rengine STATIC
                 src/sdl/sdlbackend.cpp
                 src/scenegraph/openglrenderer.cpp
-                src/scenegraph/node.cpp
                )
     target_link_libraries(rengine ${SDL2_LIBRARIES})
 else()
@@ -99,7 +98,6 @@ else()
     add_library(rengine STATIC
                 src/qt/qtbackend.cpp
                 src/scenegraph/openglrenderer.cpp
-                src/scenegraph/node.cpp
                )
     target_link_libraries(rengine Qt5::Gui)
 endif()

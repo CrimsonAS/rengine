@@ -17,11 +17,14 @@ int rengine_main(int argc, char **argv) {
 RENGINE_END_NAMESPACE
 
 #define RENGINE_MAIN(InterfaceName)                     \
+                                                        \
+    RENGINE_ALLOCATION_POOL_NODE_DEFINITIONS            \
+                                                        \
 int main(int argc, char **argv) {                       \
     RENGINE_ALLOCATION_POOL(Node, 256);                 \
     RENGINE_ALLOCATION_POOL(TransformNode, 256);        \
     RENGINE_ALLOCATION_POOL(RectangleNode, 256);        \
-    RENGINE_ALLOCATION_POOL(TextureNode, 256);            \
+    RENGINE_ALLOCATION_POOL(TextureNode, 256);          \
     RENGINE_ALLOCATION_POOL(OpacityNode, 64);           \
     RENGINE_ALLOCATION_POOL(ColorFilterNode, 16);       \
     RENGINE_ALLOCATION_POOL(BlurNode, 16);              \

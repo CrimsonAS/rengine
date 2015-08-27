@@ -26,7 +26,6 @@
 
 #include "test.h"
 
-
 template <typename T> bool tst_node_cast_helper()
 {
     T *org = T::create();;

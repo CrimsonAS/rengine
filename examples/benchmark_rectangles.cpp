@@ -1,6 +1,8 @@
 #include "rengine.h"
 #include "examples.h"
 
+RENGINE_ALLOCATION_POOL_NODE_DEFINITIONS;
+
 class Rectangles : public StandardSurfaceInterface
 {
 public:
@@ -37,6 +39,7 @@ public:
         return root;
     }
 };
+
 
 int main(int argc, char **argv) {
     RENGINE_ALLOCATION_POOL(RectangleNode, 1024);
