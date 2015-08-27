@@ -38,6 +38,8 @@ template <typename T> class KeyFrames;
 // toplevel include dir
 class Backend;
 
+// 'object' subdir
+
 RENGINE_END_NAMESPACE
 
 #include "common/mathtypes.h"
@@ -61,6 +63,8 @@ RENGINE_END_NAMESPACE
 
 #include "util/standardsurfaceinterface.h"
 #include "util/maindefine.h"
+
+#include "object/property.h"
 
 
 
