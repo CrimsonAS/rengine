@@ -26,16 +26,13 @@
 
 #include <SDL.h>
 
-#include "rengine.h"
-
-RENGINE_USE_NAMESPACE;
-using namespace std;
+RENGINE_BEGIN_NAMESPACE
 
 class SdlBackend;
 class SdlSurface;
 class SdlWindow;
 
-static void sdldie(const char *msg)
+inline void sdlbackend_die(const char *msg)
 {
     printf("%s: %s\n", msg, SDL_GetError());
     SDL_Quit();
@@ -48,9 +45,9 @@ public:
     SdlBackend()
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
-            sdldie("Unable to initialize SDL");
+            sdlbackend_die("Unable to initialize SDL");
 #ifdef RENGINE_LOG_INFO
-        cout << "SdlBackend: created..." << endl;
+        std::cout << "SdlBackend: created..." << std::endl;
 #endif
     }
 
@@ -96,7 +93,7 @@ public:
     {
         setSurfaceToInterface(iface);
 #ifdef RENGINE_LOG_INFO
-        cout << "SdlBackend::Surface created with interface=" << iface << endl;
+        std::cout << "SdlBackend::Surface created with interface=" << iface << std::endl;
 #endif
         requestRender();
     }
@@ -105,7 +102,7 @@ public:
         static bool warned = false;
         if (!warned) {
             warned = true;
-            cerr << "makeCurrent: stub" << endl;
+            std::cerr << "makeCurrent: stub" << std::endl;
         }
         return true;
     }
@@ -152,21 +149,15 @@ public:
     SurfaceInterface *iface;
 };
 
-Backend *Backend::get()
+inline void SdlBackend::processEvents()
 {
-    static SdlBackend *singleton = new SdlBackend();
-    return singleton;
+    std::cerr << "stub: processEvents" << std::endl;
 }
 
-void SdlBackend::processEvents()
-{
-    cerr << "stub: processEvents" << endl;
-}
-
-void SdlBackend::run()
+inline void SdlBackend::run()
 {
 #ifdef RENGINE_LOG_INFO
-    cout << "SdlBackend: starting eventloop..." << endl;
+    std::cout << "SdlBackend: starting eventloop..." << std::endl;
 #endif
 
     bool done = false;
@@ -185,24 +176,24 @@ void SdlBackend::run()
                 break;
             }
             default: {
-                cerr << "unknown event.type " << event.type << endl;
+                std::cerr << "unknown event.type " << event.type << std::endl;
             }
         }
     }
 
 #ifdef RENGINE_LOG_INFO
-    cout << "SdlBackend: exited eventloop..." << endl;
+    std::cout << "SdlBackend: exited eventloop..." << std::endl;
 #endif
 }
 
-Surface *SdlBackend::createSurface(SurfaceInterface *iface)
+inline Surface *SdlBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
     SdlSurface *s = new SdlSurface(iface);
     return s;
 }
 
-Renderer *SdlBackend::createRenderer(Surface *surface)
+inline Renderer *SdlBackend::createRenderer(Surface *surface)
 {
     assert(surface);
     OpenGLRenderer *r = new OpenGLRenderer();
@@ -210,3 +201,11 @@ Renderer *SdlBackend::createRenderer(Surface *surface)
     return r;
 }
 
+#define RENGINE_DEFINE_BACKEND                           \
+    Backend *Backend::get() {                            \
+        static SdlBackend *singleton = new SdlBackend(); \
+        return singleton;                                \
+    }
+
+
+RENGINE_END_NAMESPACE

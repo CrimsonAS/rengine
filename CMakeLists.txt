@@ -82,7 +82,7 @@ enable_testing()
 #
 if (RENGINE_USE_SDL)
     add_definitions(-DRENGINE_BACKEND_SDL)
-    target_link_libraries(rengine ${SDL2_LIBRARIES})
+    set(RENGINE_LIBS ${RENGINE_LIBS} ${SDL2_LIBRARIES})
 else()
     # Qt based
     add_definitions(-DRENGINE_BACKEND_QT)

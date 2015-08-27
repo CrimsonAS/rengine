@@ -92,9 +92,12 @@ RENGINE_END_NAMESPACE
 #include "object/property.h"
 #include "object/signal.h"
 
-#ifdef RENGINE_BACKEND_QT
+#if defined RENGINE_BACKEND_QT
 #include "backend/qt/qtbackend.h"
+#elif defined RENGINE_BACKEND_SDL
+#include "backend/sdl/sdlbackend.h"
+#else
+#error "Please define which backend you want... RENGINE_BACKEND_QT or RENGINE_BACKEND_SDL.. Thanks.."
 #endif
-
 
 
