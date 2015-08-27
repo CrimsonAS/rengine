@@ -31,10 +31,6 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class PropertyListener;
-
-typedef void (*PropertyNotification)(void *);
-
 template <typename T>
 class Property {
 public:
@@ -46,8 +42,8 @@ public:
         if (t == m_t)
             return;
         m_t = t;
-        for (auto n : m_notifications)
-            n();
+        for (auto callback : m_listeners)
+            callback();
     }
 
     operator const T &() const { return get(); }
@@ -55,20 +51,20 @@ public:
 
     bool operator==(const T &t) const { return m_t == t; }
 
-    int addNotification(const std::function<void()> &n) {
-        m_notifications.push_back(n);
-        return m_notifications.size() - 1;
+    int connect(const std::function<void()> &listener) {
+        m_listeners.push_back(listener);
+        return m_listeners.size() - 1;
     }
 
-    void removeNotification(unsigned id) {
-        assert(id < m_notifications.size());
-        m_notifications.erase(m_notifications.begin() + id);
+    void disconnect(unsigned id) {
+        assert(id < m_listeners.size());
+        m_listeners.erase(m_listeners.begin() + id);
     }
 
 private:
     T m_t;
 
-    std::vector<std::function<void()> > m_notifications;
+    std::vector<std::function<void()> > m_listeners;
 };
 
 template <typename T>

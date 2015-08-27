@@ -10,7 +10,7 @@ void tst_property()
 
     // Check that notification triggers and can update a local var
     int copyOfX = 0;
-    x.addNotification([&]() { copyOfX = x; });
+    x.connect([&]() { copyOfX = x; });
     x = 1;
     check_equal(x, 1);
     check_equal(copyOfX, 1);
@@ -18,7 +18,7 @@ void tst_property()
     // Check that we can set up a bidning to another property
     bool wasCalled = false;
     Property<int> *other = new Property<int>();
-    int id = x.addNotification([&] {
+    int id = x.connect([&] {
         other->set(x + 100);
         wasCalled = true;
     });
@@ -28,7 +28,7 @@ void tst_property()
 
     // Check that we can unregister and that the dependent value is not called
     wasCalled = false;
-    x.removeNotification(id);
+    x.disconnect(id);
     delete other;
     x = 3;
     check_equal(x, 3);
@@ -65,7 +65,7 @@ void tst_bounded_property()
     // Check that notifiers are called only when inside range
     bool called = false;
     v = 0.0f;
-    v.addNotification([&]() { called = true; });
+    v.connect([&]() { called = true; });
 
     v = 0.5f;
     check_equal(v, 0.5f);
