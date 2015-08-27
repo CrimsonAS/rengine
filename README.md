@@ -2,10 +2,8 @@
 a rendering engine
 ------------------
 
-rengine compiles to a single static library and has no dependencies other than
+rengine is a header-only rendering library and has no dependencies other than
 OpenGL and the C++ standard library (C++11).
-
-Right now, it is all pretty lame, but I'm having fun..
 
 The idea is provide a simple scene graph and animation api that is capable of
 support HTML/CSS style layer composition. That means:
@@ -19,20 +17,16 @@ support HTML/CSS style layer composition. That means:
    - Sort center of layers front to back and render them (like chrome does)
  - replacable backends to handle windowsystem/eventloop/input
    - optional backend code to hardware compositor
- - optional frontend to wayland to provide window surfaces as layers
-   - application protocol to create and run animations
-   - server-side pannables
 
-Right now this project is pretty lame. It ain't stable, not very functional,
+Right now this project is not stable, not very functional,
 hard to use and very much work in progress, but I'm having fun :)
 
 Now go look at something else...
 
 Optional dependences include:
 
- - Qt: for the Qt based backend
+ - Qt: for the Qt based backend, the default
  - SDL2: for the SDL 2 based backend, enable using 'cmake -DRENGINE_USE_SDL=on'
- - Wayland: For the wayland based front end (currently not implented)
 
 
 todo
@@ -41,9 +35,9 @@ todo
 lots and lots...
  - OpenGL renderer
    - antialiased edges -> rely on MSAA for now, though this is slow on intel chips
-   - filter nodes (maybe drop blur/dropshadow for now since they are expensive as hell)
-      -> provide effects both as 'live' in the tree and 'static' as a means of producing a Texture instance.
-   - caching of non-changing flattened subtrees to improve performance
+   - provide effects both as 'live' in the tree and 'static' as a means of producing a Texture instance.
+   - caching of non-changing flattened subtrees to improve performance, especially on blurred subtrees
+   - custom render node
  - add more properties to TextureNode
    - opacity
    - border and rounded edges? -> lets not for now...
@@ -60,7 +54,6 @@ include/rengine.h
 include/common
  - Utility classes used throughout
  - no dependencies, can be used stand alone
- - all inline
 
 include/scenegraph
  - The scene graph and default OpenGL renderer
@@ -69,25 +62,34 @@ include/scenegraph
 include/animation
  - The animation system
  - no dependences, can be used stand alone
- - all inline
 
 include/windowsystem
  - The windowsystem/display/screen interfaces
  - depends on src/common
 
-src/qt
- - Implementation of a Qt backend
+include/backend/
+ - Implementation of backends
+    -> qt/qtbackend.h: for qt one
+    -> sdl/sdlbackend.h: for the sdl one
 
 src/sailfish
  - Implementation of a Sailfish system (todo :)
 
 3rdparty
- - stb_image.h -> for easy image loading
+ - stb headers for reading and writing
 
 tests
- - tst_node
- - tst_mathtypes
- - tst_keyframes
+ - tst_keyframes: tests for the animation system
+ - tst_mathtypes: unit tests for the math classes
+ - tst_node: unit tests for node classes
+ - tst_property: unit tests for the property concept
+ - tst_render: unit tests for rendering
+ - tst_signal: unit tests for the signal concept
 
-examples
- - hello -> sample to show it works
+examples - The examples are simple snippets meant to illustrate how a concept works
+ - ex_benchmark_rectangles: benchmark on creating/destroying 1000 rects per frame, including rendering
+ - ex_blur: shows the blurring
+ - ex_filters: shows how color filtering works
+ - ex_layeredopacity: shows layered opacity
+ - ex_rectangles: shows to render with 3D projection
+ - ex_shadow: shows drop shadow
