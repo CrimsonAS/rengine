@@ -19,7 +19,7 @@ RENGINE_END_NAMESPACE
 #define RENGINE_MAIN(InterfaceName)                     \
                                                         \
     RENGINE_DEFINE_BACKEND                              \
-    RENGINE_ALLOCATION_POOL_NODE_DEFINITIONS            \
+    RENGINE_DEFINE_NODE_ALLOCATION_POOLS                \
                                                         \
 int main(int argc, char **argv) {                       \
     RENGINE_ALLOCATION_POOL(Node, 256);                 \

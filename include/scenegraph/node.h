@@ -495,7 +495,7 @@ protected:
     vec4 m_color;
 };
 
-#define RENGINE_ALLOCATION_POOL_NODE_DEFINITIONS          \
+#define RENGINE_DEFINE_NODE_ALLOCATION_POOLS              \
     RENGINE_ALLOCATION_POOL_DEFINITION(Node);             \
     RENGINE_ALLOCATION_POOL_DEFINITION(TransformNode);    \
     RENGINE_ALLOCATION_POOL_DEFINITION(OpacityNode);      \

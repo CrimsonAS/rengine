@@ -86,6 +86,7 @@ if (RENGINE_USE_SDL)
 else()
     # Qt based
     add_definitions(-DRENGINE_BACKEND_QT)
+    set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
 endif()
 
 

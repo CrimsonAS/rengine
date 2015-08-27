@@ -34,6 +34,7 @@
 #define QWINDOW_HAS_REQUEST_UPDATE
 #endif
 
+RENGINE_BEGIN_NAMESPACE
 
 class QtBackend;
 class QtSurface;
@@ -43,14 +44,14 @@ class QtOpenGLContext;
 class QtBackend : public Backend
 {
     static int &hack_argc() { static int i = 1; return i; }
-    static char **hack_argv() { static char *v[] = { "rengine_app" }; return v; }
+    static char **hack_argv() { static const char *v[] = { "rengine_app" }; return (char **) v; }
 public:
 
     QtBackend()
         : app(hack_argc(), hack_argv()), exited(false)
     {
 #ifdef RENGINE_LOG_INFO
-        cout << "QtBackend: created..." << endl;
+        std::cout << "QtBackend: created..." << std::endl;
 #endif
     }
 
@@ -100,7 +101,7 @@ public:
     {
         setSurfaceToInterface(iface);
 #ifdef RENGINE_LOG_INFO
-        cout << "QtBackend::Surface created with interface=" << iface << endl;
+        std::cout << "QtBackend::Surface created with interface=" << iface << std::endl;
 #endif
         QSurfaceFormat format;
         format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
@@ -116,7 +117,7 @@ public:
 
     bool makeCurrent() {
         if (!context.makeCurrent(&window)) {
-            cout << "QtSurface::makeCurrent: failed..." << endl;
+            std::cout << "QtSurface::makeCurrent: failed..." << std::endl;
             return false;
         }
         return true;
@@ -151,14 +152,14 @@ inline void QtBackend::processEvents()
 inline void QtBackend::run()
 {
 #ifdef RENGINE_LOG_INFO
-    cout << "QtBackend: starting eventloop..." << endl;
+    std::cout << "QtBackend: starting eventloop..." << std::endl;
     if (exited)
-        cout << " -> quit() already called, not starting eventloop.." << endl;
+        std::cout << " -> quit() already called, not starting eventloop.." << std::endl;
 #endif
     if (!exited)
         app.exec();
 #ifdef RENGINE_LOG_INFO
-    cout << "QtBackend: exited eventloop..." << endl;
+    std::cout << "QtBackend: exited eventloop..." << std::endl;
 #endif
 }
 
@@ -205,6 +206,8 @@ inline void QtWindow::resizeEvent(QResizeEvent *e)
 {
     s->iface->onSizeChange(vec2(width(), height()));
 }
+
+RENGINE_END_NAMESPACE
 
 #define RENGINE_DEFINE_BACKEND                         \
     Backend *Backend::get() {                          \
