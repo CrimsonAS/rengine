@@ -65,6 +65,7 @@ RENGINE_END_NAMESPACE
 #include "util/maindefine.h"
 
 #include "object/property.h"
+#include "object/signal.h"
 
 
 

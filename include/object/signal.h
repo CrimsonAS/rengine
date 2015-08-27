@@ -31,64 +31,27 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-template <typename T>
-class Property {
+template <typename ...Arguments>
+class Signal
+{
 public:
-
-    Property(const T &t = T()) : m_t(t) { }
-
-    const T &get() const { return m_t; }
-    void set(const T &t) {
-        if (t == m_t)
-            return;
-        m_t = t;
-        for (auto callback : m_listeners)
-            callback();
+    void emit(Arguments...args) {
+        for(std::function<void(Arguments...)> &callback : m_listeners)
+            callback(args...);
     }
 
-    operator const T &() const { return get(); }
-    void operator=(const T &t) { set(t); }
-
-    bool operator==(const T &t) const { return m_t == t; }
-
-    int connect(const std::function<void()> &listener) {
+    int connect(const std::function<void(Arguments...)> &listener) {
         m_listeners.push_back(listener);
         return m_listeners.size() - 1;
     }
 
-    void disconnect(unsigned id) {
+    void disconnect(int id) {
         assert(id < m_listeners.size());
         m_listeners.erase(m_listeners.begin() + id);
     }
 
 private:
-    T m_t;
-
-    std::vector<std::function<void()> > m_listeners;
-};
-
-template <typename T>
-class BoundedProperty : public Property<T>
-{
-public:
-
-    static const T &clamp(const T &min, const T &max, const T &value) {
-        return (value < min ? min : (value > max ? max : value));
-    }
-
-    BoundedProperty(const T &min, const T &max, const T &value = T())
-        : Property<T>(clamp(min, max, value))
-        , m_min(min)
-        , m_max(max)
-    {
-    }
-
-    void set(const T &v) { Property<T>::set(clamp(m_min, m_max, v)); }
-    void operator=(const T &v) { set(v); }
-
-private:
-    T m_min;
-    T m_max;
+    std::vector<std::function<void(Arguments...)> > m_listeners;
 };
 
 RENGINE_END_NAMESPACE
