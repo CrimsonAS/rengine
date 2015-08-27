@@ -37,7 +37,7 @@
 #endif
 
 #ifdef RENGINE_OPENGL_DESKTOP
-# define RENGINE_GLSL_HEADER "#define highp\n#define mediump\n#define lowp\n"
+# define RENGINE_GLSL(code) "#define highp\n#define mediump\n#define lowp\n"#code
 #else
-# define RENGINE_GLSL_HEADER ""
+# define RENGINE_GLSL(code) #code
 #endif
