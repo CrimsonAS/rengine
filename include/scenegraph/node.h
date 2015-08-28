@@ -52,7 +52,7 @@ public:
     bool hasChild(Node *child) {
         Node *n = m_child;
         while (n && n != child)
-            n = n->m_sibling;
+            n = n->sibling();
         return n;
     }
 
@@ -65,16 +65,19 @@ public:
     void append(Node *child) {
         assert(!hasChild(child));
         assert(child->m_parent == 0);
-        assert(child->m_sibling == 0);
-        if (!m_lastChild) {
-            assert(!m_child);
-            m_child = child;
-            m_lastChild = child;
+        assert(child->m_next == 0);
+        assert(child->m_prev == 0);
+
+        if (!m_child) {
+            child->m_next = child;
+            child->m_prev = child;
         } else {
-            assert(m_child);
-            m_lastChild->m_sibling = child;
-            m_lastChild = child;
+            m_child->m_prev->m_next = child;
+            child->m_prev = m_child->m_prev;
+            m_child->m_prev = child;
+            child->m_next = m_child;
         }
+        m_child = child;
         child->setParent(this);
     }
 
@@ -89,16 +92,19 @@ public:
     void prepend(Node *child) {
         assert(!hasChild(child));
         assert(child->m_parent == 0);
-        assert(child->m_sibling == 0);
+        assert(child->m_next == 0);
+        assert(child->m_prev == 0);
+
         if (!m_child) {
-            assert(!m_lastChild);
-            m_child = child;
-            m_lastChild = child;
+            child->m_next = child;
+            child->m_prev = child;
         } else {
-            assert(m_lastChild);
-            child->m_sibling = m_child;
-            m_child = child;
+            m_child->m_next->m_prev = child;
+            child->m_next = m_child->m_next;
+            child->m_prev = m_child;
+            m_child->m_next = child;
         }
+        m_child = child;
         child->setParent(this);
     }
 
@@ -112,22 +118,17 @@ public:
         assert(child);
         assert(hasChild(child));
 
-        if (m_child == child) {
-            m_child = m_child->m_sibling;
-            if (child == m_lastChild)
-                m_lastChild = 0;
+        // only child..
+        if (child->m_next == child) {
+            m_child = 0;
         } else {
-            Node *n = m_child;
-            while (n->m_sibling != child) {
-                n = n->m_sibling;
-                assert(n);
-            }
-            n->m_sibling = child->m_sibling;
-            if (child == m_lastChild) {
-                m_lastChild = n;
-                assert(n->m_sibling == 0);
-            }
+            if (m_child == child)
+                m_child = child->m_next;
+            child->m_next->m_prev = child->m_prev;
+            child->m_prev->m_next = child->m_next;
         }
+        child->m_next = 0;
+        child->m_prev = 0;
         child->setParent(0);
     }
 
@@ -178,7 +179,7 @@ public:
         Node *n = m_child;
         while (n) {
             ++c;
-            n = n->m_sibling;
+            n = n->sibling();
         }
         return c;
     }
@@ -188,7 +189,15 @@ public:
      */
     Node *parent() const { return m_parent; }
 
-    Node *sibling() const { return m_sibling; }
+    Node *sibling() const {
+        assert(m_parent);
+        return m_next == m_parent->m_child ? 0 : m_next;
+    }
+    Node *previousSibling() const {
+        assert(m_parent);
+        return m_prev == m_parent->m_child ? 0 : m_prev;
+    }
+
     Node *child() const { return m_child; }
 
     /*!
@@ -237,7 +246,7 @@ public:
         Node *child = n->m_child;
         while (child) {
             dump(child, level + 1);
-            child = child->m_sibling;
+            child = child->sibling();
         }
     }
 
@@ -245,6 +254,12 @@ public:
 
     void __mark_as_pool_allocated() { m_poolAllocated = true; }
     bool __is_pool_allocated() const { return m_poolAllocated; }
+
+    /*!
+     * State variable used by the event dispatch.
+     */
+    bool isPointerTarget() const { return m_pointerTarget; }
+    void setPointerTarget(bool target) { m_pointerTarget = target;}
 
 protected:
     virtual void onPreprocess() { }
@@ -255,11 +270,12 @@ protected:
     Node(Type type = BasicNodeType)
         : m_parent(0)
         , m_child(0)
-        , m_lastChild(0)
-        , m_sibling(0)
+        , m_next(0)
+        , m_prev(0)
         , m_type(type)
         , m_preprocess(false)
         , m_poolAllocated(false)
+        , m_pointerTarget(false)
     {
     }
 
@@ -290,13 +306,16 @@ protected:
 
     Node *m_parent;
     Node *m_child;
-    Node *m_lastChild;
-    Node *m_sibling;
+    Node *m_next;
+    Node *m_prev;
 
     Type m_type : 4;
     unsigned m_preprocess : 1;
     unsigned m_poolAllocated : 1;
+    unsigned m_pointerTarget : 1;
+    unsigned m_reserved : 25; // 32 - 7
 };
+
 
 class OpacityNode : public Node {
 public:

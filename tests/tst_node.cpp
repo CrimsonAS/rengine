@@ -65,6 +65,12 @@ void tst_node_addRemoveParent()
     Node *n12 = Node::create();
     Node *n21 = Node::create();
 
+    cout << "n ....: " << n << endl;
+    cout << "n1 ...: " << n1 << endl;
+    cout << "n2 ...: " << n2 << endl;
+    cout << "n11 ..: " << n11 << endl;
+    cout << "n12 ..: " << n12 << endl;
+    cout << "n21 ..: " << n21 << endl;
     /* build the tree
             n
            / \
@@ -74,10 +80,15 @@ void tst_node_addRemoveParent()
     */
 
     n->append(n1);
+    Node::dump(n); cout << endl;
     n->append(n2);
+    Node::dump(n); cout << endl;
     n1->append(n11);
+    Node::dump(n); cout << endl;
     n1->append(n12);
+    Node::dump(n); cout << endl;
     n2->append(n21);
+    Node::dump(n); cout << endl;
 
     // Check child counts
     check_equal(n->childCount(), 2);

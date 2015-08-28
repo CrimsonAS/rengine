@@ -83,9 +83,20 @@ public:
         }
     }
 
+    void unregisterPointerTarget(Node *n) {
+
+    }
+
+    void registerPointerTarget(Node *n) {
+        assert(!n->isPointerTarget());
+        n->setPointerTarget(true);
+    }
+
     void dispatchEvent(Event *e) override {
 
     }
+
+
 
     Renderer *renderer() const { return m_renderer; }
 
@@ -94,6 +105,8 @@ public:
 private:
     Renderer *m_renderer;
     AnimationManager m_animationManager;
+
+
 };
 
 RENGINE_END_NAMESPACE

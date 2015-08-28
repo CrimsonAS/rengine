@@ -52,6 +52,9 @@ public:
         root->append(m_left);
         root->append(m_right);
 
+        registerPointerTarget(m_left);
+        registerPointerTarget(m_right);
+
         return root;
     }
 
@@ -72,7 +75,7 @@ public:
     void dispatchEvent(Event *e) override {
         if (e->type() == Event::PointerDown) {
             vec2 p = PointerEvent::from(e)->position();
-            if (m_left->geometry().contains(p)) 
+            if (m_left->geometry().contains(p))
                 activate(m_left);
             else if (m_right->geometry().contains(p))
                 activate(m_right);
