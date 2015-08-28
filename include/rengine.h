@@ -42,6 +42,8 @@ struct mat4;
 // 'windowsystem' subdir
 class Surface;
 class SurfaceInterface;
+class Event;
+class PointerEvent;
 
 // 'scenegraph' subdir
 class Node;
@@ -71,6 +73,7 @@ RENGINE_END_NAMESPACE
 #include "common/allocationpool.h"
 #include "common/colormatrix.h"
 
+#include "windowsystem/event.h"
 #include "windowsystem/surface.h"
 
 #include "scenegraph/opengl.h"

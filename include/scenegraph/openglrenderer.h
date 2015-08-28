@@ -893,14 +893,14 @@ inline bool OpenGLRenderer::render()
     assert(m_elementIndex == elementCount);
     // for (unsigned i=0; i<m_elementIndex; ++i) {
     //     const Element &e = m_elements[i];
-    //     std::cout << " " << setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
+    //     std::cout << " " << std::setw(5) << i << ": " << "element=" << &e << " node=" << e.node << " " << e.node->type() << " "
     //          << (e.projection ? "projection " : "")
-    //          << "vboOffset=" << setw(5) << e.vboOffset << " "
-    //          << "groupSize=" << setw(3) << e.groupSize << " "
+    //          << "vboOffset=" << std::setw(5) << e.vboOffset << " "
+    //          << "groupSize=" << std::setw(3) << e.groupSize << " "
     //          << "z=" << e.z << " " << std::endl;
     // }
     // for (unsigned i=0; i<m_vertexIndex; ++i)
-    //     std::cout << "vertex[" << setw(5) << i << "]=" << m_vertices[i] << std::endl;
+    //     std::cout << "vertex[" << std::setw(5) << i << "]=" << m_vertices[i] << std::endl;
 
     // Assign our static texture coordinate buffer to attribute 1.
     glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);

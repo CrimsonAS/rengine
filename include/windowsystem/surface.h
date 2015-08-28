@@ -96,6 +96,8 @@ public:
     Surface *surface() { return m_surface; }
     const Surface *surface() const { return m_surface; }
 
+    virtual void dispatchEvent(Event *e) { }
+
 private:
     friend class Surface;
 

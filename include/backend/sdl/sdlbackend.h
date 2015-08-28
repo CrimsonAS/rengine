@@ -56,6 +56,11 @@ public:
     void processEvents();
     Surface *createSurface(SurfaceInterface *iface);
     Renderer *createRenderer(Surface *surface);
+
+    SdlSurface *findSurface(unsigned id);
+
+private:
+    std::vector<SdlSurface *> m_surfaces;
 };
 
 class SdlWindow
@@ -76,8 +81,9 @@ public:
 
         context = SDL_GL_CreateContext(mainwindow);
         SDL_GL_SetSwapInterval(1);
-
     }
+
+    unsigned id() const { return SDL_GetWindowID(mainwindow); }
 
     SdlSurface *s;
     SDL_Window *mainwindow;
@@ -149,6 +155,14 @@ public:
     SurfaceInterface *iface;
 };
 
+inline SdlSurface *SdlBackend::findSurface(unsigned id)
+{
+    for (auto surface : m_surfaces)
+        if (surface->window.id() == id)
+            return surface;
+    return 0;
+}
+
 inline void SdlBackend::processEvents()
 {
     std::cerr << "stub: processEvents" << std::endl;
@@ -164,11 +178,32 @@ inline void SdlBackend::run()
     SDL_Event event;
 
     while (!done && SDL_WaitEvent(&event)) {
+        
         switch (event.type) {
             case SDL_USEREVENT: {
-                // process the asynchronous render request
                 SdlSurface *surface = static_cast<SdlSurface *>(event.user.data1);
+                // process the asynchronous render request
                 surface->iface->onRender();
+                break;
+            }
+            case SDL_MOUSEBUTTONDOWN: {
+                PointerEvent pe(Event::PointerDown);
+                pe.setPosition(vec2(event.button.x, event.button.y));
+                SdlSurface *surface = findSurface(event.button.windowID);
+                assert(surface);
+                surface->iface->dispatchEvent(&pe);
+                break;
+            }
+            case SDL_MOUSEBUTTONUP: {
+                PointerEvent pe(Event::PointerUp);
+                pe.setPosition(vec2(event.button.x, event.button.y));
+                SdlSurface *surface = findSurface(event.button.windowID);
+                assert(surface);
+                surface->iface->dispatchEvent(&pe);
+                break;
+            }
+            case SDL_MOUSEMOTION: {
+                std::cout << "mouse move..." << std::endl;
                 break;
             }
             case SDL_QUIT: {
@@ -190,6 +225,7 @@ inline Surface *SdlBackend::createSurface(SurfaceInterface *iface)
 {
     assert(iface);
     SdlSurface *s = new SdlSurface(iface);
+    m_surfaces.push_back(s);
     return s;
 }
 

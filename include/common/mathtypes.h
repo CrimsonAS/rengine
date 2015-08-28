@@ -388,7 +388,7 @@ public:
 
     static rect2d fromPosSize(const vec2 &pos, const vec2 &size) { return rect2d(pos, pos + size); }
     static rect2d fromXywh(float x, float y, float w, float h) { return rect2d(x, y, x+w, y+h); }
-    static rect2d fromXywhCentered(float cx, float cy, float w, float h) { return rect2d(cx-w/2.0f, cy-h/2.0f, w, h); }
+    static rect2d fromXywhCentered(float cx, float cy, float w, float h) { return fromXywh(cx-w/2.0f, cy-h/2.0f, w, h); }
 
     float top() const { return tl.y; }
     float left() const { return tl.x; }
