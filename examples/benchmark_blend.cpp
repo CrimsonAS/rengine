@@ -45,15 +45,12 @@ public:
 
         return root;
     }
-
-private:
-    Texture *m_layer;
 };
 
-RENGINE_DEFINE_BACKEND                              
-RENGINE_DEFINE_NODE_ALLOCATION_POOLS               
-                                                   
-int main(int argc, char **argv) {                       
+RENGINE_DEFINE_BACKEND
+RENGINE_DEFINE_NODE_ALLOCATION_POOLS
+
+int main(int argc, char **argv) {
 
     for (int i=0; i<argc; ++i) {
         if (i + 1 < argc && std::string(argv[i]) == "--count") {

@@ -123,7 +123,14 @@ void tst_node_addRemoveParent()
          n21 n11 n12
      */
     n2->remove(n21);
+    cout << "removing: " << endl;
+    Node::dump(n); cout << endl;
     n1->prepend(n21);
+    cout << "prepended: " << endl;
+    Node::dump(n); cout << endl;
+
+
+
     check_equal(n2->childCount(), 0);
     check_equal(n1->childCount(), 3);
     check_equal(n21->parent(), n1);

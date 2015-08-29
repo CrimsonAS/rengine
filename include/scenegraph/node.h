@@ -71,13 +71,13 @@ public:
         if (!m_child) {
             child->m_next = child;
             child->m_prev = child;
+            m_child = child;
         } else {
             m_child->m_prev->m_next = child;
             child->m_prev = m_child->m_prev;
             m_child->m_prev = child;
             child->m_next = m_child;
         }
-        m_child = child;
         child->setParent(this);
     }
 
@@ -90,22 +90,11 @@ public:
      * or is already a child of this node.
      */
     void prepend(Node *child) {
-        assert(!hasChild(child));
-        assert(child->m_parent == 0);
-        assert(child->m_next == 0);
-        assert(child->m_prev == 0);
-
-        if (!m_child) {
-            child->m_next = child;
-            child->m_prev = child;
-        } else {
-            m_child->m_next->m_prev = child;
-            child->m_next = m_child->m_next;
-            child->m_prev = m_child;
-            m_child->m_next = child;
-        }
+        // Since children are a cyclic linked list, we can do prepend
+        // in terms of an append, followed by setting the added child
+        // as the front of the list.
+        append(child);
         m_child = child;
-        child->setParent(this);
     }
 
     /*!
@@ -242,7 +231,11 @@ public:
         case Node::TextureNodeType: std::cout << "TextureNodeType"; break;
         default: std::cout << "Node(type=" << n->type() << ")"; break;
         }
-        std::cout << "(" << n << ") parent=" << n->parent() << " childCount=" << n->childCount() << std::endl;
+        std::cout << "(" << n << ") parent=" << n->parent()
+                  << " childCount=" << n->childCount()
+                  << " next=" << n->m_next
+                  << " prev=" << n->m_prev
+                  << std::endl;
         Node *child = n->m_child;
         while (child) {
             dump(child, level + 1);
