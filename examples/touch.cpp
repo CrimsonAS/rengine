@@ -27,6 +27,7 @@
 
 const vec4 COLOR_IDLE(0.5, 0.6, 0.8, 1.0);
 const vec4 COLOR_ACTIVE(0.8, 0.6, 0.5, 1.0);
+const vec4 COLOR_CENTER(0.6, 0.8, 0.5, 1.0);
 
 class TouchWindow : public StandardSurfaceInterface
 {
@@ -43,17 +44,34 @@ public:
         float size = std::min(surfaceSize.x, surfaceSize.y);
 
         vec2 c = surfaceSize / 2.0;
-        float boxSize = size * 0.3;
+        float boxSize = size * 0.4;
         float shift = boxSize + size * 0.01;
 
         m_left  = RectangleNode::create(rect2d::fromXywhCentered(c.x - shift, c.y, boxSize, boxSize), COLOR_IDLE);
         m_right = RectangleNode::create(rect2d::fromXywhCentered(c.x + shift, c.y, boxSize, boxSize), COLOR_IDLE);
+        m_center = RectangleNode::create(rect2d::fromXywhCentered(0, 0, boxSize * 2.0, boxSize / 2), COLOR_CENTER);
 
         root->append(m_left);
         root->append(m_right);
 
+        TransformNode *xform = TransformNode::create();
+
+        *root << &(*TransformNode::create(mat4::translate2D(c.x, c.y))
+                   << &(*xform
+                        << m_center)
+                  );
+
         registerPointerTarget(m_left);
         registerPointerTarget(m_right);
+        registerPointerTarget(m_center);
+
+        AnimationClosure<TransformNode, SmoothedTimingFunction> *anim = new AnimationClosure<TransformNode, SmoothedTimingFunction>(xform);
+        anim->setDuration(10);
+        anim->setIterations(-1);
+        anim->keyFrames.times() << 0 << 1;
+        anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
+        animationManager()->startAnimation(anim);
+
 
         return root;
     }
@@ -72,21 +90,23 @@ public:
         surface()->requestRender();
     }
 
-    void dispatchEvent(Event *e) override {
-        if (e->type() == Event::PointerDown) {
-            vec2 p = PointerEvent::from(e)->position();
-            if (m_left->geometry().contains(p))
-                activate(m_left);
-            else if (m_right->geometry().contains(p))
-                activate(m_right);
-        } else if (m_currentReceiver && e->type() == Event::PointerUp) {
+    bool onPointerEvent(Node *n, PointerEvent *event) {
+        if (event->type() == Event::PointerDown) {
+            assert(n);
+            assert(n == m_left || n == m_right || n == m_center);
+            activate(static_cast<RectangleNode *>(n));
+            return true;
+        } else if (m_currentReceiver && event->type() == Event::PointerUp) {
             deactivate();
+            return true;
         }
+        return false;
     }
 
 private:
     RectangleNode *m_left  = nullptr;
     RectangleNode *m_right = nullptr;
+    RectangleNode *m_center = nullptr;
     RectangleNode *m_currentReceiver = nullptr;
 };
 

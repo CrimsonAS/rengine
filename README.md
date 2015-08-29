@@ -43,6 +43,10 @@ lots and lots...
    - border and rounded edges? -> lets not for now...
  - API
    - Be consistent with use of 2D (mat4::translate2D) and 2d (rect2d)
+   - Change: T *Node::from<T>(Node *)  ->  static T *T::from(Node *);
+   - Combined matrices are hard in the animation system, for instance, setting
+     up a rotation around a point x,y requires two nodes right now. One for the
+     offset and one to run the animation on.
  - input, both keyboard, touch and mouse
    - shared input event for touch/pointer
    - what does the event receiver look like?

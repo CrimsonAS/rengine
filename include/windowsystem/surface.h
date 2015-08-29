@@ -96,7 +96,14 @@ public:
     Surface *surface() { return m_surface; }
     const Surface *surface() const { return m_surface; }
 
-    virtual void dispatchEvent(Event *e) { }
+    /*!
+
+        Called by the backend when an event occurs. The surface interface should
+        implement this method to deliver the event to the right place inside
+        the application.
+
+     */
+    virtual void onEvent(Event *) { }
 
 private:
     friend class Surface;

@@ -22,6 +22,12 @@ struct TransformNode_rotateAroundZ {
     }
 };
 
+struct TransformNode_rotate2D {
+    void operator()(double rotation, TransformNode *node) {
+        node->setMatrix(mat4::rotate2D(rotation));
+    }
+};
+
 
 
 struct OpacityNode_setOpacity {

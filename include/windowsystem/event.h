@@ -27,7 +27,7 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class Event 
+class Event
 {
 public:
 	enum Type {
@@ -45,18 +45,45 @@ private:
 	Type m_type;
 };
 
-
 class PointerEvent : public Event
 {
 public:
     PointerEvent(Type t) : Event(t) {
-        assert(t == PointerUp 
+        assert(t == PointerUp
                || t == PointerDown
                || t == PointerMove);
     };
 
+    /*!
+
+        Called by the backend to initialize this object.
+
+     */
+    void initialize(const vec2 &pos) {
+        setPosition(pos);
+        setPositionInSurface(pos);
+    }
+
+    /*!
+
+        Describes the position of the event relative to the surface it is
+        being delivered to. This value does not change dependent on where
+        in a scene an object is located.
+
+     */
+    void setPositionInSurface(const vec2 &pos) { m_posInSurface = pos; }
+    vec2 positionInSurface() const { return m_posInSurface; }
+
+
+    /*!
+
+        Describes the position in local coordinates, relative to the local
+        object/scene or whatever thing it is being delivered to.
+
+     */
     void setPosition(const vec2 &position) { m_pos = position; }
 	vec2 position() const { return m_pos; }
+
 
     static PointerEvent *from(Event *e) {
         assert(e->type() == PointerUp || e->type() == PointerDown || e->type() == PointerMove);
@@ -65,6 +92,7 @@ public:
 
 private:
     vec2 m_pos;
+    vec2 m_posInSurface;
 };
 
 RENGINE_END_NAMESPACE

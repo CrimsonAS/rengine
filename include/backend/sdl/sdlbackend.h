@@ -57,6 +57,8 @@ public:
     Surface *createSurface(SurfaceInterface *iface);
     Renderer *createRenderer(Surface *surface);
 
+    void sendPointerEvent(SDL_Event *e, Event::Type type);
+
     SdlSurface *findSurface(unsigned id);
 
 private:
@@ -77,13 +79,20 @@ public:
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
         mainwindow = SDL_CreateWindow("rengine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                      800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+                                      800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI );
 
         context = SDL_GL_CreateContext(mainwindow);
         SDL_GL_SetSwapInterval(1);
     }
 
     unsigned id() const { return SDL_GetWindowID(mainwindow); }
+
+    unsigned devicePixelRatio() const {
+        int dw, dh, ww, wh;
+        SDL_GetWindowSize(mainwindow, &ww, &wh);
+        SDL_GL_GetDrawableSize(mainwindow, &dw, &dh);
+        return dw / ww;
+    }
 
     SdlSurface *s;
     SDL_Window *mainwindow;
@@ -168,6 +177,16 @@ inline void SdlBackend::processEvents()
     std::cerr << "stub: processEvents" << std::endl;
 }
 
+inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
+{
+    PointerEvent pe(type);
+    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
+    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
+    assert(surface);
+    surface->iface->onEvent(&pe);
+}
+
+
 inline void SdlBackend::run()
 {
 #ifdef RENGINE_LOG_INFO
@@ -178,7 +197,7 @@ inline void SdlBackend::run()
     SDL_Event event;
 
     while (!done && SDL_WaitEvent(&event)) {
-        
+
         switch (event.type) {
             case SDL_USEREVENT: {
                 SdlSurface *surface = static_cast<SdlSurface *>(event.user.data1);
@@ -187,23 +206,18 @@ inline void SdlBackend::run()
                 break;
             }
             case SDL_MOUSEBUTTONDOWN: {
-                PointerEvent pe(Event::PointerDown);
-                pe.setPosition(vec2(event.button.x, event.button.y));
-                SdlSurface *surface = findSurface(event.button.windowID);
-                assert(surface);
-                surface->iface->dispatchEvent(&pe);
+                std::cout << "mouse button down"  << std::endl;
+                sendPointerEvent(&event, Event::PointerDown);
                 break;
             }
             case SDL_MOUSEBUTTONUP: {
-                PointerEvent pe(Event::PointerUp);
-                pe.setPosition(vec2(event.button.x, event.button.y));
-                SdlSurface *surface = findSurface(event.button.windowID);
-                assert(surface);
-                surface->iface->dispatchEvent(&pe);
+                std::cout << "mouse button up" << std::endl;
+                sendPointerEvent(&event, Event::PointerUp);
                 break;
             }
             case SDL_MOUSEMOTION: {
                 std::cout << "mouse move..." << std::endl;
+                sendPointerEvent(&event, Event::PointerMove);
                 break;
             }
             case SDL_QUIT: {
@@ -211,7 +225,7 @@ inline void SdlBackend::run()
                 break;
             }
             default: {
-                std::cerr << "unknown event.type " << event.type << std::endl;
+                // std::cerr << "unknown event.type " << event.type << std::endl;
             }
         }
     }

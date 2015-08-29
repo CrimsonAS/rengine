@@ -184,10 +184,17 @@ public:
     }
     Node *previousSibling() const {
         assert(m_parent);
-        return m_prev == m_parent->m_child ? 0 : m_prev;
+        return this == m_parent->m_child ? 0 : m_prev;
     }
 
     Node *child() const { return m_child; }
+    Node *lastChild() const {
+        if (!m_child)
+            return 0;
+        else if (m_child->m_prev == m_child) // an only child
+            return m_child;
+        return m_child->m_prev;
+    }
 
     /*!
      * Returns this node's type.
@@ -306,7 +313,8 @@ protected:
     unsigned m_preprocess : 1;
     unsigned m_poolAllocated : 1;
     unsigned m_pointerTarget : 1;
-    unsigned m_reserved : 25; // 32 - 7
+    unsigned m_pointerDisabled : 1;
+    unsigned m_reserved : 24; // 32 - 8
 };
 
 

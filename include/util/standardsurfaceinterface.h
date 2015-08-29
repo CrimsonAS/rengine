@@ -31,7 +31,6 @@ class StandardSurfaceInterface : public SurfaceInterface
 {
 public:
     StandardSurfaceInterface()
-        : m_renderer(0)
     {
     }
 
@@ -44,8 +43,8 @@ public:
 
     virtual Node *update(Node *oldRoot) = 0;
 
-    virtual void beforeRender() { }
-    virtual void afterRender() { }
+    virtual void onBeforeRender() { }
+    virtual void onAfterRender() { }
 
     void onRender() override {
         surface()->makeCurrent();
@@ -66,9 +65,9 @@ public:
         m_animationManager.tick();
 
         // And then render the stuff
-        beforeRender();
+        onBeforeRender();
         m_renderer->render();
-        afterRender();
+        onAfterRender();
 
         surface()->swapBuffers();
         m_renderer->frameSwapped();
@@ -84,29 +83,101 @@ public:
     }
 
     void unregisterPointerTarget(Node *n) {
+        assert(n->isPointerTarget());
+        n->setPointerTarget(false);
 
     }
 
+
+    /*!
+
+        Register \a node as a receiver of pointer events. When a pointer event
+        occurs, it will be sent through the scene and transformed according to
+
+     */
     void registerPointerTarget(Node *n) {
         assert(!n->isPointerTarget());
         n->setPointerTarget(true);
     }
 
-    void dispatchEvent(Event *e) override {
-
+    virtual bool onPointerEvent(Node *node, PointerEvent *event) {
+        return true;
     }
 
-
+    virtual void onEvent(Event *e) override;
 
     Renderer *renderer() const { return m_renderer; }
-
     AnimationManager *animationManager() { return &m_animationManager; }
 
-private:
-    Renderer *m_renderer;
+protected:
+    bool deliverPointerEventInScene(Node *n, PointerEvent *e);
+
+    Renderer *m_renderer = nullptr;
     AnimationManager m_animationManager;
-
-
 };
+
+inline void StandardSurfaceInterface::onEvent(Event *e)
+{
+    switch (e->type()) {
+    case Event::PointerDown:
+    case Event::PointerUp:
+    case Event::PointerMove:
+        if (m_renderer && m_renderer->sceneRoot()) {
+            PointerEvent *pe = PointerEvent::from(e);
+            Node::dump(m_renderer->sceneRoot());
+            deliverPointerEventInScene(m_renderer->sceneRoot(), pe);
+        }
+        break;
+    default:
+        std::cerr << __PRETTY_FUNCTION__ << ": unknown event type=" << e->type() << std::endl;
+        break;
+
+    }
+}
+
+inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, PointerEvent *e)
+{
+    assert(node);
+    assert(e);
+
+    std::cout << " - delivering: " << node << std::endl;
+
+    Node::Type type = node->type();
+    vec2 pos = e->position();
+
+    // Transform the event if required..
+    if (type == Node::TransformNodeType)
+        e->setPosition(static_cast<TransformNode *>(node)->matrix() * pos);
+
+    // Traverse children in backwards order (and bottom up), so we get
+    // inverse-paint order delivery
+    Node *child = node->lastChild();
+    while (child) {
+        if (deliverPointerEventInScene(child, e))
+            return true;
+        child = child->previousSibling();
+        std::cout << " - now moving on to: " << child << std::endl;
+    }
+    if (node->isPointerTarget()) {
+        const rect2d *area = 0;
+        if (RectangleNode *rn = Node::from<RectangleNode>(node))
+            area = &rn->geometry();
+        else if (TextureNode *tn = Node::from<TextureNode>(node))
+            area = &tn->geometry();
+        if (area) {
+            std::cout << " - looking in area: " << *area << " " << e->position() << " " << area->contains(e->position()) << std::endl;
+            if (area->contains(e->position()) && onPointerEvent(node, e)) {
+                std::cout << " -- delivered to: " << node << std::endl;
+                return true;
+            }
+        }
+    }
+
+    // Restore the old position
+    if (type == Node::TransformNodeType)
+        e->setPosition(pos);
+
+    return false;
+}
 
 RENGINE_END_NAMESPACE
