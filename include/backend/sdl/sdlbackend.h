@@ -142,7 +142,17 @@ public:
         return vec2(w, h);
     }
 
+    void render() {
+        // reset this before onRender so we don't prevent onRender from
+        // scheduling another one..
+        m_renderRequested = false;
+        iface->onRender();
+    }
+
     void requestRender() {
+        if (m_renderRequested)
+            return;
+        m_renderRequested = true;
         // we can't trigger the render synchronously. we need to give a chance
         // to process input, animations, whatever -- so push an event onto the
         // queue and we'll get back to this later.
@@ -159,6 +169,8 @@ public:
 
         SDL_PushEvent(&event);
     }
+
+    bool m_renderRequested = false;
 
     SdlWindow window;
     SurfaceInterface *iface;
@@ -202,21 +214,18 @@ inline void SdlBackend::run()
             case SDL_USEREVENT: {
                 SdlSurface *surface = static_cast<SdlSurface *>(event.user.data1);
                 // process the asynchronous render request
-                surface->iface->onRender();
+                surface->render();
                 break;
             }
             case SDL_MOUSEBUTTONDOWN: {
-                std::cout << "mouse button down"  << std::endl;
                 sendPointerEvent(&event, Event::PointerDown);
                 break;
             }
             case SDL_MOUSEBUTTONUP: {
-                std::cout << "mouse button up" << std::endl;
                 sendPointerEvent(&event, Event::PointerUp);
                 break;
             }
             case SDL_MOUSEMOTION: {
-                std::cout << "mouse move..." << std::endl;
                 sendPointerEvent(&event, Event::PointerMove);
                 break;
             }
