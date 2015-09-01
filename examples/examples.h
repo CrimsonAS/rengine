@@ -19,7 +19,7 @@ inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
     unsigned char *data = stbi_load(location, &w, &h, &n, 4);
     if (!data) {
         sprintf(location, "examples/images/%s", file);
-        data = stbi_load(file, &w, &h, &n, 4);
+        data = stbi_load(location, &w, &h, &n, 4);
     }
     if (!data) {
         cout << "Failed to find the image 'walker.png' under 'examples/images' or '../examples/images'. "
