@@ -28,6 +28,8 @@
 #include "rengine.h"
 #include "test.h"
 
+
+
 void tst_vec2()
 {
     vec2 a(1, 2);
@@ -186,6 +188,26 @@ void tst_mat4_vecx()
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
 
+void tst_mat4_invert()
+{
+    // Construct an invertible matrix..
+    mat4 M = mat4::translate(1, 2, 3)
+             * mat4::rotateAroundX(0.5)
+             * mat4::rotateAroundY(0.5)
+             * mat4::rotateAroundZ(0.5)
+             * mat4::translate(10, 11, 12)
+             * mat4::scale(1, 2, 3);
+
+    bool inv = false;
+    mat4 Mi = M.inverted(&inv);
+
+    check_true(inv);
+    check_fuzzyEqual(Mi * M, mat4());
+    check_fuzzyEqual(M * Mi, mat4());
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
 void tst_rect2d()
 {
     rect2d r(1, 2, 4, 8);
@@ -245,6 +267,7 @@ int main(int, char **)
     tst_vec2();
     tst_mat4();
     tst_mat4_vecx();
+    tst_mat4_invert();
     tst_rect2d();
     tst_rect2d_intersect();
 

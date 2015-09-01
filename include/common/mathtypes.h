@@ -23,6 +23,10 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+    Matrix inversion code is taken from MESA
+ */
+
 /*!
     Q: Why duplicate this? There are plenty of libraries which provide basic math?
 
@@ -303,6 +307,129 @@ struct mat4 {
                     m[12] * v.x + m[13] * v.y + m[14] * v.z + m[15] * v.w);
     }
 
+    mat4 transposed() const {
+        return mat4(m[0], m[4], m[ 8], m[12],
+                    m[1], m[5], m[ 9], m[12],
+                    m[2], m[6], m[10], m[14],
+                    m[3], m[7], m[11], m[15]);
+    }
+
+    mat4 inverted(bool *invertible) const {
+        mat4 inv;
+        inv.m[0] = m[5]  * m[10] * m[15] -
+                   m[5]  * m[11] * m[14] -
+                   m[9]  * m[6]  * m[15] +
+                   m[9]  * m[7]  * m[14] +
+                   m[13] * m[6]  * m[11] -
+                   m[13] * m[7]  * m[10];
+        inv.m[4] = -m[4]  * m[10] * m[15] +
+                    m[4]  * m[11] * m[14] +
+                    m[8]  * m[6]  * m[15] -
+                    m[8]  * m[7]  * m[14] -
+                    m[12] * m[6]  * m[11] +
+                    m[12] * m[7]  * m[10];
+        inv.m[8] = m[4]  * m[9] * m[15] -
+                   m[4]  * m[11] * m[13] -
+                   m[8]  * m[5] * m[15] +
+                   m[8]  * m[7] * m[13] +
+                   m[12] * m[5] * m[11] -
+                   m[12] * m[7] * m[9];
+        inv.m[12] = -m[4]  * m[9] * m[14] +
+                     m[4]  * m[10] * m[13] +
+                     m[8]  * m[5] * m[14] -
+                     m[8]  * m[6] * m[13] -
+                     m[12] * m[5] * m[10] +
+                     m[12] * m[6] * m[9];
+        inv.m[1] = -m[1]  * m[10] * m[15] +
+                    m[1]  * m[11] * m[14] +
+                    m[9]  * m[2] * m[15] -
+                    m[9]  * m[3] * m[14] -
+                    m[13] * m[2] * m[11] +
+                    m[13] * m[3] * m[10];
+        inv.m[5] = m[0]  * m[10] * m[15] -
+                   m[0]  * m[11] * m[14] -
+                   m[8]  * m[2] * m[15] +
+                   m[8]  * m[3] * m[14] +
+                   m[12] * m[2] * m[11] -
+                   m[12] * m[3] * m[10];
+        inv.m[9] = -m[0]  * m[9] * m[15] +
+                    m[0]  * m[11] * m[13] +
+                    m[8]  * m[1] * m[15] -
+                    m[8]  * m[3] * m[13] -
+                    m[12] * m[1] * m[11] +
+                    m[12] * m[3] * m[9];
+        inv.m[13] = m[0]  * m[9] * m[14] -
+                    m[0]  * m[10] * m[13] -
+                    m[8]  * m[1] * m[14] +
+                    m[8]  * m[2] * m[13] +
+                    m[12] * m[1] * m[10] -
+                    m[12] * m[2] * m[9];
+        inv.m[2] = m[1]  * m[6] * m[15] -
+                    m[1]  * m[7] * m[14] -
+                    m[5]  * m[2] * m[15] +
+                    m[5]  * m[3] * m[14] +
+                    m[13] * m[2] * m[7] -
+                    m[13] * m[3] * m[6];
+        inv.m[6] = -m[0]  * m[6] * m[15] +
+                    m[0]  * m[7] * m[14] +
+                    m[4]  * m[2] * m[15] -
+                    m[4]  * m[3] * m[14] -
+                    m[12] * m[2] * m[7] +
+                    m[12] * m[3] * m[6];
+        inv.m[10] = m[0]  * m[5] * m[15] -
+                    m[0]  * m[7] * m[13] -
+                    m[4]  * m[1] * m[15] +
+                    m[4]  * m[3] * m[13] +
+                    m[12] * m[1] * m[7] -
+                    m[12] * m[3] * m[5];
+        inv.m[14] = -m[0]  * m[5] * m[14] +
+                     m[0]  * m[6] * m[13] +
+                     m[4]  * m[1] * m[14] -
+                     m[4]  * m[2] * m[13] -
+                     m[12] * m[1] * m[6] +
+                     m[12] * m[2] * m[5];
+        inv.m[3] = -m[1] * m[6] * m[11] +
+                    m[1] * m[7] * m[10] +
+                    m[5] * m[2] * m[11] -
+                    m[5] * m[3] * m[10] -
+                    m[9] * m[2] * m[7] +
+                    m[9] * m[3] * m[6];
+        inv.m[7] = m[0] * m[6] * m[11] -
+                   m[0] * m[7] * m[10] -
+                   m[4] * m[2] * m[11] +
+                   m[4] * m[3] * m[10] +
+                   m[8] * m[2] * m[7] -
+                   m[8] * m[3] * m[6];
+        inv.m[11] = -m[0] * m[5] * m[11] +
+                     m[0] * m[7] * m[9] +
+                     m[4] * m[1] * m[11] -
+                     m[4] * m[3] * m[9] -
+                     m[8] * m[1] * m[7] +
+                     m[8] * m[3] * m[5];
+        inv.m[15] = m[0] * m[5] * m[10] -
+                    m[0] * m[6] * m[9] -
+                    m[4] * m[1] * m[10] +
+                    m[4] * m[2] * m[9] +
+                    m[8] * m[1] * m[6] -
+                    m[8] * m[2] * m[5];
+
+        float det = m[0] * inv.m[0] + m[1] * inv.m[4] + m[2] * inv.m[8] + m[3] * inv.m[12];
+
+        if (det == 0) {
+            if (invertible)
+                *invertible = false;
+            return mat4();
+        }
+
+        det = 1.0 / det;
+        for (int i = 0; i < 16; i++)
+            inv.m[i] *= det;
+
+        if (invertible)
+            *invertible = true;
+
+        return inv;
+    }
 
     static mat4 translate2D(float dx, float dy) {
         return mat4(1, 0, 0, dx,

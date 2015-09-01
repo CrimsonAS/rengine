@@ -60,6 +60,13 @@ inline bool fuzzy_equals(const vec4 &a, const vec4 &b, float threshold = 0.0001f
            && fuzzy_equals(a.w, b.w, threshold);
 }
 
+inline bool fuzzy_equals(const mat4 &a, const mat4 &b, float threshold = 0.01f) {
+    for (int i=0; i<16; ++i)
+        if (!fuzzy_equals(a.m[i], b.m[i], threshold))
+            return false;
+    return true;
+}
+
 #define check_true(cond)                       \
     if (!(cond)) {                               \
         assert(cond);                          \
@@ -178,7 +185,7 @@ public:
         return m_currentTest->build();
     }
 
-    void afterRender() override {
+    void onAfterRender() override {
         if (!m_currentTest)
             return;
 
