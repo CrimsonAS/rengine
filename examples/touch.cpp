@@ -61,9 +61,9 @@ public:
                         << m_center)
                   );
 
-        registerPointerTarget(m_left);
-        registerPointerTarget(m_right);
-        registerPointerTarget(m_center);
+        m_left->setPointerTarget(true);
+        m_right->setPointerTarget(true);
+        m_center->setPointerTarget(true);
 
         AnimationClosure<TransformNode, SmoothedTimingFunction> *anim = new AnimationClosure<TransformNode, SmoothedTimingFunction>(xform);
         anim->setDuration(10);
@@ -78,15 +78,19 @@ public:
 
     void activate(RectangleNode *r) {
         assert(!m_currentReceiver);
+        assert(!pointerEventReceiver());
         m_currentReceiver = r;
         m_currentReceiver->setColor(COLOR_ACTIVE);
         surface()->requestRender();
+        setPointerEventReceiver(m_currentReceiver);
     }
 
     void deactivate() {
         assert(m_currentReceiver);
+        assert(pointerEventReceiver());
         m_currentReceiver->setColor(COLOR_IDLE);
         m_currentReceiver = 0;
+        setPointerEventReceiver(0);
         surface()->requestRender();
     }
 

@@ -82,24 +82,6 @@ public:
         }
     }
 
-    void unregisterPointerTarget(Node *n) {
-        assert(n->isPointerTarget());
-        n->setPointerTarget(false);
-
-    }
-
-
-    /*!
-
-        Register \a node as a receiver of pointer events. When a pointer event
-        occurs, it will be sent through the scene and transformed according to
-
-     */
-    void registerPointerTarget(Node *n) {
-        assert(!n->isPointerTarget());
-        n->setPointerTarget(true);
-    }
-
     virtual bool onPointerEvent(Node *node, PointerEvent *event) {
         return true;
     }
@@ -109,11 +91,20 @@ public:
     Renderer *renderer() const { return m_renderer; }
     AnimationManager *animationManager() { return &m_animationManager; }
 
+    /*!
+        Set the pointer event receiver to node to indicate that onPointerEvent() should
+        be called with \a node as argument regardless of where the pointer is.
+     */
+    void setPointerEventReceiver(Node *node) { m_pointerEventReceiver = node; }
+    Node *pointerEventReceiver() const { return m_pointerEventReceiver; }
+
 protected:
     bool deliverPointerEventInScene(Node *n, PointerEvent *e);
 
     Renderer *m_renderer = nullptr;
     AnimationManager m_animationManager;
+
+    Node *m_pointerEventReceiver = nullptr;
 };
 
 inline void StandardSurfaceInterface::onEvent(Event *e)
@@ -124,14 +115,22 @@ inline void StandardSurfaceInterface::onEvent(Event *e)
     case Event::PointerMove:
         if (m_renderer && m_renderer->sceneRoot()) {
             PointerEvent *pe = PointerEvent::from(e);
-            Node::dump(m_renderer->sceneRoot());
-            deliverPointerEventInScene(m_renderer->sceneRoot(), pe);
+            if (m_pointerEventReceiver) {
+                bool inv = false;
+                mat4 invNodeMatrix = TransformNode::matrixFor(m_pointerEventReceiver, m_renderer->sceneRoot()).inverted(&inv);
+                if (inv)
+                    pe->setPosition(invNodeMatrix * pe->positionInSurface());
+                else
+                    pe->setPosition(vec2());
+                onPointerEvent(m_pointerEventReceiver, pe);
+            } else {
+                deliverPointerEventInScene(m_renderer->sceneRoot(), pe);
+            }
         }
         break;
     default:
         std::cerr << __PRETTY_FUNCTION__ << ": unknown event type=" << e->type() << std::endl;
         break;
-
     }
 }
 
@@ -140,15 +139,6 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
     assert(node);
     assert(e);
 
-    std::cout << " - delivering: " << node << std::endl;
-
-    Node::Type type = node->type();
-    vec2 pos = e->position();
-
-    // Transform the event if required..
-    if (type == Node::TransformNodeType)
-        e->setPosition(static_cast<TransformNode *>(node)->matrix() * pos);
-
     // Traverse children in backwards order (and bottom up), so we get
     // inverse-paint order delivery
     Node *child = node->lastChild();
@@ -156,7 +146,6 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
         if (deliverPointerEventInScene(child, e))
             return true;
         child = child->previousSibling();
-        std::cout << " - now moving on to: " << child << std::endl;
     }
     if (node->isPointerTarget()) {
         const rect2d *area = 0;
@@ -165,17 +154,22 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
         else if (TextureNode *tn = Node::from<TextureNode>(node))
             area = &tn->geometry();
         if (area) {
-            std::cout << " - looking in area: " << *area << " " << e->position() << " " << area->contains(e->position()) << std::endl;
-            if (area->contains(e->position()) && onPointerEvent(node, e)) {
-                std::cout << " -- delivered to: " << node << std::endl;
-                return true;
+            bool inv = false;
+            mat4 nodeInvMatrix = TransformNode::matrixFor(node, m_renderer->sceneRoot()).inverted(&inv);
+
+            // can only be inside if the matrix is invertible, as otherwise
+            // the node will be "collapsed" in some dimension
+            if (inv) {
+                // Note that this doesn't bother to unset the position afterwards as
+                // we will either:
+                // 1. accept it and the value is correct
+                // 2. reject it and the value will be written next time we try..
+                e->setPosition(nodeInvMatrix * e->positionInSurface());
+                if (area->contains(e->position()) && onPointerEvent(node, e))
+                    return true;
             }
         }
     }
-
-    // Restore the old position
-    if (type == Node::TransformNodeType)
-        e->setPosition(pos);
 
     return false;
 }
