@@ -69,6 +69,12 @@ class Backend;
 
 RENGINE_END_NAMESPACE
 
+// Because Qt has some very special header include rules, we need to include
+// these things first...
+#if defined RENGINE_BACKEND_QT
+#include "backend/qt/qtpreinclude.h"
+#endif
+
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
 #include "common/colormatrix.h"
