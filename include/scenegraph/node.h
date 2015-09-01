@@ -364,6 +364,21 @@ public:
         return node;
     }
 
+    static mat4 matrixFor(Node *descendant, Node *root = 0) {
+        Node *n = descendant;
+        mat4 m;
+        while (true) {
+            if (TransformNode *tn = Node::from<TransformNode>(n)) {
+                m = tn->matrix() * m;
+            }
+            if (n == root)
+                break;
+            n = n->parent();
+            assert(root == nullptr || n != nullptr);
+        }
+        return m;
+    }
+
 protected:
     TransformNode()
         : Node(TransformNodeType)
