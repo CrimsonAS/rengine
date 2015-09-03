@@ -35,23 +35,35 @@ template <typename ...Arguments>
 class Signal
 {
 public:
-    void emit(Arguments...args) {
-        for(std::function<void(Arguments...)> &callback : m_listeners)
-            callback(args...);
+
+    typedef std::function<void(Arguments...)> SignalListener;
+
+    ~Signal()
+    {
+        delete m_listeners;
     }
 
-    int connect(const std::function<void(Arguments...)> &listener) {
-        m_listeners.push_back(listener);
-        return m_listeners.size() - 1;
+    void emit(Arguments...args) {
+        if (m_listeners)
+            for(auto &callback : *m_listeners)
+                callback(args...);
+    }
+
+    int connect(const SignalListener &listener) {
+        if (!m_listeners)
+            m_listeners = new std::vector<SignalListener>();
+        m_listeners->push_back(listener);
+        return m_listeners->size() - 1;
     }
 
     void disconnect(int id) {
-        assert(id < m_listeners.size());
-        m_listeners.erase(m_listeners.begin() + id);
+        assert(m_listeners);
+        assert(id < m_listeners->size());
+        m_listeners->erase(m_listeners->begin() + id);
     }
 
 private:
-    std::vector<std::function<void(Arguments...)> > m_listeners;
+    std::vector<SignalListener> *m_listeners = nullptr;
 };
 
 RENGINE_END_NAMESPACE

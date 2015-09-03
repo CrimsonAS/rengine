@@ -48,9 +48,13 @@ lots and lots...
      up a rotation around a point x,y requires two nodes right now. One for the
      offset and one to run the animation on.
  - input, both keyboard, touch and mouse
-   - shared input event for touch/pointer
-   - what does the event receiver look like?
-   - How does it fit with the tree
+   - keyboard input missing
+   - basic pointer support in place, but lacking multitouch
+ - property api needs to improve
+   - Property<float> takes up 32 bytes: 4 from float, 24 from std::vector, 4 bytes of padding
+   - both signal and property's disconnect are broken, as the id is an integer
+     removing one in the middle will invalidate all ids after that position...
+
 
 
 overview of the dependencies between source directories
