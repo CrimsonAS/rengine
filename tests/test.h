@@ -228,6 +228,6 @@ RENGINE_USE_NAMESPACE
 // This is a rather cruel thing to do, but it saves us
 // from including this in all the tst_ files and since
 // test.h is only included in a single file, it is ok..
-RENGINE_DEFINE_NODE_ALLOCATION_POOLS
-RENGINE_DEFINE_BACKEND
+RENGINE_NODE_DEFINE_ALLOCATION_POOLS
+RENGINE_BACKEND_DEFINE
 

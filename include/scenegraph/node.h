@@ -32,17 +32,31 @@
 
 RENGINE_BEGIN_NAMESPACE
 
+#define RENGINE_NODE_DEFINE_FROM_FUNCTION(Class, Type) \
+    static Class *from(Node *node) {                   \
+        return (node->type() == Type)                  \
+               ? static_cast<Class *>(node)            \
+               : 0;                                    \
+    }                                                  \
+    static const Class *from(const Node *node) {       \
+        return (node->type() == Type)                  \
+               ? static_cast<const Class *>(node)      \
+               : 0;                                    \
+    }                                                  \
+
 class Node {
 public:
     enum Type {
-        BasicNodeType = 0,
-        RectangleNodeType,
-        TextureNodeType,
-        TransformNodeType,
-        OpacityNodeType,
-        ColorFilterNodeType,
-        BlurNodeType,
-        ShadowNodeType,
+        BasicNodeType         = 0,
+        TransformNodeType     = 1,
+        OpacityNodeType       = 2,
+        ColorFilterNodeType   = 3,
+        BlurNodeType          = 4,
+        ShadowNodeType        = 5,
+
+        RectangleNodeBaseType = (1 << 6),
+        RectangleNodeType     = 0 | RectangleNodeBaseType,
+        TextureNodeType       = 1 | RectangleNodeBaseType,
     };
 
     /*!
@@ -201,24 +215,6 @@ public:
      */
     Type type() const { return m_type; }
 
-    /*!
-     * Helper function to downcast from Node * to a specific subclass.
-     */
-    template <typename T>
-    static T* from(Node *n) {
-        assert(n);
-        return (n->type() == (Node::Type) T::StaticType) ? static_cast<T *>(n) : 0;
-    }
-
-    /*!
-     * Helper function to downcast from const Node * to a specific subclass.
-     */
-    template <typename T>
-    static const T* from(const Node *n) {
-        assert(n);
-        return (n->type() == T::StaticType) ? static_cast<const T *>(n) : 0;
-    }
-
     void requestPreprocess() { m_preprocess = true; }
     void preprocess() {
         if (m_preprocess) {
@@ -309,19 +305,17 @@ protected:
     Node *m_next;
     Node *m_prev;
 
-    Type m_type : 4;
+    Type m_type : 8;
     unsigned m_preprocess : 1;
     unsigned m_poolAllocated : 1;
     unsigned m_pointerTarget : 1;
     unsigned m_pointerDisabled : 1;
-    unsigned m_reserved : 24; // 32 - 8
+    unsigned m_reserved : 20; // 32 - 12
 };
 
 
 class OpacityNode : public Node {
 public:
-    enum { StaticType = OpacityNodeType };
-
     float opacity() const { return m_opacity; }
     void setOpacity(float opacity) { m_opacity = opacity; }
 
@@ -332,6 +326,8 @@ public:
         node->setOpacity(opacity);
         return node;
     }
+
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(OpacityNode, OpacityNodeType);
 
 protected:
     OpacityNode()
@@ -347,8 +343,6 @@ protected:
 class TransformNode : public Node
 {
 public:
-    enum { StaticType = TransformNodeType };
-
     const mat4 &matrix() const { return m_matrix; }
     void setMatrix(const mat4 &m) { m_matrix = m; }
 
@@ -368,7 +362,7 @@ public:
         Node *n = descendant;
         mat4 m;
         while (true) {
-            if (TransformNode *tn = Node::from<TransformNode>(n)) {
+            if (TransformNode *tn = TransformNode::from(n)) {
                 m = tn->matrix() * m;
             }
             if (n == root)
@@ -378,6 +372,8 @@ public:
         }
         return m;
     }
+
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(TransformNode, TransformNodeType);
 
 protected:
     TransformNode()
@@ -391,13 +387,36 @@ protected:
 };
 
 
-class RectangleNode : public Node {
+class RectangleNodeBase : public Node {
 public:
-    enum { StaticType = RectangleNodeType };
-
     const rect2d &geometry() const { return m_geometry; }
     void setGeometry(const rect2d &rect) { m_geometry = rect; }
 
+    // Uses & BaseType, so can't use the macro
+    static RectangleNodeBase *from(Node *node) {
+        return (node->type() & RectangleNodeBaseType)
+               ? static_cast<RectangleNodeBase *>(node)
+               : 0;
+    }
+    static const RectangleNodeBase *from(const Node *node) {
+        return (node->type() & RectangleNodeBaseType)
+               ? static_cast<const RectangleNodeBase *>(node)
+               : 0;
+    }
+
+protected:
+    RectangleNodeBase(Type type)
+        : Node(type)
+    {
+        assert(type & RectangleNodeBaseType);
+    }
+
+    rect2d m_geometry;
+};
+
+
+class RectangleNode : public RectangleNodeBase {
+public:
     const vec4 &color() const { return m_color; }
     void setColor(const vec4 &color) {
         m_color = color;
@@ -416,23 +435,19 @@ public:
         return node;
     }
 
-protected:
-    RectangleNode(Type type = RectangleNodeType) : Node(type) { }
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(RectangleNode, RectangleNodeType);
 
-    rect2d m_geometry;
+protected:
+    RectangleNode(Type type = RectangleNodeType) : RectangleNodeBase(type) { }
+
     vec4 m_color;
 };
 
 
-class TextureNode : public Node {
+class TextureNode : public RectangleNodeBase {
 public:
-    enum { StaticType = TextureNodeType };
     const Texture *layer() const { return m_layer; }
     void setTexture(const Texture *layer) { m_layer = layer; }
-
-    const rect2d &geometry() const { return m_geometry; }
-    void setGeometry(const rect2d &rect) { m_geometry = rect; }
-
 
     RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode);
 
@@ -443,21 +458,20 @@ public:
         return node;
     }
 
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(TextureNode, TextureNodeType);
+
 protected:
     TextureNode()
-        : Node(TextureNodeType)
+        : RectangleNodeBase(TextureNodeType)
         , m_layer(0)
     {
     }
 
     const Texture *m_layer;
-    rect2d m_geometry;
 };
 
 class ColorFilterNode : public Node {
 public:
-    enum { StaticType = ColorFilterNodeType };
-
     void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
     const mat4 &colorMatrix() const { return m_colorMatrix; }
 
@@ -468,6 +482,8 @@ public:
         node->setColorMatrix(matrix);
         return node;
     }
+
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(ColorFilterNode, ColorFilterNodeType);
 
 protected:
     ColorFilterNode()
@@ -492,6 +508,8 @@ public:
         node->setRadius(radius);
         return node;
     }
+
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(BlurNode, BlurNodeType);
 
 protected:
     BlurNode() : Node(BlurNodeType), m_radius(3) { }
@@ -522,6 +540,8 @@ public:
         return node;
     }
 
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(ShadowNode, ShadowNodeType);
+
 protected:
     ShadowNode() : Node(ShadowNodeType), m_radius(3), m_offset(5, 5), m_color(0.5) { }
 
@@ -530,7 +550,7 @@ protected:
     vec4 m_color;
 };
 
-#define RENGINE_DEFINE_NODE_ALLOCATION_POOLS              \
+#define RENGINE_NODE_DEFINE_ALLOCATION_POOLS              \
     RENGINE_ALLOCATION_POOL_DEFINITION(Node);             \
     RENGINE_ALLOCATION_POOL_DEFINITION(TransformNode);    \
     RENGINE_ALLOCATION_POOL_DEFINITION(OpacityNode);      \

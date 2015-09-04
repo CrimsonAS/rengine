@@ -682,8 +682,8 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
     assert(devRect.width() >= 0);
     assert(devRect.height() >= 0);
 
-    BlurNode *blurNode = Node::from<BlurNode>(e->node);
-    ShadowNode *shadowNode = Node::from<ShadowNode>(e->node);
+    BlurNode *blurNode = BlurNode::from(e->node);
+    ShadowNode *shadowNode = ShadowNode::from(e->node);
 
     if (blurNode || shadowNode) {
         devRect.tl -= 1.0f;

@@ -1,8 +1,8 @@
 #include "rengine.h"
 #include "examples.h"
 
-RENGINE_DEFINE_NODE_ALLOCATION_POOLS;
-RENGINE_DEFINE_BACKEND
+RENGINE_NODE_DEFINE_ALLOCATION_POOLS;
+RENGINE_BACKEND_DEFINE
 
 class Rectangles : public StandardSurfaceInterface
 {

@@ -209,7 +209,7 @@ inline void QtWindow::resizeEvent(QResizeEvent *e)
 
 RENGINE_END_NAMESPACE
 
-#define RENGINE_DEFINE_BACKEND                         \
+#define RENGINE_BACKEND_DEFINE                         \
     Backend *Backend::get() {                          \
         static QtBackend *singleton = new QtBackend(); \
         return singleton;                              \

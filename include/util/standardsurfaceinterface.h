@@ -148,12 +148,9 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
         child = child->previousSibling();
     }
     if (node->isPointerTarget()) {
-        const rect2d *area = 0;
-        if (RectangleNode *rn = Node::from<RectangleNode>(node))
-            area = &rn->geometry();
-        else if (TextureNode *tn = Node::from<TextureNode>(node))
-            area = &tn->geometry();
-        if (area) {
+        RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
+        if (rectNode) {
+            const rect2d &area = rectNode->geometry();
             bool inv = false;
             mat4 nodeInvMatrix = TransformNode::matrixFor(node, m_renderer->sceneRoot()).inverted(&inv);
 
@@ -165,7 +162,7 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
                 // 1. accept it and the value is correct
                 // 2. reject it and the value will be written next time we try..
                 e->setPosition(nodeInvMatrix * e->positionInSurface());
-                if (area->contains(e->position()) && onPointerEvent(node, e))
+                if (area.contains(e->position()) && onPointerEvent(node, e))
                     return true;
             }
         }
