@@ -31,39 +31,59 @@
 
 RENGINE_BEGIN_NAMESPACE
 
+template <typename ...Arguments> class Signal;
+
+template <typename ... Arguments>
+class SignalHandler
+{
+public:
+    virtual ~SignalHandler() { }
+    virtual void onSignal(Arguments ...args) = 0;
+
+    class Function : public SignalHandler<Arguments ...>
+    {
+    public:
+        Function(const std::function<void(Arguments ...)> handler) : m_handler(handler) { }
+        void onSignal(Arguments ... args) override { m_handler(args...); }
+    private:
+        std::function<void(Arguments ...)> m_handler;
+    };
+
+};
+
+
+
 template <typename ...Arguments>
 class Signal
 {
 public:
 
-    typedef std::function<void(Arguments...)> SignalListener;
-
     ~Signal()
     {
-        delete m_listeners;
+        delete m_handlers;
     }
 
     void emit(Arguments...args) {
-        if (m_listeners)
-            for(auto &callback : *m_listeners)
-                callback(args...);
+        if (m_handlers)
+            for(auto handler : *m_handlers)
+                handler->onSignal(args...);
     }
 
-    int connect(const SignalListener &listener) {
-        if (!m_listeners)
-            m_listeners = new std::vector<SignalListener>();
-        m_listeners->push_back(listener);
-        return m_listeners->size() - 1;
+    void connect(SignalHandler<Arguments...> *handler) {
+        if (!m_handlers)
+            m_handlers = new std::vector<SignalHandler<Arguments...> *>();
+        m_handlers->push_back(handler);
     }
 
-    void disconnect(int id) {
-        assert(m_listeners);
-        assert(id < m_listeners->size());
-        m_listeners->erase(m_listeners->begin() + id);
+    void disconnect(SignalHandler<Arguments...> *handler) {
+        assert(m_handlers);
+        auto pos = std::find(m_handlers->begin(), m_handlers->end(), handler);
+        assert(pos != m_handlers->end());
+        m_handlers->erase(pos);
     }
 
 private:
-    std::vector<SignalListener> *m_listeners = nullptr;
+    std::vector<SignalHandler<Arguments...> *> *m_handlers = nullptr;
 };
 
 RENGINE_END_NAMESPACE
