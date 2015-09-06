@@ -527,6 +527,11 @@ public:
     float width() const { return br.x - tl.x; }
     float height() const { return br.y - tl.y; }
 
+    void setX(float x) { br.x += (x - tl.x); tl.x = x; }
+    void setY(float y) { br.y += (y - tl.y); tl.y = y; }
+    void setWidth(float w) { br.x = tl.x + w; }
+    void setHeight(float h) { br.y = tl.y + h; }
+
     vec2 position() const { return tl; }
     void setPosition(const vec2 &position) {
         br = position + vec2(width(), height());
