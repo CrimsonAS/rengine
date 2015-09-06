@@ -2,6 +2,7 @@
 #include "examples.h"
 
 RENGINE_NODE_DEFINE_ALLOCATION_POOLS;
+RENGINE_NODE_DEFINE_SIGNALS
 RENGINE_BACKEND_DEFINE
 
 class Rectangles : public StandardSurfaceInterface

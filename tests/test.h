@@ -229,5 +229,6 @@ RENGINE_USE_NAMESPACE
 // from including this in all the tst_ files and since
 // test.h is only included in a single file, it is ok..
 RENGINE_NODE_DEFINE_ALLOCATION_POOLS
+RENGINE_NODE_DEFINE_SIGNALS
 RENGINE_BACKEND_DEFINE
 

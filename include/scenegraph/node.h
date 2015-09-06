@@ -44,7 +44,8 @@ RENGINE_BEGIN_NAMESPACE
                : 0;                                    \
     }                                                  \
 
-class Node {
+class Node : public SignalEmitter
+{
 public:
     enum Type {
         BasicNodeType         = 0,
@@ -389,8 +390,58 @@ protected:
 
 class RectangleNodeBase : public Node {
 public:
+
+    static Signal<> xChanged;
+    static Signal<> yChanged;
+    static Signal<> widthChanged;
+    static Signal<> heightChanged;
+
+    float x() const { return m_geometry.x(); }
+    void setX(float x) {
+        if (x == m_geometry.x())
+            return;
+        m_geometry.setX(x);
+        xChanged.emit(this);
+    }
+
+    float y() const { return m_geometry.y(); }
+    void setY(float y) {
+        if (y == m_geometry.y())
+            return;
+        m_geometry.setY(y);
+        yChanged.emit(this);
+    }
+
+    float width() const { return m_geometry.width(); }
+    void setWidth(float w) {
+        if (w == m_geometry.width())
+            return;
+        m_geometry.setWidth(w);
+        widthChanged.emit(this);
+    }
+
+    float height() const { return m_geometry.height(); }
+    void setHeight(float h) {
+        if (h == m_geometry.height())
+            return;
+        m_geometry.setHeight(h);
+        heightChanged.emit(this);
+    }
+
     const rect2d &geometry() const { return m_geometry; }
-    void setGeometry(const rect2d &rect) { m_geometry = rect; }
+    void setGeometry(const rect2d &rect) {
+        bool updateX = rect.x() != m_geometry.x();
+        bool updateY = rect.y() != m_geometry.y();
+        bool updateW = rect.width() != m_geometry.width();
+        bool updateH = rect.height() != m_geometry.height();
+        if (!updateX && !updateY && !updateW && !updateH)
+            return;
+        m_geometry = rect;
+        if (updateX) xChanged.emit(this);
+        if (updateY) yChanged.emit(this);
+        if (updateW) widthChanged.emit(this);
+        if (updateH) heightChanged.emit(this);
+    }
 
     // Uses & BaseType, so can't use the macro
     static RectangleNodeBase *from(Node *node) {
@@ -559,5 +610,11 @@ protected:
     RENGINE_ALLOCATION_POOL_DEFINITION(ColorFilterNode);  \
     RENGINE_ALLOCATION_POOL_DEFINITION(BlurNode);         \
     RENGINE_ALLOCATION_POOL_DEFINITION(ShadowNode);
+
+#define RENGINE_NODE_DEFINE_SIGNALS                               \
+    rengine::Signal<> rengine::RectangleNodeBase::xChanged;       \
+    rengine::Signal<> rengine::RectangleNodeBase::yChanged;       \
+    rengine::Signal<> rengine::RectangleNodeBase::widthChanged;   \
+    rengine::Signal<> rengine::RectangleNodeBase::heightChanged;  \
 
 RENGINE_END_NAMESPACE

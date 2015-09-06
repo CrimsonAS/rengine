@@ -20,6 +20,7 @@ RENGINE_END_NAMESPACE
                                                         \
     RENGINE_BACKEND_DEFINE                              \
     RENGINE_NODE_DEFINE_ALLOCATION_POOLS                \
+    RENGINE_NODE_DEFINE_SIGNALS                         \
                                                         \
 int main(int argc, char **argv) {                       \
     RENGINE_ALLOCATION_POOL(Node, 256);                 \
