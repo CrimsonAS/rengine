@@ -41,7 +41,7 @@
             "id": "rotation",
             "dx": "root->width() / 2.0f",
             "dy": "root->height() / 2.0f",
-            "rotateAroundY": "1.0f",
+            "rotateAroundY": 0.789,
             "object": {
                 "class": "rengine::TextureNode",
                 "id": "image",

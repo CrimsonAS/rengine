@@ -1,6 +1,7 @@
 #pragma once
 
-RENGINE_BEGIN_NAMESPACE
+#include <string>
+#include <iostream>
 
 class Tokenizer
 {
@@ -14,14 +15,18 @@ public:
         Tk_CloseSquare,   // ]
         Tk_Colon,         // :
         Tk_Comma,         // ,
+        Tk_Number,        // well.. a number...
         Tk_String,        // "string-without-amps"
+    };
 
-    }
     Tokenizer(std::istream &stream)
         : m_stream(stream)
-        , m_token(Tk_BeginningOfStream)
+        , m_token(Tk_None)
+        , m_number(0.0)
         , m_line(0)
         , m_position(0)
+        , m_stringStartLine(0)
+        , m_stringStartPosition(0)
     {
     }
 
@@ -29,6 +34,7 @@ public:
 
     Token token() const { return m_token; }
     std::string stringValue() const { return m_string; }
+    double numberValue() const { return m_number; }
 
     unsigned line() const { return m_line; }
     unsigned position() const { return m_position; }
@@ -38,8 +44,9 @@ public:
 
 public:
     char readChar() {
-        char c;
-        istream >> c;
+        if (m_stream.eof())
+            return 0;
+        char c = m_stream.get();
         if (c == '\n') {
             ++m_line;
             m_position = 0;
@@ -49,9 +56,10 @@ public:
         return c;
     }
 
-    std::istream m_stream;
+    std::istream &m_stream;
     Token m_token;
     std::string m_string;
+    double m_number;
 
     unsigned m_line;
     unsigned m_position;
@@ -59,7 +67,7 @@ public:
     unsigned m_stringStartPosition;
 };
 
-inline Token next() {
+inline Tokenizer::Token Tokenizer::next() {
 
     if (m_token == Tk_EndOfStream)
         return Tk_EndOfStream;
@@ -67,7 +75,6 @@ inline Token next() {
     char current = readChar();
 
     Token token = Tk_None;
-
     while (token == Tk_None) {
         if (current == 0)        token = Tk_EndOfStream;
         else if (current == '{') token = Tk_OpenCurly;
@@ -84,9 +91,20 @@ inline Token next() {
             m_string.clear();
             current = readChar();
             while (current != '"' && current != 0) {
-                m_string += current;
+                m_string.push_back(current);
                 current = readChar();
             }
+        } else if ((current >= '0' && current <= '9') || current == '-') {
+            token = Tk_Number;
+            std::string number;
+            number.push_back(current);
+            current = readChar();
+            while ((current >= '0' && current <= '9') || current == 'e' || current == '.') {
+                number.push_back(current);
+                current = readChar();
+            }
+            m_number = stof(number);
+
         } else {
             current = readChar();
         }

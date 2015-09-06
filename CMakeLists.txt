@@ -75,7 +75,7 @@ enable_testing()
 
 ################################################################################
 #
-# librengine.a
+#
 #
 if (RENGINE_USE_SDL)
     add_definitions(-DRENGINE_BACKEND_SDL)
@@ -85,6 +85,14 @@ else()
     add_definitions(-DRENGINE_BACKEND_QT)
     set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
 endif()
+
+
+
+################################################################################
+#
+# Tests and Examples
+#
+add_executable(renginec "src/renginec/main.cpp")
 
 
 
