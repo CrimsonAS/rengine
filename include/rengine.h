@@ -79,6 +79,9 @@ RENGINE_END_NAMESPACE
 #include "common/allocationpool.h"
 #include "common/colormatrix.h"
 
+#include "object/property.h"
+#include "object/signal.h"
+
 #include "windowsystem/event.h"
 #include "windowsystem/surface.h"
 
@@ -97,9 +100,6 @@ RENGINE_END_NAMESPACE
 
 #include "util/standardsurfaceinterface.h"
 #include "util/maindefine.h"
-
-#include "object/property.h"
-#include "object/signal.h"
 
 #if defined RENGINE_BACKEND_QT
 #include "backend/qt/qtbackend.h"

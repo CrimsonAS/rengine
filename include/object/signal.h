@@ -33,6 +33,13 @@ RENGINE_BEGIN_NAMESPACE
 
 template <typename ...Arguments> class Signal;
 
+class SignalBase
+{
+public:
+    virtual ~SignalBase() {}
+};
+
+
 template <typename ... Arguments>
 class SignalHandler
 {
@@ -48,42 +55,81 @@ public:
     private:
         std::function<void(Arguments ...)> m_handler;
     };
-
 };
 
 
-
-template <typename ...Arguments>
-class Signal
+class SignalEmitter
 {
 public:
-
-    ~Signal()
+    virtual ~SignalEmitter()
     {
-        delete m_handlers;
-    }
-
-    void emit(Arguments...args) {
-        if (m_handlers)
-            for(auto handler : *m_handlers)
-                handler->onSignal(args...);
-    }
-
-    void connect(SignalHandler<Arguments...> *handler) {
-        if (!m_handlers)
-            m_handlers = new std::vector<SignalHandler<Arguments...> *>();
-        m_handlers->push_back(handler);
-    }
-
-    void disconnect(SignalHandler<Arguments...> *handler) {
-        assert(m_handlers);
-        auto pos = std::find(m_handlers->begin(), m_handlers->end(), handler);
-        assert(pos != m_handlers->end());
-        m_handlers->erase(pos);
+        delete m_buckets;
     }
 
 private:
-    std::vector<SignalHandler<Arguments...> *> *m_handlers = nullptr;
+    template <typename ...Arguments>
+    friend class Signal;
+    struct Bucket
+    {
+        virtual ~Bucket() { }
+        SignalBase *signal;
+    };
+    std::vector<Bucket *> *m_buckets = nullptr;
 };
+
+
+template <typename ...Arguments>
+class Signal : SignalBase
+{
+    struct Bucket : public SignalEmitter::Bucket
+    {
+        std::vector<SignalHandler<Arguments...> *> handlers;
+    };
+public:
+    void emit(SignalEmitter *emitter, Arguments ... args)
+    {
+        if (Bucket *bucket = findBucket(emitter)) {
+            for (SignalHandler<Arguments...> *handler : bucket->handlers)
+                handler->onSignal(args...);
+        }
+    }
+
+    void connect(SignalEmitter *emitter, SignalHandler<Arguments ...> *handler)
+    {
+        Bucket *bucket = findBucket(emitter);
+        if (!bucket) {
+            bucket = new Bucket();
+            bucket->signal = this;
+            if (!emitter->m_buckets) {
+                emitter->m_buckets = new std::vector<SignalEmitter::Bucket *>();
+            }
+            emitter->m_buckets->push_back(bucket);
+        }
+        bucket->handlers.push_back(handler);
+    }
+
+    void disconnect(SignalEmitter *emitter, SignalHandler<Arguments ...> *handler)
+    {
+        Bucket *bucket = findBucket(emitter);
+        assert(bucket);
+        auto pos = std::find(bucket->handlers.begin(), bucket->handlers.end(), handler);
+        assert(pos != bucket->handlers.end());
+        bucket->handlers.erase(pos);
+    }
+private:
+
+    Bucket *findBucket(SignalEmitter *emitter) const
+    {
+        if (!emitter->m_buckets)
+            return 0;
+        for (SignalEmitter::Bucket *bucket : *emitter->m_buckets) {
+            if (bucket->signal == this)
+                return static_cast<Bucket *>(bucket);
+        }
+        return 0;
+    }
+};
+
+
 
 RENGINE_END_NAMESPACE
