@@ -49,7 +49,7 @@ if (RENGINE_USE_SDL)
     # ### TODO: Why is the -L needed here?
     set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib)
 elseif(RENGINE_USE_SFHWC)
-    add_definitions(-DRENGINE_BACKEND_SFHWC)
+
 else()
     find_package(Qt5Gui)
 endif()
@@ -81,6 +81,8 @@ enable_testing()
 if (RENGINE_USE_SDL)
     add_definitions(-DRENGINE_BACKEND_SDL)
     set(RENGINE_LIBS ${RENGINE_LIBS} ${SDL2_LIBRARIES})
+elseif(RENGINE_USE_SFHWC)
+    add_definitions(-DRENGINE_BACKEND_SFHWC)
 else()
     # Qt based
     add_definitions(-DRENGINE_BACKEND_QT)

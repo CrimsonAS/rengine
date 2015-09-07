@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -46,15 +47,16 @@ class SignalHandler
 public:
     virtual ~SignalHandler() { }
     virtual void onSignal(Arguments ...args) = 0;
+};
 
-    class Function : public SignalHandler<Arguments ...>
-    {
-    public:
-        Function(const std::function<void(Arguments ...)> handler) : m_handler(handler) { }
-        void onSignal(Arguments ... args) override { m_handler(args...); }
-    private:
-        std::function<void(Arguments ...)> m_handler;
-    };
+template<typename ... Arguments>
+class SignalHandler_Function : public SignalHandler<Arguments ...>
+{
+public:
+    SignalHandler_Function(const std::function<void(Arguments ...)> handler) : m_handler(handler) { }
+    void onSignal(Arguments ... args) override { m_handler(args...); }
+private:
+    std::function<void(Arguments ...)> m_handler;
 };
 
 
@@ -69,27 +71,29 @@ public:
 private:
     template <typename ...Arguments>
     friend class Signal;
-    struct Bucket
+    struct BucketBase
     {
-        virtual ~Bucket() { }
+        virtual ~BucketBase() { }
         SignalBase *signal;
     };
-    std::vector<Bucket *> *m_buckets = nullptr;
+    std::vector<BucketBase *> *m_buckets = nullptr;
 };
 
 
 template <typename ...Arguments>
 class Signal : SignalBase
 {
-    struct Bucket : public SignalEmitter::Bucket
+    struct Bucket : public SignalEmitter::BucketBase
     {
-        std::vector<SignalHandler<Arguments...> *> handlers;
+        // Using void * rather than SignalHandler<Arguments ...> because gcc gets confused..
+        std::vector<SignalHandler<Arguments ...> *> handlers;
     };
+
 public:
     void emit(SignalEmitter *emitter, Arguments ... args)
     {
         if (Bucket *bucket = findBucket(emitter)) {
-            for (SignalHandler<Arguments...> *handler : bucket->handlers)
+            for (auto handler : bucket->handlers)
                 handler->onSignal(args...);
         }
     }
@@ -101,7 +105,7 @@ public:
             bucket = new Bucket();
             bucket->signal = this;
             if (!emitter->m_buckets) {
-                emitter->m_buckets = new std::vector<SignalEmitter::Bucket *>();
+                emitter->m_buckets = new std::vector<SignalEmitter::BucketBase *>();
             }
             emitter->m_buckets->push_back(bucket);
         }
@@ -122,7 +126,7 @@ private:
     {
         if (!emitter->m_buckets)
             return 0;
-        for (SignalEmitter::Bucket *bucket : *emitter->m_buckets) {
+        for (SignalEmitter::BucketBase *bucket : *emitter->m_buckets) {
             if (bucket->signal == this)
                 return static_cast<Bucket *>(bucket);
         }

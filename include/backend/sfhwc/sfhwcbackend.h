@@ -1,7 +1,5 @@
 #pragma once
 
-#include "backend.h"
-
 RENGINE_BEGIN_NAMESPACE
 
 class SfHwcSurface;
@@ -37,8 +35,8 @@ public:
     SurfaceInterface *m_iface;
 };
 
-void SfHwcBackend::quit() { std::cout << __PRETTY_FUNCTION << std::endl; }
-void SfHwcBackend::run() { std::cout << __PRETTY_FUNCTION << std::endl; }
+void SfHwcBackend::quit() { std::cout << __PRETTY_FUNCTION__<< std::endl; }
+void SfHwcBackend::run() { std::cout << __PRETTY_FUNCTION__<< std::endl; }
 
 Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
 {
@@ -53,12 +51,12 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface)
 	setSurfaceToInterface(iface);
 }
 
-void SfHwcSurface::hide() override { std::cout << __PRETTY_FUNCTION << std::endl; }
-void SfHwcSurface::show() override { std::cout << __PRETTY_FUNCTION << std::endl; }
-bool SfHwcSurface::makeCurrent() override { std::cout << __PRETTY_FUNCTION << std::endl; }
-bool SfHwcSurface::swapBuffers() override { std::cout << __PRETTY_FUNCTION << std::endl; }
-vec2 SfHwcSurface::size() const override { return vec2(720, 1280); }
-void SfHwcSurface::requestRender() override { std::cout << __PRETTY_FUNCTION << std::endl; }
+void SfHwcSurface::hide() { std::cout << __PRETTY_FUNCTION__<< std::endl; }
+void SfHwcSurface::show() { std::cout << __PRETTY_FUNCTION__<< std::endl; }
+bool SfHwcSurface::makeCurrent() { std::cout << __PRETTY_FUNCTION__<< std::endl; return false; }
+bool SfHwcSurface::swapBuffers() { std::cout << __PRETTY_FUNCTION__<< std::endl; return false; }
+vec2 SfHwcSurface::size() const { return vec2(720, 1280); }
+void SfHwcSurface::requestRender() { std::cout << __PRETTY_FUNCTION__<< std::endl; }
 
 
 

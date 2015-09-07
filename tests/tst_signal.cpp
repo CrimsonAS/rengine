@@ -34,8 +34,8 @@ void tst_signal_basic()
 
     SignalEmitter emitter;
 
-    SignalHandler<>::Function voidLambda([&]() { called_void = true; });
-    SignalHandler<>::Function voidCFunc(cfunc_void);
+    SignalHandler_Function<> voidLambda([&]() { called_void = true; });
+    SignalHandler_Function<> voidCFunc(cfunc_void);
 
     Signal<> signal_void;
     signal_void.connect(&emitter, &voidLambda);
@@ -47,11 +47,11 @@ void tst_signal_basic()
     signal_void.disconnect(&emitter, &voidLambda);
 
     int emitted_int = 0;
-    SignalHandler<int>::Function intLambda([&] (int value) {
+    SignalHandler_Function<int> intLambda([&] (int value) {
         called_int = true;
         emitted_int = value;
     });
-    SignalHandler<int>::Function intCFunc(cfunc_int);
+    SignalHandler_Function<int> intCFunc(cfunc_int);
     Signal<int> signal_int;
     signal_int.connect(&emitter, &intLambda);
     signal_int.connect(&emitter, &intCFunc);
@@ -64,13 +64,13 @@ void tst_signal_basic()
     std::string emitted_string;
     float emitted_float1 = 0;
     float emitted_float2 = 0;
-    SignalHandler<std::string, float, float>::Function stringFloatFloatLambda([&](std::string str, float a, float b) {
+    SignalHandler_Function<std::string, float, float> stringFloatFloatLambda([&](std::string str, float a, float b) {
         called_string_float_float = true;
         emitted_string = str;
         emitted_float1 = a;
         emitted_float2 = b;
     });
-    SignalHandler<std::string, float, float>::Function stringFloatFloatCFunc(cfunc_string_float_float);
+    SignalHandler_Function<std::string, float, float> stringFloatFloatCFunc(cfunc_string_float_float);
     Signal<std::string, float, float> signal_string_float_float;
     signal_string_float_float.connect(&emitter, &stringFloatFloatLambda);
     signal_string_float_float.connect(&emitter, &stringFloatFloatCFunc);
