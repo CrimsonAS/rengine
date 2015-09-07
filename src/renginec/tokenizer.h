@@ -42,6 +42,18 @@ public:
     unsigned stringStartLine() const { return m_stringStartLine; }
     unsigned stringStartPosition() const { return m_stringStartPosition; }
 
+    std::string tokenAsString() const {
+        if (m_token == Tokenizer::Tk_OpenCurly) return "{";
+        else if (m_token == Tokenizer::Tk_CloseCurly) return "}";
+        else if (m_token == Tokenizer::Tk_OpenSquare) return "[";
+        else if (m_token == Tokenizer::Tk_CloseSquare) return "]";
+        else if (m_token == Tokenizer::Tk_Colon) return ":";
+        else if (m_token == Tokenizer::Tk_Comma) return ",";
+        else if (m_token == Tokenizer::Tk_String) return stringValue();
+        else if (m_token == Tokenizer::Tk_Number) return std::to_string(numberValue());
+        return "";
+    }
+
 public:
     char readChar() {
         if (m_stream.eof())

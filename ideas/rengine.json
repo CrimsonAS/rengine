@@ -1,7 +1,7 @@
 {
     "rengine-revision": 0,
 
-    "class":
+    "class-declaration":
     {
         "include": "rengine.h",
         "name": "Texture",
@@ -9,7 +9,7 @@
         "type": "heap-object"
     },
 
-    "class":
+    "class-declaration":
     {
         "include": "rengine.h",
         "name": "Node",
@@ -18,7 +18,7 @@
         // no properties...
     },
 
-    "class":
+    "class-declaration":
     {
         "include": "rengine.h",
         "name": "RectangleNode",
@@ -45,7 +45,7 @@
         ]
     },
 
-    "class":
+    "class-declaration":
     {
         "include": "rengine.h",
         "name": "TextureNode",
@@ -72,7 +72,7 @@
         ]
     },
 
-    "class":
+    "class-declaration":
     {
         "include": "rengine.h",
         "name": "TransformNode",

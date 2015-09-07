@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "parser.h"
 #include "fstream"
 
 using namespace std;
@@ -35,17 +36,6 @@ int main(int argc, char **argv)
     ifstream stream(options.inputFile.c_str(), ifstream::in);
     Tokenizer tokenizer(stream);
 
-    Tokenizer::Token token = tokenizer.next();
-
-    while (token != Tokenizer::Tk_EndOfStream) {
-        if (token == Tokenizer::Tk_OpenCurly) cout << "{" << endl;
-        else if (token == Tokenizer::Tk_CloseCurly) cout << "}" << endl;
-        else if (token == Tokenizer::Tk_OpenSquare) cout << "[" << endl;
-        else if (token == Tokenizer::Tk_CloseSquare) cout << "]" << endl;
-        else if (token == Tokenizer::Tk_Colon) cout << ":" << endl;
-        else if (token == Tokenizer::Tk_Comma) cout << "," << endl;
-        else if (token == Tokenizer::Tk_String) cout << tokenizer.stringValue() << endl;
-        else if (token == Tokenizer::Tk_Number) cout << tokenizer.numberValue() << endl;
-        token = tokenizer.next();
-    }
+    Parser parser;
+    parser.parse(&tokenizer)
 }
