@@ -43,6 +43,22 @@ public:
             *root << child;
         }
 
+        float bw = std::max(s.x, s.y) * 0.4;
+        TransformNode *rotation = TransformNode::create(mat4::rotate2D(1));
+        *root << &(*TransformNode::create(mat4::translate2D(s.x / 2, s.y / 2))
+                   << &(*rotation
+                        << RectangleNode::create(rect2d::fromXywh(-bw/2.0, -5, bw, 10), vec4(0, 0, 1, 1))
+                       )
+                  );
+
+        AnimationClosure<TransformNode, LinearTimingFunction> *anim
+            = new AnimationClosure<TransformNode, LinearTimingFunction>(rotation);
+        anim->setDuration(5);
+        anim->setIterations(-1);
+        anim->keyFrames.times() << 0 << 1;
+        anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
+        animationManager()->startAnimation(anim);
+
         return root;
     }
 };
