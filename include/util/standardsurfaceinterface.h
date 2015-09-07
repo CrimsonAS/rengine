@@ -36,9 +36,11 @@ public:
 
     ~StandardSurfaceInterface()
     {
-        if (m_renderer->sceneRoot())
-            m_renderer->sceneRoot()->destroy();
-        delete m_renderer;
+        if (m_renderer) {
+            if (m_renderer->sceneRoot())
+                m_renderer->sceneRoot()->destroy();
+            delete m_renderer;
+        }
     }
 
     virtual Node *update(Node *oldRoot) = 0;

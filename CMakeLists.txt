@@ -46,12 +46,17 @@ if (RENGINE_USE_SDL)
     include(FindPkgConfig)
     pkg_search_module(SDL2 REQUIRED sdl2)
     include_directories(${SDL2_INCLUDE_DIRS})
-    # ### TODO: Why is the -L needed here?
-    set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib)
+    set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib ${SDL2_LIBRARIES})
+    add_definitions(-DRENGINE_BACKEND_SDL)
 elseif(RENGINE_USE_SFHWC)
+    add_definitions(-DRENGINE_BACKEND_SFHWC)
+    include_directories(/usr/lib/droid-devel/droid-headers)
+    set(RENGINE_LIBS ${RENGINE_LIBS} -lhardware -lhybris-common)
 
 else()
     find_package(Qt5Gui)
+    add_definitions(-DRENGINE_BACKEND_QT)
+    set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
 endif()
 
 
@@ -71,23 +76,6 @@ endif()
 #
 include_directories(include 3rdparty)
 enable_testing()
-
-
-
-################################################################################
-#
-#
-#
-if (RENGINE_USE_SDL)
-    add_definitions(-DRENGINE_BACKEND_SDL)
-    set(RENGINE_LIBS ${RENGINE_LIBS} ${SDL2_LIBRARIES})
-elseif(RENGINE_USE_SFHWC)
-    add_definitions(-DRENGINE_BACKEND_SFHWC)
-else()
-    # Qt based
-    add_definitions(-DRENGINE_BACKEND_QT)
-    set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
-endif()
 
 
 
