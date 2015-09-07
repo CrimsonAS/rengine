@@ -3,17 +3,20 @@
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
 
+#include "hwcomposer_window.h"
+
 RENGINE_BEGIN_NAMESPACE
 
 class SfHwcSurface;
 class SfHwcBackend;
 
-class SfHwcSurface : public Surface
+class SfHwcSurface : public Surface, public HWComposerNativeWindow
 {
 public:
-	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend);
+	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const vec2 &size);
 
-	void initHwc();
+    void initHwc();
+	void initEgl();
 
     void hide() override;
     void show() override;
@@ -22,12 +25,20 @@ public:
 	vec2 size() const override;
     void requestRender() override;
 
+   	void present(HWComposerNativeWindowBuffer *buffer) override;
+
     SurfaceInterface *m_iface;
     SfHwcBackend *m_backend;
 
     double m_vsyncDelta;
     vec2 m_size;
     vec2 m_dpi;
+
+    hwc_display_contents_1_t *m_hwcList;
+
+    EGLDisplay m_eglDisplay;
+    EGLSurface m_eglSurface;
+    EGLContext m_eglContext;
 };
 
 class SfHwcBackend : public Backend
@@ -49,6 +60,8 @@ public:
     SfHwcSurface *surface = nullptr;
 	hw_module_t *hwcModule = 0;
 	hwc_composer_device_1_t *hwcDevice = 0;
+
+    bool m_running = true;
 };
 
 #define RENGINE_BACKEND_DEFINE                               \

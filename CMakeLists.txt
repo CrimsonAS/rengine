@@ -40,7 +40,7 @@ endmacro(add_rengine_test)
 
 ################################################################################
 #
-# Resolving libraries
+# Resolving backend stuff
 #
 if (RENGINE_USE_SDL)
     include(FindPkgConfig)
@@ -48,10 +48,20 @@ if (RENGINE_USE_SDL)
     include_directories(${SDL2_INCLUDE_DIRS})
     set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib ${SDL2_LIBRARIES})
     add_definitions(-DRENGINE_BACKEND_SDL)
+
 elseif(RENGINE_USE_SFHWC)
     add_definitions(-DRENGINE_BACKEND_SFHWC)
-    include_directories(/usr/lib/droid-devel/droid-headers)
-    set(RENGINE_LIBS ${RENGINE_LIBS} -lhardware -lhybris-common)
+    include_directories(# android headers
+                        /usr/lib/droid-devel/droid-headers
+                        # libhybris headers
+                        /usr/include/hybris/hwcomposerwindow
+                        /usr/include/hybris/eglplatformcommon)
+    set(RENGINE_LIBS ${RENGINE_LIBS}
+        -lhardware
+        -lhybris-common
+        -lhybris-eglplatformcommon
+        -lhybris-hwcomposerwindow
+        -lEGL)
 
 else()
     find_package(Qt5Gui)
