@@ -105,6 +105,8 @@ RENGINE_END_NAMESPACE
 #include "backend/qt/qtbackend.h"
 #elif defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
+#elif defined RENGINE_BACKEND_SFHWC
+#include "backend/sfhwc/sfhwcbackend.h"
 #else
 #error "Please define which backend you want... RENGINE_BACKEND_QT or RENGINE_BACKEND_SDL.. Thanks.."
 #endif

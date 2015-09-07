@@ -48,18 +48,19 @@ if (RENGINE_USE_SDL)
     include_directories(${SDL2_INCLUDE_DIRS})
     # ### TODO: Why is the -L needed here?
     set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib)
+elseif(RENGINE_USE_SFHWC)
+    add_definitions(-DRENGINE_BACKEND_SFHWC)
 else()
     find_package(Qt5Gui)
 endif()
-
-find_package(OpenGL)
 
 
 if (OPENGL_FOUND)
     set(RENGINE_LIBS ${RENGINE_LIBS} ${OPENGL_LIBRARIES})
     add_definitions(-DRENGINE_OPENGL_DESKTOP)
 else()
-    message(FATAL_ERROR, "OpenGL not detected")
+    message(WARNING, "OpenGL was not found, assuming OpenGL ES 2.0 in default locations...")
+    set(RENGINE_LIBS ${RENGINE_LIBS} -lGLESv2)
 endif()
 
 
@@ -85,14 +86,6 @@ else()
     add_definitions(-DRENGINE_BACKEND_QT)
     set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
 endif()
-
-
-
-################################################################################
-#
-# Tests and Examples
-#
-add_executable(renginec "src/renginec/main.cpp")
 
 
 
