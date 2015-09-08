@@ -314,14 +314,14 @@ inline void OpenGLRenderer::initialize()
         glGetIntegerv(GL_ALPHA_BITS, &a);
         glGetIntegerv(GL_DEPTH_BITS, &d);
         glGetIntegerv(GL_STENCIL_BITS, &s);
-        std::cout << "OpenGL" << std::endl
-                  << " - Renderer .........: " << glGetString(GL_RENDERER) << std::endl
-                  << " - Version ..........: " << glGetString(GL_VERSION) << std::endl
-                  << " - R/G/B/A ..........: " << r << " " << g << " " << b << " " << a << std::endl
-                  << " - Depth/Stencil ....: " << d << " " << s << std::endl
-                  << " - Samples ..........: " << samples << std::endl
-                  << " - Max Texture Size .: " << maxTexSize << std::endl
-                  << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << std::endl;
+        logi << "OpenGL" << std::endl;
+        logi << " - Renderer .........: " << glGetString(GL_RENDERER) << std::endl;
+        logi << " - Version ..........: " << glGetString(GL_VERSION) << std::endl;
+        logi << " - R/G/B/A ..........: " << r << " " << g << " " << b << " " << a << std::endl;
+        logi << " - Depth/Stencil ....: " << d << " " << s << std::endl;
+        logi << " - Samples ..........: " << samples << std::endl;
+        logi << " - Max Texture Size .: " << maxTexSize << std::endl;
+        logi << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << std::endl;
     }
 #endif
 
@@ -702,10 +702,11 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, e->texture, 0);
 
 #ifndef NDEBUG
+    // Only enabled in debug mode because it syncs the GL stack and takes forever..
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "OpenGLRenderer::renderToLayer: FBO failed, devRect=" << devRect
-                  << ", dim=" << devRect.width() << "x" << devRect.height() << ", tex=" << e->texture << ", fbo=" << m_fbo << ", error="
-                  << std::hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
+        logw << "FBO failed, devRect=" << devRect
+             << ", dim=" << devRect.width() << "x" << devRect.height() << ", tex=" << e->texture << ", fbo=" << m_fbo << ", error="
+             << std::hex << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
         assert(false);
     }
 #endif

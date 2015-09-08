@@ -1,10 +1,36 @@
+/*
+    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #pragma once
 
 RENGINE_BEGIN_NAMESPACE
 
 void SfHwcBackend::quit()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    logi << __PRETTY_FUNCTION__ << std::endl;
     m_running = false;
 }
 
@@ -22,22 +48,22 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
         HWC_DISPLAY_NO_ATTRIBUTE,
     };
     for (int display=0; display<HWC_NUM_DISPLAY_TYPES; ++display) {
-        std::cout << " - display[" << display << "]" << std::endl;
+        logi << " - display[" << display << "]" << std::endl;
         unsigned int configs[10];
         size_t configCount = 10;
         if (hwcDevice->getDisplayConfigs(hwcDevice, display, configs, &configCount) == 0) {
             for (uint32_t config=0; config<configCount; ++config) {
                 int32_t cfg = configs[config];
-                std::cout << "   - config: " << cfg << std::endl;
+                logi << "   - config: " << cfg << std::endl;
                 int32_t values[5];
                 hwcDevice->getDisplayAttributes(hwcDevice, display, cfg, DISPLAY_ATTRIBUTES, values);
                 double vsyncDelta = values[0] / 1000000.0;
                 vec2 size = vec2(values[1], values[2]);
                 vec2 dpi = vec2(values[3] / 1000.0f, values[4] / 1000.0f);
 
-                std::cout << "     - VSync .: " << vsyncDelta << " ms" << std::endl;
-                std::cout << "     - sSize .: " << (int) size.x << "x" << (int) size.y << std::endl;
-                std::cout << "     - dpi ...: " << dpi.x << ", " << dpi.y << std::endl;
+                logi << "     - VSync .: " << vsyncDelta << " ms" << std::endl;
+                logi << "     - sSize .: " << (int) size.x << "x" << (int) size.y << std::endl;
+                logi << "     - dpi ...: " << dpi.x << ", " << dpi.y << std::endl;
 
                 if (config == 0) {
                     surface = new SfHwcSurface(iface, this, size);
@@ -58,13 +84,13 @@ SfHwcBackend::SfHwcBackend()
         std::cerr << "error: " << __PRETTY_FUNCTION__ << ": failed to open module" << std::endl;
         return;
     }
-    std::cout << "Hardware Composer Module:" << std::endl;
-    std::cout << " - Address .............: " << hwcModule << std::endl;
-    std::cout << " - Module API Version ..: " << std::hex << hwcModule->module_api_version << std::endl;
-    std::cout << " - HAL API Version .....: " << std::hex << hwcModule->hal_api_version << std::endl;
-    std::cout << " - Identifier ..........: " << hwcModule->id << std::endl;
-    std::cout << " - Name ................: " << hwcModule->name << std::endl;
-    std::cout << " - Author ..............: " << hwcModule->author << std::endl;
+    logi << "Hardware Composer Module:" << std::endl;
+    logi << " - Address .............: " << hwcModule << std::endl;
+    logi << " - Module API Version ..: " << std::hex << hwcModule->module_api_version << std::endl;
+    logi << " - HAL API Version .....: " << std::hex << hwcModule->hal_api_version << std::endl;
+    logi << " - Identifier ..........: " << hwcModule->id << std::endl;
+    logi << " - Name ................: " << hwcModule->name << std::endl;
+    logi << " - Author ..............: " << hwcModule->author << std::endl;
 
     hw_device_t *device = 0;
     if (hwcModule->methods->open(hwcModule, HWC_HARDWARE_COMPOSER, (hw_device_t **) &device) != 0 || !device) {
@@ -72,20 +98,20 @@ SfHwcBackend::SfHwcBackend()
         return;
     }
     hwcDevice = (hwc_composer_device_1_t *) device;
-    std::cout << "Hardware Composer Device" << std::endl;
-    std::cout << " - version ............: " << std::hex << hwcDevice->common.version << std::endl;
-    std::cout << " - module .............: " << hwcDevice->common.module << std::endl;
-    std::cout << " - tag ................: " << std::hex << hwcDevice->common.tag << std::dec << std::endl;
-    std::cout << " - composer/device ....: " << hwcDevice << std::endl;
+    logi << "Hardware Composer Device" << std::endl;
+    logi << " - version ............: " << std::hex << hwcDevice->common.version << std::endl;
+    logi << " - module .............: " << hwcDevice->common.module << std::endl;
+    logi << " - tag ................: " << std::hex << hwcDevice->common.tag << std::dec << std::endl;
+    logi << " - composer/device ....: " << hwcDevice << std::endl;
 }
 
 void SfHwcBackend::run()
 {
-    std::cout << __PRETTY_FUNCTION__
-              << "; running=" << m_running
-              << "; surface=" << surface
-              << "; iface=" << (surface ? surface->m_iface : nullptr)
-              << std::endl;
+    logi << __PRETTY_FUNCTION__
+         << "; running=" << m_running
+         << "; surface=" << surface
+         << "; iface=" << (surface ? surface->m_iface : nullptr)
+         << std::endl;
     while (m_running && surface && surface->m_iface)
         surface->m_iface->onRender();
 }

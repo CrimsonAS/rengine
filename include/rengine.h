@@ -75,6 +75,7 @@ RENGINE_END_NAMESPACE
 #include "backend/qt/qtpreinclude.h"
 #endif
 
+#include "common/logging.h"
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
 #include "common/colormatrix.h"

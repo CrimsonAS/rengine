@@ -85,10 +85,16 @@ public:
 
 #ifndef QWINDOW_HAS_REQUEST_UPDATE
     void requestUpdate() {
+        logd << "using timer" << std::endl;
         if (updateTimer == 0)
             updateTimer = startTimer(5);
     }
     int updateTimer;
+#else
+    void requestUpdate() {
+        logd << "using QWindow::requestUpdate()" << std::endl;
+        QWindow::requestUpdate();
+    }
 #endif
 };
 
@@ -100,11 +106,9 @@ public:
     , iface(iface)
     {
         setSurfaceToInterface(iface);
-#ifdef RENGINE_LOG_INFO
-        std::cout << "QtBackend::Surface created with interface=" << iface << std::endl;
-#endif
+        logi << "QtBackend::Surface created with interface=" << iface << std::endl;
         QSurfaceFormat format;
-        format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
+        // format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
 
         window.setFormat(format);
         window.setSurfaceType(QSurface::OpenGLSurface);
@@ -117,14 +121,16 @@ public:
 
     bool makeCurrent() {
         if (!context.makeCurrent(&window)) {
-            std::cout << "QtSurface::makeCurrent: failed..." << std::endl;
+            logw << "failed..." << std::endl;
             return false;
         }
         return true;
     }
 
     bool swapBuffers() {
-        context.swapBuffers(&window);
+        if (context.swapBuffers(&window)) {
+            logw << "failed.." << std::end;
+        }
         return context.isValid();
     }
 
@@ -135,6 +141,7 @@ public:
         return vec2(window.width() * dpr, window.height() * dpr);
     }
     void requestRender() {
+        logd << std::endl;
         window.requestUpdate();
     }
 
@@ -151,20 +158,17 @@ inline void QtBackend::processEvents()
 
 inline void QtBackend::run()
 {
-#ifdef RENGINE_LOG_INFO
-    std::cout << "QtBackend: starting eventloop..." << std::endl;
+    logd << "starting eventloop..." << std::endl;
     if (exited)
-        std::cout << " -> quit() already called, not starting eventloop.." << std::endl;
-#endif
+        logd << "quit() already called, not starting eventloop.." << std::endl;
     if (!exited)
         app.exec();
-#ifdef RENGINE_LOG_INFO
-    std::cout << "QtBackend: exited eventloop..." << std::endl;
-#endif
+    logd << "exited event loop" << << std::endl;
 }
 
 inline Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
+    logd << __PRETTY_FUNCTION__ << iface << std::endl;
     assert(iface);
     QtSurface *s = new QtSurface(iface);
     return s;
@@ -172,6 +176,7 @@ inline Surface *QtBackend::createSurface(SurfaceInterface *iface)
 
 inline Renderer *QtBackend::createRenderer(Surface *surface)
 {
+    logd << __PRETTY_FUNCTION__ << surface << std::endl;
     assert(surface);
     assert(&static_cast<QtSurface *>(surface)->context == QOpenGLContext::currentContext());
     OpenGLRenderer *r = new OpenGLRenderer();
@@ -183,11 +188,13 @@ inline bool QtWindow::event(QEvent *e)
 {
 #ifdef QWINDOW_HAS_REQUEST_UPDATE
     if (e->type() == QEvent::UpdateRequest) {
+        logd << "invoking onRender" << std::endl;
         s->iface->onRender();
         return true;
     }
 #else
     if (e->type() == QEvent::Timer) {
+        logd << "invoking onRender" << std::endl;
         killTimer(updateTimer);
         updateTimer = 0;
         s->iface->onRender();
@@ -198,12 +205,14 @@ inline bool QtWindow::event(QEvent *e)
 
 inline void QtWindow::exposeEvent(QExposeEvent *e)
 {
+    logd << std::endl;
     if (isExposed() && isVisible())
         s->iface->onRender();
 }
 
 inline void QtWindow::resizeEvent(QResizeEvent *e)
 {
+    logd << e->width() << "x" << e->height() << std::endl;
     s->iface->onSizeChange(vec2(width(), height()));
 }
 

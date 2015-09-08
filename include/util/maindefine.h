@@ -8,13 +8,9 @@ template <typename InterfaceName>
 int rengine_main(int argc, char **argv) {
     std::unique_ptr<Backend> backend(Backend::get());
     InterfaceName iface;
-    std::cout << __FILE__ << ": " << __LINE__ << std::endl;
     Surface *surface = backend->createSurface(&iface);
-    std::cout << __FILE__ << ": " << __LINE__ << std::endl;
     surface->show();
-    std::cout << __FILE__ << ": " << __LINE__ << std::endl;
     backend->run();
-    std::cout << __FILE__ << ": " << __LINE__ << std::endl;
     return 0;
 }
 
