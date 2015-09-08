@@ -34,6 +34,7 @@ endif()
 option(RENGINE_USE_SDL "SDL Backend" OFF)
 
 
+
 ################################################################################
 #
 # Macros
@@ -85,6 +86,7 @@ else()
 endif()
 
 
+find_package(OpenGL)
 if (OPENGL_FOUND)
     set(RENGINE_LIBS ${RENGINE_LIBS} ${OPENGL_LIBRARIES})
     add_definitions(-DRENGINE_OPENGL_DESKTOP)
@@ -95,10 +97,14 @@ endif()
 
 
 
+
+
+
 ################################################################################
 #
 # Misc..
 #
+add_executable(renginec "src/renginec/main.cpp")
 include_directories(include 3rdparty)
 enable_testing()
 

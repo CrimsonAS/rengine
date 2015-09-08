@@ -1,45 +1,42 @@
 {
-    "rengine-revision": 0,
-
     "import": "rengine.json",
 
-    "class": {
+    "classes": [
+    {
         "name": "Sample",
         "namespace": "rengine_ideas",
 
-        "resource": {
-            "class": "rengine::Texture",
-            "id": "sourceTexture",
-            "file": "walker.png"
-        },
+        "resources": [
+            "rengine::Texture sourceTexture = walker.png"
+        ],
 
-        "property": { "type": "std::string", "name": "name" },
-        "property": { "type": "int", "name" : "id" },
+        "properties": [
+            "std::string name",
+            "int id"
+        ],
 
-        "signal": { "name": "onAction" },
-        "signal": { "name": "onComplexAction", "arguments": "std::string,int" },
+        "signals": [
+            "onAction",
+            "onCompexAction<std::string, int>"
+        ],
 
-        // Just a declaration for the sake of having something that can be
-        // called and triggered from inside this spec.
-        "function": { "name": "foo" },
-        "function": { "name": "evaluate",
-                      "returns": "float",
-                      "arguments": "const std::string &, int"
-                    },
+        "functions": [
+            "void foo()",
+            "float evaluate(const std::string &, int)"
+        ],
 
-        "object": {
+        "root": {
             "class": "rengine::RectangleNode",
             "id": "root",
             "width": 320,
             "height": 480,
-
-            "object": {
+            "children": {
                 "class": "rengine::TransformNode",
                 "id": "rotation",
                 "dx": "root->width() / 2.0f",
                 "dy": "root->height() / 2.0f",
                 "rotateAroundY": 0.789,
-                "object": {
+                "children": {
                     "class": "rengine::TextureNode",
                     "id": "image",
                     "width": "sourceTexture->width()",
@@ -50,4 +47,5 @@
             }
         }
     }
+    ]
 }
