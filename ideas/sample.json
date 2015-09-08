@@ -26,23 +26,23 @@
         ],
 
         "root": {
-            "class": "rengine::RectangleNode",
-            "id": "root",
-            "width": 320,
-            "height": 480,
-            "children": {
-                "class": "rengine::TransformNode",
-                "id": "rotation",
-                "dx": "root->width() / 2.0f",
-                "dy": "root->height() / 2.0f",
-                "rotateAroundY": 0.789,
-                "children": {
-                    "class": "rengine::TextureNode",
-                    "id": "image",
-                    "width": "sourceTexture->width()",
-                    "height": "sourceTexture->height()",
-                    "x": "-width() / 2.0f",
-                    "y": "-height() / 2.0f"
+            "class"    : "rengine::RectangleNode",
+            "id"       : "root",
+            "width"    : 320,
+            "height"   : 480,
+            "children" : {
+                "class"         : "rengine::TransformNode",
+                "id"            : "rotation",
+                "dx"            : ":= root->width() / 2.0f",
+                "dy"            : ":= root->height() / 2.0f",
+                "rotateAroundY" : 0.789,
+                "children"      : {
+                    "class"  : "rengine::TextureNode",
+                    "id"     : "image",
+                    "width"  : ":= sourceTexture->width()",
+                    "height" : ":= sourceTexture->height()",
+                    "x"      : ":= -width() / 2.0f",
+                    "y"      : ":= -height() / 2.0f"
                 }
             }
         }
