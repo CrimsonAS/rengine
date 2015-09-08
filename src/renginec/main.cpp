@@ -1,5 +1,6 @@
 #include "picojson.h"
 #include <fstream>
+#include "objectmodel.h"
 
 using namespace std;
 using namespace picojson;
