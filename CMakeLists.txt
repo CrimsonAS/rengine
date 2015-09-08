@@ -17,17 +17,17 @@ if (RENGINE_LOG_INFO)
 endif()
 
 option(RENGINE_LOG_DEBUG "LogDebug" OFF)
-if (RENGINE_LOG_INFO)
+if (RENGINE_LOG_DEBUG)
     add_definitions(-DRENGINE_LOG_DEBUG)
 endif()
 
 option(RENGINE_LOG_WARNING "LogWarning" ON)
-if (RENGINE_LOG_INFO)
+if (RENGINE_LOG_WARNING)
     add_definitions(-DRENGINE_LOG_WARNING)
 endif()
 
 option(RENGINE_LOG_ERROR "LogError" ON)
-if (RENGINE_LOG_INFO)
+if (RENGINE_LOG_ERROR)
     add_definitions(-DRENGINE_LOG_ERROR)
 endif()
 

@@ -29,6 +29,7 @@
 #include <QWindow>
 #include <QOpenGLContext>
 #include <QTimer>
+#include <QResizeEvent>
 
 #if QT_VERSION >= 0x050500
 #define QWINDOW_HAS_REQUEST_UPDATE
@@ -50,9 +51,7 @@ public:
     QtBackend()
         : app(hack_argc(), hack_argv()), exited(false)
     {
-#ifdef RENGINE_LOG_INFO
-        std::cout << "QtBackend: created..." << std::endl;
-#endif
+        logd << std::endl;
     }
 
     void quit() override { exited = true; app.quit(); }
@@ -128,8 +127,11 @@ public:
     }
 
     bool swapBuffers() {
-        if (context.swapBuffers(&window)) {
-            logw << "failed.." << std::end;
+        logd << "swapping" << std::endl;
+        context.swapBuffers(&window);
+        logd << "swapping done" << std::endl;
+        if (!context.isValid()) {
+            logw << "context is no longer valid" << std::endl;
         }
         return context.isValid();
     }
@@ -163,7 +165,7 @@ inline void QtBackend::run()
         logd << "quit() already called, not starting eventloop.." << std::endl;
     if (!exited)
         app.exec();
-    logd << "exited event loop" << << std::endl;
+    logd << "exited event loop" << std::endl;
 }
 
 inline Surface *QtBackend::createSurface(SurfaceInterface *iface)
@@ -188,16 +190,19 @@ inline bool QtWindow::event(QEvent *e)
 {
 #ifdef QWINDOW_HAS_REQUEST_UPDATE
     if (e->type() == QEvent::UpdateRequest) {
-        logd << "invoking onRender" << std::endl;
+        logd << "invoking onRender (update from updateRequest)" << std::endl;
         s->iface->onRender();
+        logd << "onRender completed" << std::endl;
         return true;
     }
 #else
     if (e->type() == QEvent::Timer) {
-        logd << "invoking onRender" << std::endl;
+        logd << "updateRequest from timer triggered" << std::endl;
         killTimer(updateTimer);
         updateTimer = 0;
+        logd << "invoking onRender" << std::endl;
         s->iface->onRender();
+        logd << "onRender completed" << std::endl;
     }
 #endif
     return QWindow::event(e);
@@ -212,7 +217,7 @@ inline void QtWindow::exposeEvent(QExposeEvent *e)
 
 inline void QtWindow::resizeEvent(QResizeEvent *e)
 {
-    logd << e->width() << "x" << e->height() << std::endl;
+    logd << e->size().width() << "x" << e->size().height() << std::endl;
     s->iface->onSizeChange(vec2(width(), height()));
 }
 

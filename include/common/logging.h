@@ -35,33 +35,35 @@ inline std::string log_timestring()
 {
 	auto time = std::chrono::system_clock::now().time_since_epoch();
 	unsigned s = std::chrono::duration_cast<std::chrono::seconds>(time).count() % 10000;
-	unsigned us = std::chrono::duration_cast<std::chrono::microseconds>(time).count() % 1000000;
-	// ssss.uuuuu
+	unsigned ms = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() % 1000;
+	unsigned us = std::chrono::duration_cast<std::chrono::microseconds>(time).count() % 1000;
+	// ssss:mmm.uuu
 	char buffer[16];
-	snprintf(buffer, sizeof(buffer), "%4d.%05d", s, us);
+	snprintf(buffer, sizeof(buffer), "%4d:%03d.%03d", s, ms, us);
 	return buffer;
 }
 
 #ifdef RENGINE_LOG_INFO
-#  define logi std::cerr << "I" << log_timestring() << ": "
+#  define logi std::cerr << "I [" << log_timestring() << "]: "
 #else
 #  define logi if (0) std::cerr
 #endif
 
 #ifdef RENGINE_LOG_DEBUG
-#  define logd std::cerr << "D" << log_timestring() << " " << __PRETTY_FUNCTION__ << ": "
+#error "debug is defined..."
+#  define logd std::cerr << "D [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define logd if (0) std::cerr
 #endif
 
 #ifdef RENGINE_LOG_WARNING
-#  define logw std::cerr << "W" << log_timestring() << " " << __PRETTY_FUNCTION__ << ": "
+#  define logw std::cerr << "W [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define logw if (0) std::cerr
 #endif
 
 #ifdef RENGINE_LOG_ERROR
-#  define loge std::cerr << "E" << log_timestring() << " " << __PRETTY_FUNCTION__ << ": "
+#  define loge std::cerr << "E [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define loge if (0) std::cerr
 #endif
