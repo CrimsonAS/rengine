@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -27,6 +28,7 @@
 #include "examples.h"
 
 static int nodeCount = 4;
+static bool useTextures = false;
 
 using namespace std::chrono;
 
@@ -35,6 +37,8 @@ static steady_clock::time_point then;
 class BlendBenchWindow : public StandardSurfaceInterface
 {
 public:
+
+    float rnd() { return (rand() % 100) / 100.0; }
 
     Node *update(Node *old) {
 
@@ -56,42 +60,34 @@ public:
             return old;
 
         vec2 s = surface()->size();
+        vec2 s2 = s / 2.0f;
+        float dim = std::max(s.x, s.y);
+        float dim2 = dim / 2.0f;
+        rect2d geometry(-dim2, -dim2, dim, dim);
 
-        cout << "creating " << nodeCount << " layers.." << endl;
+        if (useTextures)
+            cout << "creating " << nodeCount << " texture layers.." << endl;
+        else
+            cout << "creating " << nodeCount << " solid-color layers.." << endl;
 
-        vec4 color((rand() % 100) / 100.0,
-                   (rand() % 100) / 100.0,
-                   (rand() % 100) / 100.0,
-                   0.9);
-        rect2d geometry(0, 0, s.x, s.y);
-        RectangleNode *root = RectangleNode::create(geometry, color);
+        Node *root = Node::create();
+        for (int i=0; i<nodeCount; ++i) {
+            TransformNode *rotation = TransformNode::create();
 
-        float bw = std::max(s.x, s.y) * 0.4;
-        TransformNode *rotation = TransformNode::create(mat4::rotate2D(1));
-        *root << &(*TransformNode::create(mat4::translate2D(s.x / 2, s.y / 2))
-                   << &(*rotation
-                        << RectangleNode::create(rect2d::fromXywh(-bw/2.0, -5, bw, 10), vec4(0, 0, 1, 1))
-                       )
-                  );
+            *root << &(*TransformNode::create(mat4::translate2D(s2.x, s2.y))
+                       << rotation
+                      );
+            if (useTextures) {
+                cout << "Creating texture: " << (i+1) << endl;
+                Texture *texture = rengine_fractalTexture(renderer(), vec2(dim, dim));
+                *rotation << TextureNode::create(geometry, texture);
+            } else {
+                *rotation << RectangleNode::create(geometry, vec4(rnd(), rnd(), rnd(), 0.5));
+            }
 
-        for (int i=1; i<nodeCount; ++i) {
-            geometry = rect2d(i * 4, i * 4, s.x, s.y);
-            color = vec4(1.0,
-                         1.0,
-                         1.0,
-                         0.1);
-            RectangleNode *child = RectangleNode::create(geometry, color);
-            *root << child;
+
+            animation_rotateZ(animationManager(), rotation, 4 + i);
         }
-
-
-        AnimationClosure<TransformNode, LinearTimingFunction> *anim
-            = new AnimationClosure<TransformNode, LinearTimingFunction>(rotation);
-        anim->setDuration(5);
-        anim->setIterations(-1);
-        anim->keyFrames.times() << 0 << 1;
-        anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
-        animationManager()->startAnimation(anim);
 
         return root;
     }
@@ -104,8 +100,18 @@ RENGINE_BACKEND_DEFINE
 int main(int argc, char **argv) {
 
     for (int i=0; i<argc; ++i) {
-        if (i + 1 < argc && std::string(argv[i]) == "--count") {
+        std::string arg(argv[i]);
+        if (i + 1 < argc && arg == "--count") {
             nodeCount = atoi(argv[++i]);
+        } else if (arg == "--textures") {
+            useTextures = true;
+        } else if (arg == "-h" || arg == "--help") {
+            cout << "Usage: " << endl
+                 << " > " << argv[0] << " [options]" << endl
+                 << endl
+                 << "Options:" << endl
+                 << "  --count [x]      Number of layers" << endl
+                 << "  --textures       Use textures rather than solid fills" << endl;
         }
     }
 
