@@ -59,6 +59,7 @@ endmacro(add_rengine_test)
 # Resolving backend stuff
 #
 if (RENGINE_USE_SDL)
+    message("-- SDL backend")
     include(FindPkgConfig)
     pkg_search_module(SDL2 REQUIRED sdl2)
     include_directories(${SDL2_INCLUDE_DIRS})
@@ -66,6 +67,7 @@ if (RENGINE_USE_SDL)
     add_definitions(-DRENGINE_BACKEND_SDL)
 
 elseif(RENGINE_USE_SFHWC)
+    message("-- SFHWC backedn")
     add_definitions(-DRENGINE_BACKEND_SFHWC)
     include_directories(# android headers
                         /usr/lib/droid-devel/droid-headers
@@ -80,6 +82,7 @@ elseif(RENGINE_USE_SFHWC)
         -lEGL)
 
 else()
+    message("-- Qt backend")
     find_package(Qt5Gui)
     add_definitions(-DRENGINE_BACKEND_QT)
     set(RENGINE_LIBS ${RENGINE_LIBS} Qt5::Gui)
