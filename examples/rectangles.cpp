@@ -51,6 +51,12 @@ public:
         TransformNode *root = TransformNode::create();
         root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));
 
+        bool flipOrientation = false;
+        if (s.x < s.y) {
+            flipOrientation = true;
+            s = vec2(s.y, s.x);
+        }
+
         TransformNode *xnode = TransformNode::create();
         xnode->setProjectionDepth(1000);
         xnode->setMatrix(mat4::rotateAroundX(-0.15));
@@ -81,7 +87,12 @@ public:
             rotationNode->append(depthAdjustment);
         }
 
-        root->append(xnode);
+        if (flipOrientation) {
+            *root << &(*TransformNode::create(mat4::rotate2D(M_PI / 2.0))
+                       << xnode);
+        } else {
+            root->append(xnode);
+        }
 
         AnimationClosure<TransformNode, SmoothedTimingFunction> *anim = new AnimationClosure<TransformNode, SmoothedTimingFunction>(rotationNode);
         anim->setDuration(4);
