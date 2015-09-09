@@ -2,21 +2,13 @@
     "class-declarations": [
     {
         "include": "rengine.h",
-        "name": "Texture",
-        "namespace": "rengine",
-        "type": "heap-object"
+        "name": "rengine::Node",
+        "alloc": "rengine::Node::create()"
     },
     {
         "include": "rengine.h",
-        "name": "Node",
-        "namespace": "rengine",
-        "type": "pool-allocated"
-    },
-    {
-        "include": "rengine.h",
-        "name": "RectangleNode",
-        "namespace": "rengine",
-        "type": "pool-allocated",
+        "name": "rengine::RectangleNode",
+        "alloc": "rengine::RectangleNode::create()",
         "properties": [
             "float x",
             "float y",
@@ -26,21 +18,19 @@
         ]
     }, {
         "include": "rengine.h",
-        "name": "TextureNode",
-        "namespace": "rengine",
-        "type": "pool-allocated",
+        "name": "rengine::TextureNode",
+        "alloc": "pool-allocated",
         "properties": [
             "float x",
             "float y",
             "float width",
             "float height",
-            "vec4 texture"
+            "rengine::Texture texture"
         ]
     }, {
         "include": "rengine.h",
-        "name": "TransformNode",
-        "namespace": "rengine",
-        "type": "pool-allocated",
+        "name": "rengine::TransformNode",
+        "alloc": "pool-allocated",
         "properties": [
             "float dx",
             "float dy",

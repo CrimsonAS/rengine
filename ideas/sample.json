@@ -4,7 +4,6 @@
     "classes": [
     {
         "name": "Sample",
-        "namespace": "rengine_ideas",
 
         "resources": [
             "rengine::Texture sourceTexture = walker.png"
