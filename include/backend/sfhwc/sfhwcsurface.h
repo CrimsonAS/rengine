@@ -140,15 +140,36 @@ void SfHwcSurface::requestRender()
 
 void SfHwcSurface::initHwc()
 {
-    size_t size = sizeof(hwc_display_contents_1_t) + 1 * sizeof(hwc_layer_1_t);
+    size_t size = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
     m_hwcList = (hwc_display_contents_1_t *) malloc(size);
     memset(m_hwcList, 0, size);
 
     m_hwcList->retireFenceFd = -1;
     m_hwcList->flags = HWC_GEOMETRY_CHANGED;
-    m_hwcList->numHwLayers = 1;
+    m_hwcList->numHwLayers = 2;
 
     hwc_layer_1_t *l = &m_hwcList->hwLayers[0];
+    l->compositionType = HWC_FRAMEBUFFER;
+    l->hints = 0;
+    l->flags = 0;
+    l->handle = 0;
+    l->transform = 0;
+    l->blending = HWC_BLENDING_NONE;
+    l->sourceCropf.left = 0.0f;
+    l->sourceCropf.top = 0.0f;
+    l->sourceCropf.right = m_size.x;
+    l->sourceCropf.bottom = m_size.y;
+    l->displayFrame.left = 0;
+    l->displayFrame.top = 0;
+    l->displayFrame.right = (int) m_size.x;
+    l->displayFrame.bottom = (int) m_size.y;
+    l->visibleRegionScreen.numRects = 1;
+    l->visibleRegionScreen.rects = &l->displayFrame;
+    l->acquireFenceFd = -1;
+    l->releaseFenceFd = -1;
+    l->planeAlpha = 0xff;
+
+	l = &m_hwcList->hwLayers[1];
     l->compositionType = HWC_FRAMEBUFFER_TARGET;
     l->hints = 0;
     l->flags = 0;
@@ -231,7 +252,7 @@ void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 	int status; (void) status;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 
-	hwc_layer_1_t &l = m_hwcList->hwLayers[0];
+	hwc_layer_1_t &l = m_hwcList->hwLayers[1];
 	l.handle = buffer->handle;
 	l.acquireFenceFd = getFenceBufferFd(buffer);
 	l.releaseFenceFd = -1;
