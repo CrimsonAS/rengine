@@ -92,7 +92,7 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const
 
 void SfHwcSurface::hide()
 {
-	std::cout << __PRETTY_FUNCTION__<< std::endl;
+	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 	hwc->setPowerMode(hwc, 0, HWC_POWER_MODE_OFF);
 	// hwc->blank(hwc, 0, 0);
@@ -100,18 +100,18 @@ void SfHwcSurface::hide()
 
 void SfHwcSurface::show()
 {
-	std::cout << __PRETTY_FUNCTION__<< std::endl;
+	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 	hwc->setPowerMode(hwc, 0, HWC_POWER_MODE_NORMAL);
-	// hwc->blank(hwc, 0, 1);
+	// hwc->blank(hwc, 0, 0);
 }
 
 bool SfHwcSurface::makeCurrent()
 {
-	// std::cout << __PRETTY_FUNCTION__ << std::endl;
+	logd << std::endl;
 	EGLBoolean ok = eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
 	if (!ok) {
-		std::cerr << "error: " << __PRETTY_FUNCTION__ << ": " << sfhwc_decode_egl_error(eglGetError());
+		logw << sfhwc_decode_egl_error(eglGetError()) << std::endl;
 		return false;
 	}
 	return true;
@@ -119,10 +119,10 @@ bool SfHwcSurface::makeCurrent()
 
 bool SfHwcSurface::swapBuffers()
 {
-	// std::cout << __PRETTY_FUNCTION__ << std::endl;
+	logd << std::endl;
     EGLBoolean ok = eglSwapBuffers(m_eglDisplay, m_eglSurface);
     if (!ok) {
-		std::cerr << "error: " << __PRETTY_FUNCTION__ << ": " << sfhwc_decode_egl_error(eglGetError());
+		logw << sfhwc_decode_egl_error(eglGetError()) << std::endl;
 		return false;
     }
     return true;
@@ -135,12 +135,12 @@ vec2 SfHwcSurface::size() const
 
 void SfHwcSurface::requestRender()
 {
-	// std::cout << __PRETTY_FUNCTION__<< std::endl;
+	logd << std::endl;
 }
 
 void SfHwcSurface::initHwc()
 {
-    size_t size = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
+    size_t size = sizeof(hwc_display_contents_1_t) + 1 * sizeof(hwc_layer_1_t);
     m_hwcList = (hwc_display_contents_1_t *) malloc(size);
     memset(m_hwcList, 0, size);
 
@@ -149,27 +149,6 @@ void SfHwcSurface::initHwc()
     m_hwcList->numHwLayers = 1;
 
     hwc_layer_1_t *l = &m_hwcList->hwLayers[0];
-    l->compositionType = HWC_FRAMEBUFFER_TARGET;
-    l->hints = 0;
-    l->flags = 0;
-    l->handle = 0;
-    l->transform = 0;
-    l->blending = HWC_BLENDING_NONE;
-    l->sourceCropf.left = 0.0f;
-    l->sourceCropf.top = 0.0f;
-    l->sourceCropf.right = m_size.x;
-    l->sourceCropf.bottom = m_size.y;
-    l->displayFrame.left = 0;
-    l->displayFrame.top = 0;
-    l->displayFrame.right = (int) m_size.x;
-    l->displayFrame.bottom = (int) m_size.y;
-    l->visibleRegionScreen.numRects = 1;
-    l->visibleRegionScreen.rects = &l->displayFrame;
-    l->acquireFenceFd = -1;
-    l->releaseFenceFd = -1;
-    l->planeAlpha = 0xff;
-
-    l = &m_hwcList->hwLayers[1];
     l->compositionType = HWC_FRAMEBUFFER_TARGET;
     l->hints = 0;
     l->flags = 0;
@@ -224,9 +203,6 @@ void SfHwcSurface::initEgl()
     m_eglContext = eglCreateContext(m_eglDisplay, eglConfig, EGL_NO_CONTEXT, eglContextAttributes);
     assert(m_eglContext);
 
-	result = eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
-	assert(result);
-
 	logi << "EGL Configuration:" << std::endl;
 	logi << " - Display .........: " << m_eglDisplay << std::endl;
 	logi << " - Config ..........: " << eglConfig << std::endl;
@@ -236,10 +212,6 @@ void SfHwcSurface::initEgl()
 	logi << " - EGL_VERSION .....: " << eglQueryString(m_eglDisplay, EGL_VERSION) << std::endl;
 	logi << " - EGL_CLIENT_APIS .: " << eglQueryString(m_eglDisplay, EGL_CLIENT_APIS) << std::endl;
 	logi << " - EGL_EXTENSIONS ..: " << eglQueryString(m_eglDisplay, EGL_EXTENSIONS) << std::endl;
-	logi << " - GL_VERSION ......: " << glGetString(GL_VERSION) << std::endl;
-	logi << " - GL_VENDOR .......: " << glGetString(GL_VENDOR) << std::endl;
-	logi << " - GL_RENDERER .....: " << glGetString(GL_RENDERER) << std::endl;
-
 	int r, g, b, a, d, s;
 	eglGetConfigAttrib(m_eglDisplay, eglConfig, EGL_ALPHA_SIZE, &a);
 	eglGetConfigAttrib(m_eglDisplay, eglConfig, EGL_RED_SIZE, &r);
@@ -249,14 +221,12 @@ void SfHwcSurface::initEgl()
 	eglGetConfigAttrib(m_eglDisplay, eglConfig, EGL_STENCIL_SIZE, &s);
 	logi << " - RGBA Buffers ....: " << r << " " << g << " " << b << " " << a << std::endl;
 	logi << " - Depth / Stencil .: " << d << " " << s << std::endl;
-
-	eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
 
 void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	// std::cout << __PRETTY_FUNCTION__ << ": " << buffer << std::endl;
+	logd << "buffer=" << (void *) buffer << std::endl;
 
 	int status; (void) status;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;

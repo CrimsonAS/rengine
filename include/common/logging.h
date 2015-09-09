@@ -50,20 +50,19 @@ inline std::string log_timestring()
 #endif
 
 #ifdef RENGINE_LOG_DEBUG
-#error "debug is defined..."
-#  define logd std::cerr << "D [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
+#  define logd std::cerr << "D [" << log_timestring() << "]: " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define logd if (0) std::cerr
 #endif
 
 #ifdef RENGINE_LOG_WARNING
-#  define logw std::cerr << "W [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
+#  define logw std::cerr << "W [" << log_timestring() << "]: " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define logw if (0) std::cerr
 #endif
 
 #ifdef RENGINE_LOG_ERROR
-#  define loge std::cerr << "E [" << log_timestring() << "] " << __PRETTY_FUNCTION__ << ": "
+#  define loge std::cerr << "E [" << log_timestring() << "]: " << __PRETTY_FUNCTION__ << ": "
 #else
 #  define loge if (0) std::cerr
 #endif
