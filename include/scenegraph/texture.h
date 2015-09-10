@@ -27,8 +27,6 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-typedef void* BufferHandle;
-
 class Texture {
 public:
 
@@ -60,10 +58,13 @@ public:
      */
     virtual GLuint textureId() const = 0;
 
+
     /*!
-        Returns the native buffer handle for this surface.
+        A pointer to the backend that created this texture. Can be
+        used as a type specifier inside the renderer/backend to
+        perform downcasting.
      */
-    virtual BufferHandle bufferHandle() const { return 0; }
+    virtual Backend *backend() const { return 0; }
 
 };
 

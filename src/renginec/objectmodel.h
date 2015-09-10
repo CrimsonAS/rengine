@@ -28,6 +28,7 @@
 #include <string>
 
 struct Class;
+struct Object;
 
 struct Property
 {
@@ -45,10 +46,8 @@ struct Signal
 
 struct Function
 {
-    Class *ownerClass = nullptr;
-    std::string name;
+    Class *clazz = nullptr;
     std::string signature;
-    std::string returnValue;
 };
 
 struct Resource
@@ -66,12 +65,31 @@ struct Value
         StringValue,
         BindingValue
     };
-    union {
-        double numberValue;
-        std::string *stringValue;
-    };
+
+    std::string stringValue;
+    double numberValue;
     unsigned type = InvalidValue;
+
+    static Value number(double dval) {
+        Value v;
+        v.type = NumberValue;
+        v.numberValue = dval;
+        return v;
+    }
+    static Value string(const std::string &sval) {
+        Value v;
+        v.type = StringValue;
+        v.stringValue = sval;
+        return v;
+    }
+    static Value binding(const std::string &sval) {
+        Value v;
+        v.type = BindingValue;
+        v.stringValue = sval;
+        return v;
+    }
 };
+
 
 struct Class
 {
@@ -83,14 +101,17 @@ struct Class
     std::vector<Function> functions;
     std::vector<Resource> resources;
 
-    bool declarationOnly = false;
+    Object *root;
 
+    bool declarationOnly = false;
 };
 
 struct Object
 {
     Class *clazz = nullptr;
-    std::map<std::string, Value> properties;
+    Object *parent;
+    std::string id;
+    std::map<std::string, Value> propertyValues;
     std::vector<Object *> children;
 };
 

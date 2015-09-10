@@ -30,6 +30,7 @@
 
 #include <set>
 #include <cctype>
+#include <sstream>
 
 class ObjectModelBuilder
 {
@@ -40,23 +41,39 @@ public:
 
 
 private:
+    bool registerId(Class *clazz, const std::string &id);
     bool buildClasses(const picojson::value &value, bool isDeclaration);
     bool buildMaybeClass(const picojson::value &value, bool isDeclaration);
     bool buildClass(const picojson::object &object, bool declaration);
-
     bool buildProperty(const std::string &property, Class *clazz);
     bool buildMaybeProperty(const picojson::value &value, Class *clazz);
-
-    bool buildSignal(const std::string &property, Class *clazz);
+    bool buildSignal(const std::string &signal, Class *clazz);
     bool buildMaybeSignal(const picojson::value &value, Class *clazz);
+    bool buildFunction(const std::string &function, Class *clazz);
+    bool buildMaybeFunction(const picojson::value &value, Class *clazz);
+    bool buildResource(const std::string &resource, Class *clazz);
+    bool buildMaybeResource(const picojson::value &value, Class *clazz);
+    bool buildObject(const picojson::value &value, Object *parent, Class *clazz);
 
     static std::string findStringInObject(const picojson::object &o, const char *key);
 
+    std::map<Class *, std::set<std::string>> m_ids;
     std::set<std::string> m_includes;
     std::map<std::string, Class *> m_classes;
 
+    int m_unnamedCounter;
+
     bool m_verbose = false;
 };
+
+bool ObjectModelBuilder::registerId(Class *clazz, const std::string &id)
+{
+    auto ids = m_ids[clazz];
+    if (ids.find(id) != ids.end())
+        return false;
+    ids.insert(id);
+    return true;
+}
 
 bool ObjectModelBuilder::build(const picojson::value &value)
 {
@@ -65,9 +82,9 @@ bool ObjectModelBuilder::build(const picojson::value &value)
         return false;
     }
 
+    bool ok = true;
     const picojson::object &object = value.get<picojson::object>();
     for (auto i : object) {
-        bool ok = true;
         if (i.first == "class-declarations") {
             ok = buildClasses(i.second, true);
         } else if (i.first == "classes") {
@@ -76,8 +93,12 @@ bool ObjectModelBuilder::build(const picojson::value &value)
 
         if (!ok) {
             std::cerr << "error: failed to build '" << i.first << "', " << i.second.to_str() << std::endl;
+            break;
         }
     }
+
+    for (auto i : m_classes) delete i.second;
+
     return true;
 }
 
@@ -140,8 +161,7 @@ bool ObjectModelBuilder::buildClass(const picojson::object &classObject, bool de
 
     Class *clazz = new Class();
     clazz->name = name;
-
-    std::unique_ptr<Class> clazzCleaner(clazz);
+    m_classes[name] = clazz;
 
     if (declaration) {
         std::string include = findStringInObject(classObject, "include");
@@ -172,14 +192,12 @@ bool ObjectModelBuilder::buildClass(const picojson::object &classObject, bool de
         const picojson::value &props = propertyIt->second;
         if (props.is<picojson::array>()) {
             for (auto prop : props.get<picojson::array>()) {
-                if (!buildMaybeProperty(prop, clazz)) {
+                if (!buildMaybeProperty(prop, clazz))
                     return false;
-                }
             }
         } else if (props.is<std::string>()) {
-            if (!buildProperty(props.get<std::string>(), clazz)) {
+            if (!buildProperty(props.get<std::string>(), clazz))
                 return false;
-            }
         } else {
             std::cerr << "error: invalid property in class=" << name << std::endl;
             return false;
@@ -190,23 +208,60 @@ bool ObjectModelBuilder::buildClass(const picojson::object &classObject, bool de
     if (signalIt != classObject.end()) {
         const picojson::value &signals = signalIt->second;
         if (signals.is<picojson::array>()) {
-            for (auto signal : signals.get<picojson::array>()) {
-                if (!buildMaybeSignal(signal, clazz)) {
+            for (auto signal : signals.get<picojson::array>())
+                if (!buildMaybeSignal(signal, clazz))
                     return false;
-                }
-            }
         } else if (signals.is<std::string>()) {
-            if (!buildSignal(signals.get<std::string>(), clazz)) {
+            if (!buildSignal(signals.get<std::string>(), clazz))
                 return false;
-            }
         } else {
             std::cerr << "error: invalid signal in class=" << name << std::endl;
             return false;
         }
     }
 
-    m_classes.insert(std::pair<std::string, Class *>(name, clazz));
-    clazzCleaner.reset(); // to avoid the auto-cleanup on out-of-scope.
+    auto functionsIt = classObject.find("functions");
+    if (functionsIt != classObject.end()) {
+        const picojson::value &functions = functionsIt->second;
+        if (functions.is<picojson::array>()) {
+            for (auto function : functions.get<picojson::array>())
+                if (!buildMaybeFunction(function, clazz))
+                    return false;
+        } else if (functions.is<std::string>()) {
+            if (!buildFunction(functions.get<std::string>(), clazz))
+                return false;
+        } else {
+            std::cerr << "error: invalid function in class=" << name << std::endl;
+            return false;
+        }
+    }
+
+    auto resourcesIt = classObject.find("resources");
+    if (resourcesIt != classObject.end()) {
+        const picojson::value &resources = resourcesIt->second;
+        if (resources.is<picojson::array>()) {
+            for (auto resource : resources.get<picojson::array>())
+                if (!buildMaybeResource(resource, clazz))
+                    return false;
+        } else if (resources.is<std::string>()) {
+            if (!buildResource(resources.get<std::string>(), clazz))
+                return false;
+        } else {
+            std::cerr << "error: invalid function in class=" << name << std::endl;
+            return false;
+        }
+    }
+
+    if (!declaration) {
+        auto rootIt = classObject.find("root");
+        if (rootIt != classObject.end()) {
+            const picojson::value &root = rootIt->second;
+            if (!buildObject(root, 0, clazz))
+                return false;
+        }
+
+    }
+
 
     return true;
 }
@@ -217,11 +272,12 @@ bool ObjectModelBuilder::buildMaybeProperty(const picojson::value &value, Class 
         std::cerr << "error: property in class='" << clazz->name << "' is not a JSON string.." << std::endl;
         return false;
     }
-    return buildProperty(string_trim(value.get<std::string>()), clazz);
+    return buildProperty(value.get<std::string>(), clazz);
 }
 
-bool ObjectModelBuilder::buildProperty(const std::string &prop, Class *clazz)
+bool ObjectModelBuilder::buildProperty(const std::string &propertyString, Class *clazz)
 {
+    std::string prop = string_trim(propertyString);
     size_t space = prop.find_last_of(" ");
     if (space == std::string::npos) {
         std::cerr << "error: invalid property: " << prop << " in class: " << clazz->name << std::endl;
@@ -249,14 +305,15 @@ bool ObjectModelBuilder::buildMaybeSignal(const picojson::value &value, Class *c
     return buildSignal(string_trim(value.get<std::string>()), clazz);
 }
 
-bool ObjectModelBuilder::buildSignal(const std::string &signal, Class *clazz)
+bool ObjectModelBuilder::buildSignal(const std::string &signalString, Class *clazz)
 {
+    std::string signal = string_trim(signalString);
+
     size_t argumentsStart = signal.find_last_of("<");
     size_t argumentsEnd = signal.find_last_of(">");
 
     std::string name;
     std::string args;
-
 
     if (argumentsStart == std::string::npos && argumentsEnd == std::string::npos) {
         // no arguments, equal to <>, aka void
@@ -271,6 +328,7 @@ bool ObjectModelBuilder::buildSignal(const std::string &signal, Class *clazz)
     }
 
     Signal s;
+    s.clazz = clazz;
     s.name = name;
     s.signature = args;
     clazz->signals.push_back(s);
@@ -281,4 +339,166 @@ bool ObjectModelBuilder::buildSignal(const std::string &signal, Class *clazz)
     return true;
 }
 
+bool ObjectModelBuilder::buildMaybeFunction(const picojson::value &value, Class *clazz)
+{
+    if (!value.is<std::string>()) {
+        std::cerr << "error: function in class='" << clazz->name << "' is not a JSON string.." << std::endl;
+        return false;
+    }
+    return buildFunction(string_trim(value.get<std::string>()), clazz);
+}
 
+bool ObjectModelBuilder::buildFunction(const std::string &functionString, Class *clazz)
+{
+    std::string function = string_trim(functionString);
+
+    Function f;
+    f.clazz = clazz;
+    f.signature = function;
+    clazz->functions.push_back(f);
+
+    if (m_verbose)
+        std::cerr << " - function: '" << f.signature << "'" << std::endl;
+
+    return true;
+}
+
+bool ObjectModelBuilder::buildMaybeResource(const picojson::value &value, Class *clazz)
+{
+    if (!value.is<std::string>()) {
+        std::cerr << "error: resource in class='" << clazz->name << "' is not a JSON string.." << std::endl;
+        return false;
+    }
+    return buildResource(value.get<std::string>(), clazz);
+}
+
+bool ObjectModelBuilder::buildResource(const std::string &resourceString, Class *clazz)
+{
+    std::string resource = string_trim(resourceString);
+
+    std::istringstream iss(resource);
+    std::string type, name, initializer;
+    char assign;
+    iss >> type >> name >> assign >> initializer;
+
+    if (type.empty() || name.empty() || initializer.empty() || assign != '=') {
+        std::cerr << "error: malformed 'resource' string in class='" << clazz->name
+                  << "', expected: '[type] [name] = [initialier]'" << std::endl;
+        return false;
+    }
+
+    Resource r;
+    r.name = name;
+    r.type = type;
+    r.initializer = initializer;
+    clazz->resources.push_back(r);
+    registerId(clazz, name);
+
+    if (m_verbose)
+        std::cerr << " - resource: type='" << type << "', name='" << name << "', initializer='" << initializer << "'" << std::endl;
+
+    return true;
+}
+
+bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *parent, Class *clazz)
+{
+    if (!value.is<picojson::object>()) {
+        std::cerr << "error: 'root' entry in class='" << clazz->name << "' is not a JSON object..." << std::endl;
+        return false;
+    }
+
+    const picojson::object &object = value.get<picojson::object>();
+
+    std::string typeName = findStringInObject(object, "class");
+    if (typeName.empty()) {
+        std::cerr << "error: object has empty or missing 'class' in class='" << clazz->name << "', " << std::endl;
+        return false;
+    }
+
+    std::string id = findStringInObject(object, "id");
+    if (id.empty()) {
+        ++m_unnamedCounter;
+        id = std::string("unnamable") + std::to_string(m_unnamedCounter);
+    }
+
+    Object *instance = new Object();
+    std::unique_ptr<Object> objectCleanup(instance);
+    instance->parent = parent;
+
+    auto classIt = m_classes.find(typeName);
+    if (classIt == m_classes.end()) {
+        std::cerr << "error: unknown class=" << typeName << ", for object id=" << id << std::endl;
+        return false;
+    }
+    instance->clazz = classIt->second;
+
+    // Parse out the properties and values..
+    for (auto member : object) {
+        const std::string &key = member.first;
+
+        // These are special cased above and below
+        if (key == "children" || key == "id" || key == "class")
+            continue;
+
+        // Verify that the class in question actually has the property
+        bool exists = false;
+        for (auto classProperty : instance->clazz->properties) {
+            if (classProperty.name == key) {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            std::cerr << "error: object id=" << id << ", class=" << typeName << ", unknown property=" << key << std::endl;
+            return false;
+        }
+
+        const picojson::value &propertyValue = member.second;
+        if (value.is<double>())
+            instance->propertyValues[key] = Value::number(propertyValue.get<double>());
+        else if (value.is<std::string>()) {
+            std::string stringValue = value.get<std::string>();
+            if (stringValue.compare(0, 2, ":=") == 0) {
+                instance->propertyValues[key] = Value::binding(stringValue.substr(2));
+            } else {
+                instance->propertyValues[key] = Value::string(stringValue);
+            }
+        }
+    }
+
+    // Recursively traverse the children..
+    auto childrenIt = object.find("children");
+    if (childrenIt != object.end()) {
+        const picojson::value &children = childrenIt->second;
+        if (children.is<picojson::array>()) {
+            for (auto child : children.get<picojson::array>())
+                if (!buildObject(child, instance, clazz))
+                    return false;
+        } else if (children.is<picojson::object>()) {
+            if (!buildObject(children, instance, clazz))
+                return false;
+        } else {
+            std::cerr << "error: object id=" << id << " of class=" << typeName << ", has invalid children, must be JSON array or object" << std::endl;
+            return false;
+        }
+    }
+
+    if (m_verbose) {
+        std::string padding;
+        Object *p = parent;
+        while (p) {
+            padding += "  ";
+            p = p->parent;
+        }
+        std::cerr << " - object: " << padding << "id=" << id << ", class=" << typeName << ", children=" << instance->children.size() << std::endl;
+    }
+
+    objectCleanup.reset();
+
+    if (parent)
+        parent->children.push_back(instance);
+    else
+        clazz->root = instance;
+
+    return true;
+}

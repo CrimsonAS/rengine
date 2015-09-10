@@ -5,9 +5,9 @@ namespace rengine_ideas
 
 class Sample {
 public:
-    Sample(Renderer *renderer)
+    Sample(ResourceManager *resources)
     {
-        setupResources(renderer);
+        setupResources(resources);
         setupObjects();
     }
 
@@ -74,9 +74,24 @@ public:
     } binding_image_height;
 };
 
-inline void Sample::setupResources(Renderer *renderer)
+
+/*
+    Assumes something like this:
+class ResourceManager
 {
-    textureWalker = loadTexture(renderer, "walker.png");
+public:
+    template <typename T> T *acquire(const char *name) { ... }
+    template <typename T> release(T *) { ... }
+
+    template <> rengine::Texture *acquire<rengine::Texture>(const char *name) { ... }
+    template <> release<rengine::Texture>(rengine::Texture *texture) { ... }
+};
+
+*/
+
+inline void Sample::setupResources(ResourceManager *resources)
+{
+    textureWalker = resources->acquire<rengine::Texture>("walker.png");
 }
 
 inline void setupObjects()
