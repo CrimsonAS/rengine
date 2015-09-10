@@ -34,12 +34,18 @@ using namespace picojson;
 struct Options {
     string inputFile;
     vector<string> includeDirs;
+    bool verbose;
+    bool dumpJson;
 } options;
 
 static void printHelp(char *cmd)
 {
     cout << "Usage:" << endl
          << " > " << cmd << "[options] inputfile" << endl
+         << endl
+         << "Options: " << endl
+         << "  -v   --verbose    Print extra output to stderr" << endl
+         << "  -d   --dump-json  Dump the complete json file" << endl
          << endl;
 }
 
@@ -121,9 +127,14 @@ int main(int argc, char **argv)
     options.includeDirs.push_back("./");
 
     for (int i=1; i<argc; ++i) {
-        if (strstr(argv[i], "-h") != nullptr || strstr(argv[i], "--help")) {
+        std::string arg(argv[i]);
+        if (arg == "-h" || arg == "--help") {
             printHelp(argv[0]);
             return 0;
+        } else if (arg == "-v" || arg == "--verbose") {
+            options.verbose = true;
+        } else if (arg == "-d" || arg == "--dump-json") {
+            options.dumpJson = true;
         } else {
             std::string file(argv[i]);
             options.inputFile = file;
@@ -149,9 +160,11 @@ int main(int argc, char **argv)
 
     substituteImports(&content);
 
-    cout << content.serialize(true);
+    if (options.dumpJson)
+        cout << content.serialize(true);
 
     ObjectModelBuilder builder;
+    builder.setVerbose(options.verbose);
     builder.build(content);
 
     return 0;
