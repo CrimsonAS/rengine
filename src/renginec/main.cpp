@@ -27,6 +27,7 @@
 #include <fstream>
 #include "objectmodel.h"
 #include "objectmodelbuilder.h"
+#include "codegenerator.h"
 
 using namespace std;
 using namespace picojson;
@@ -166,6 +167,10 @@ int main(int argc, char **argv)
     ObjectModelBuilder builder;
     builder.setVerbose(options.verbose);
     builder.build(content);
+
+    CodeGenerator generator;
+    generator.setClasses(builder.classes());
+    generator.generate();
 
     return 0;
 }

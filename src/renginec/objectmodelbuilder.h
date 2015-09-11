@@ -39,6 +39,7 @@ public:
 
     bool build(const picojson::value &value);
 
+    const std::map<std::string, Class *> &classes() const { return m_classes; }
 
 private:
     bool registerId(Class *clazz, const std::string &id);
@@ -96,8 +97,6 @@ bool ObjectModelBuilder::build(const picojson::value &value)
             break;
         }
     }
-
-    for (auto i : m_classes) delete i.second;
 
     return true;
 }
@@ -358,7 +357,7 @@ bool ObjectModelBuilder::buildFunction(const std::string &functionString, Class 
     clazz->functions.push_back(f);
 
     if (m_verbose)
-        std::cerr << " - function: '" << f.signature << "'" << std::endl;
+        std::cerr << " - function: '" << function << "'" << std::endl;
 
     return true;
 }
