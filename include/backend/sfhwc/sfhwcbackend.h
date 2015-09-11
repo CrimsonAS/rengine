@@ -74,14 +74,36 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
         }
     }
 
+    int value;
+    hwcDevice->query(hwcDevice, HWC_BACKGROUND_LAYER_SUPPORTED, &value);
+    logi << " - Background Layer Support: " << (value != 0 ? "yes" : "no") << std::endl;
+    hwcDevice->query(hwcDevice, HWC_DISPLAY_TYPES_SUPPORTED, &value);
+    logi << " - Supported Display Types:"
+         << ((value & HWC_DISPLAY_PRIMARY_BIT) ? " primary" : "")
+         << ((value & HWC_DISPLAY_EXTERNAL_BIT) ? " external" : "")
+         << ((value & HWC_DISPLAY_VIRTUAL_BIT) ? " virtual" : "")
+         << std::endl;
+
     assert(surface);
     return surface;
 }
 
 SfHwcBackend::SfHwcBackend()
 {
+    if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **) &grallocModule) != 0 || !grallocModule) {
+        loge << "failed to open gralloc module" << std::endl;
+        return;
+    }
+    if (gralloc_open((const hw_module_t *) grallocModule, &allocDevice) != 0 || !allocDevice) {
+        loge << "failed to open alloc device" << std::endl;
+        return;
+    }
+    logi << "Gralloc:" << std::endl;
+    logi << " - gralloc module ......: " << grallocModule << std::endl;
+    logi << " - alloc device ........: " << allocDevice << std::endl;
+
     if (hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwcModule)) != 0 || !hwcModule) {
-        std::cerr << "error: " << __PRETTY_FUNCTION__ << ": failed to open module" << std::endl;
+        loge << ": failed to open module" << std::endl;
         return;
     }
     logi << "Hardware Composer Module:" << std::endl;
@@ -103,6 +125,18 @@ SfHwcBackend::SfHwcBackend()
     logi << " - module .............: " << hwcDevice->common.module << std::endl;
     logi << " - tag ................: " << std::hex << hwcDevice->common.tag << std::dec << std::endl;
     logi << " - composer/device ....: " << hwcDevice << std::endl;
+
+#ifndef NDEBUG
+    if (hwcDevice->dump) {
+        int maxLength = 64 * 1024;
+        char *bytes = (char *) malloc(maxLength);
+        hwcDevice->dump(hwcDevice, bytes, maxLength);
+        logi << "Hwc Device Dump ...: " << bytes << std::endl;
+        free(bytes);
+    } else {
+        logi << "Hwc Device Dump ...: n/a" << std::endl;
+    }
+#endif
 }
 
 void SfHwcBackend::run()

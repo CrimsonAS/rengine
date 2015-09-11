@@ -47,6 +47,8 @@ public:
 
         m_layer = rengine_loadImage(renderer(), "walker.png");
 
+        renderer()->setFillColor(vec4(0.0, 0, 0, 0.0));
+
         // Root has origin in screen center
         TransformNode *root = TransformNode::create();
         root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));

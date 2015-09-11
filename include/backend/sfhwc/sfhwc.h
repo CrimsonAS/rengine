@@ -35,6 +35,7 @@ RENGINE_BEGIN_NAMESPACE
 
 class SfHwcSurface;
 class SfHwcBackend;
+class SfHwcBuffer;
 
 class SfHwcSurface : public Surface, public HWComposerNativeWindow
 {
@@ -84,10 +85,49 @@ public:
     }
 
     SfHwcSurface *surface = nullptr;
+    gralloc_module_t *grallocModule = 0;
+    alloc_device_t *allocDevice = 0;
 	hw_module_t *hwcModule = 0;
 	hwc_composer_device_1_t *hwcDevice = 0;
 
     bool m_running = true;
+};
+
+class SfHwcBuffer
+{
+public:
+    SfHwcBuffer(SfHwcBackend *backend,
+                int w = 0,
+                int h = 0,
+                int format = HAL_PIXEL_FORMAT_RGBA_8888,
+                int usage = GRALLOC_USAGE_HW_COMPOSER | GRALLOC_USAGE_SW_WRITE_RARELY | GRALLOC_USAGE_HW_FB);
+    ~SfHwcBuffer();
+
+    bool isCreated() const { return m_handle != 0; }
+    bool isLocked() const { return m_bits != 0; }
+
+    void release();
+
+    void lock();
+    void unlock();
+    void *bits() { return m_bits; }
+
+    int width() const { return m_width; }
+    int height() const { return m_height; }
+    buffer_handle_t handle() { return m_handle; }
+
+    void fillWithCrap();
+
+private:
+    gralloc_module_t *grallocModule() const { return m_backend->grallocModule; }
+    alloc_device_t *allocDevice() const { return m_backend->allocDevice; }
+
+    SfHwcBackend *m_backend;
+    buffer_handle_t m_handle;
+    void *m_bits;
+    int m_stride;
+    int m_width;
+    int m_height;
 };
 
 #define RENGINE_BACKEND_DEFINE                               \
@@ -101,4 +141,5 @@ RENGINE_END_NAMESPACE
 // Implementations, included outside the namespace
 #include "sfhwcsurface.h"
 #include "sfhwcbackend.h"
+#include "sfhwcbuffer.h"
 
