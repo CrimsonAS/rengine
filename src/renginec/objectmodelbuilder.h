@@ -55,6 +55,7 @@ private:
     bool buildResource(const std::string &resource, Class *clazz);
     bool buildMaybeResource(const picojson::value &value, Class *clazz);
     bool buildObject(const picojson::value &value, Object *parent, Class *clazz);
+    bool buildBindingDependency(Binding *binding, const std::string &dependency);
 
     static std::string findStringInObject(const picojson::object &o, const char *key);
 
@@ -421,8 +422,8 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
     }
 
     Object *instance = new Object();
-    std::unique_ptr<Object> objectCleanup(instance);
     instance->parent = parent;
+    instance->id = id;
 
     auto classIt = m_classes.find(typeName);
     if (classIt == m_classes.end()) {
@@ -453,14 +454,44 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
         }
 
         const picojson::value &propertyValue = member.second;
-        if (value.is<double>())
+        if (propertyValue.is<double>()) {
             instance->propertyValues[key] = Value::number(propertyValue.get<double>());
-        else if (value.is<std::string>()) {
-            std::string stringValue = value.get<std::string>();
-            if (stringValue.compare(0, 2, ":=") == 0) {
-                instance->propertyValues[key] = Value::binding(stringValue.substr(2));
+        } else if (propertyValue.is<std::string>()) {
+            instance->propertyValues[key] = Value::string(propertyValue.get<std::string>());
+        } else if (propertyValue.is<picojson::object>()) {
+            const picojson::object &binding = propertyValue.get<picojson::object>();
+            auto bind = binding.find("bind");
+            auto to = binding.find("to");
+
+            if (bind != binding.end() && bind->second.is<std::string>()
+                && to != binding.end() && (to->second.is<std::string>() || to->second.is<picojson::array>())) {
+                std::shared_ptr<Binding> binding(new Binding());
+                if (to->second.is<std::string>()) {
+                    if (!buildBindingDependency(binding.get(), to->second.get<std::string>())) {
+                        std::cerr << "error: malformed binding dependency=" << to->second.get<std::string>() << ", in object id="
+                                  << id << ", class=" << typeName << ", property=" << key << std::endl;
+                        return false;
+                    }
+                } else {
+                    for (auto i : to->second.get<picojson::array>()) {
+                        if (!i.is<std::string>()) {
+                            std::cerr << "error: binding dependency needs to be a JSON string, id=" << id << ", property="
+                                      << key << ", class=" << typeName << std::endl;
+                            return false;
+                        }
+                        if (!buildBindingDependency(binding.get(), i.get<std::string>())) {
+                            std::cerr << "error: malformed binding dependency=" << i.get<std::string>() << ", in object id="
+                                      << id << ", class=" << typeName << ", property=" << key << std::endl;
+                            return false;
+                        }
+                    }
+                }
+                binding->expression = bind->second.get<std::string>();
+                instance->propertyValues[key] = Value::binding(binding);
             } else {
-                instance->propertyValues[key] = Value::string(stringValue);
+                std::cerr << "error: malformed binding in object id=" << id << ", class=" << typeName
+                          << ", property=" << key << std::endl;
+                return false;
             }
         }
     }
@@ -492,12 +523,26 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
         std::cerr << " - object: " << padding << "id=" << id << ", class=" << typeName << ", children=" << instance->children.size() << std::endl;
     }
 
-    objectCleanup.reset();
-
     if (parent)
         parent->children.push_back(instance);
     else
         clazz->root = instance;
 
+    return true;
+}
+
+bool ObjectModelBuilder::buildBindingDependency(Binding *binding, const std::string &dep)
+{
+    // parse out "objectId->propertyName" and add as a Binding::Depencency to the Binding
+    std::string dependency = string_trim(dep);
+    size_t pos = dependency.find("->");
+    if (pos == std::string::npos)
+        return false;
+    Binding::Dependency d;
+    d.objectId = dependency.substr(0, pos);
+    d.propertyName = dependency.substr(pos + 2);
+    if (d.objectId.empty() || d.propertyName.empty())
+        return false;
+    binding->dependencies.push_back(d);
     return true;
 }

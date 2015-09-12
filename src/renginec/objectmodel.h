@@ -57,6 +57,16 @@ struct Resource
     std::string initializer;
 };
 
+struct Binding
+{
+    struct Dependency {
+        std::string propertyName;
+        std::string objectId;
+    };
+    std::string expression;
+    std::vector<Dependency> dependencies;
+};
+
 struct Value
 {
     enum {
@@ -66,8 +76,11 @@ struct Value
         BindingValue
     };
 
+    // Should have been a union, but then we'd have to memory manage the
+    // the string and stuff, so keep it simple and waste memory..
     std::string stringValue;
     double numberValue;
+    std::shared_ptr<Binding> bindingValue;
     unsigned type = InvalidValue;
 
     static Value number(double dval) {
@@ -82,10 +95,10 @@ struct Value
         v.stringValue = sval;
         return v;
     }
-    static Value binding(const std::string &sval) {
+    static Value binding(const std::shared_ptr<Binding> &binding) {
         Value v;
         v.type = BindingValue;
-        v.stringValue = sval;
+        v.bindingValue = binding;
         return v;
     }
 };

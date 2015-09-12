@@ -27,7 +27,7 @@ Optional dependences include:
 
  - Qt: for the Qt based backend, the default
  - SDL2: for the SDL 2 based backend, enable using 'cmake -DRENGINE_USE_SDL=on'
-
+ - SfHwc: Sailfish, running directly on the HWC API
 
 todo
 ----
@@ -50,12 +50,6 @@ lots and lots...
  - input, both keyboard, touch and mouse
    - keyboard input missing
    - basic pointer support in place, but lacking multitouch
- - property api needs to improve
-   - Property<float> takes up 32 bytes: 4 from float, 24 from std::vector, 4 bytes of padding
-   - both signal and property's disconnect are broken, as the id is an integer
-     removing one in the middle will invalidate all ids after that position...
-
-
 
 overview of the dependencies between source directories
 -------------------------------------------------------
@@ -84,11 +78,9 @@ include/backend/
     -> qt/qtbackend.h: for qt one
     -> sdl/sdlbackend.h: for the sdl one
 
-src/sailfish
- - Implementation of a Sailfish system (todo :)
-
 3rdparty
- - stb headers for reading and writing
+ - stb headers for reading and writing images
+ - picojson.h for parsing json
 
 tests
  - tst_keyframes: tests for the animation system
@@ -100,6 +92,7 @@ tests
 
 examples - The examples are simple snippets meant to illustrate how a concept works
  - ex_benchmark_rectangles: benchmark on creating/destroying 1000 rects per frame, including rendering
+ - ex_benchmark_blend: benchmark to test overdraw performance of a GPUs
  - ex_blur: shows the blurring
  - ex_filters: shows how color filtering works
  - ex_layeredopacity: shows layered opacity

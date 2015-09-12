@@ -32,16 +32,16 @@
             "children" : {
                 "class"           : "rengine::TransformNode",
                 "id"              : "rotation",
-                "dx"              : ":= root->width() / 2.0f",
-                "dy"              : ":= root->height() / 2.0f",
-                "rotationAroundY" : 0.789,
+                "dx"              : "root->width() / 2.0f",
+                "dy"              : "root->height() / 2.0f",
+                "rotationAroundY" : "0.789f",
                 "children"        : {
                     "class"  : "rengine::TextureNode",
                     "id"     : "image",
-                    "width"  : ":= sourceTexture->width()",
-                    "height" : ":= sourceTexture->height()",
-                    "x"      : ":= -width() / 2.0f",
-                    "y"      : ":= -height() / 2.0f"
+                    "width"  : { "bind" : "sourceTexture->width()", "to": "sourceTexture->width" },
+                    "height" : { "bind" : "sourceTexture->height()", "to": "sourceTexture->height" },
+                    "x"      : { "bind" : "-width() / 2.0f", "to" : "image->width" },
+                    "y"      : { "bind" : "-height() / 2.0f", "to" : "image->height" }
                 }
             }
         }

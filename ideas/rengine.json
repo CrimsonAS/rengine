@@ -19,7 +19,7 @@
     }, {
         "include": "rengine.h",
         "name": "rengine::TextureNode",
-        "alloc": "pool-allocated",
+        "alloc": "rengine::TextureNode::create()",
         "properties": [
             "float x",
             "float y",
@@ -30,7 +30,7 @@
     }, {
         "include": "rengine.h",
         "name": "rengine::TransformNode",
-        "alloc": "pool-allocated",
+        "alloc": "rengine::TransformNode::create()",
         "properties": [
             "float dx",
             "float dy",
