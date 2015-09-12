@@ -90,7 +90,6 @@ bool CodeGenerator::generateClass(Class *clazz)
     writeProperties(stream, clazz);
     writeSignals(stream, clazz);
 
-    stream << "private:" << std::endl;
     writeResources(stream, clazz);
     writePropertyMemberVars(stream, clazz);
 
