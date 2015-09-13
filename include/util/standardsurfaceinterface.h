@@ -105,6 +105,7 @@ protected:
 
     Renderer *m_renderer = nullptr;
     AnimationManager m_animationManager;
+    ResourceHandler m_resourceHandler;
 
     Node *m_pointerEventReceiver = nullptr;
 };
