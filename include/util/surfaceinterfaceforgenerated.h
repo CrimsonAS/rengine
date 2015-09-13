@@ -37,7 +37,7 @@ public:
         if (code.initialized) {
             assert(old == code.root);
         } else {
-            code.initialize(&m_resourceHandler);
+            code.initialize(m_resourceHandler);
         }
         return code.root;
     }
