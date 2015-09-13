@@ -29,8 +29,8 @@
         ]
     }, {
         "include": "rengine.h",
-        "name": "rengine::TransformNode",
-        "alloc": "rengine::TransformNode::create()",
+        "name": "rengine::SimplifiedTransformNode",
+        "alloc": "rengine::SimplifiedTransformNode::create()",
         "properties": [
             "float dx",
             "float dy",

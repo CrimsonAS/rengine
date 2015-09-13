@@ -34,6 +34,7 @@ public:
     void setClasses(const std::map<std::string, Class *> &classes) { m_classes = classes; }
 
     void generate();
+    void setIncludeMain(bool include) { m_includeMain = include; }
 
 private:
     bool generateClass(Class *clazz);
@@ -51,10 +52,13 @@ private:
     void writeObject(std::ostream &stream, Object *object);
     void writeObjectMemberVars(std::ostream &stream, Object *object);
     void writeSignalHandlers(std::ostream &stream, Object *object, Class *clazz);
+    void writeDummyMain(std::ostream &stream, Class *clazz);
 
     std::map<std::string, Class *> m_classes;
 
     std::string m_outputDir;
+
+    bool m_includeMain = false;
 };
 
 void CodeGenerator::generate()
@@ -100,8 +104,21 @@ bool CodeGenerator::generateClass(Class *clazz)
     writeObjects(stream, clazz);
 
     writeEndOfClass(stream, clazz);
-
     stream.close();
+
+    std::cerr << "wrote: " << fileName << std::endl;
+
+    if (m_includeMain) {
+        std::string mainFileName = dir + "/main_" + clazz->name + ".cpp";
+        std::ofstream mainStream(mainFileName, std::ofstream::out);
+        if (!mainStream.is_open()) {
+            std::cerr << "Failed to open file='" << mainFileName << "'" << std::endl;
+        }
+        writeDummyMain(mainStream, clazz);
+        mainStream.close();
+        std::cerr << "wrote: " << mainFileName << std::endl;
+    }
+
 
     return true;
 }
@@ -131,11 +148,13 @@ void CodeGenerator::writeBeginningOfClass(std::ostream &s, Class *clazz)
     s << "class " << clazz->name << " : public rengine::SignalEmitter" << std::endl
       << "{" << std::endl
       << "public:" << std::endl
-      << "    // Constructor" << std::endl
-      << "    " << clazz->name << "(ResourceHandler *handler)" << std::endl
+      << "    bool initialized = false;" << std::endl
+      << "    // initialize function.." << std::endl
+      << "    void initialize(rengine::ResourceHandler *handler)" << std::endl
       << "    {" << std::endl
       << "        initResources(handler);" << std::endl
-      << "        initObjects()" << std::endl
+      << "        initObjects();" << std::endl
+      << "        initialized = true;" << std::endl
       << "    }" << std::endl
       << std::endl;
 }
@@ -158,7 +177,7 @@ void CodeGenerator::writeSignals(std::ostream &s, Class *clazz)
 {
     s << "    // signals" << std::endl;
     for (auto i : clazz->signals)
-        s << "    static Signal<" << i.signature << "> " << i.name << ";" << std::endl;
+        s << "    static rengine::Signal<" << i.signature << "> " << i.name << ";" << std::endl;
     s << std::endl;
 }
 
@@ -168,7 +187,7 @@ void CodeGenerator::writeProperties(std::ostream &s, Class *clazz)
     for (auto i : clazz->properties) {
         std::string name = i.name;
         name[0] = std::toupper(name[0]);
-        s << "    static Signal<> on" << name << "Changed;" << std::endl
+        s << "    static rengine::Signal<> on" << name << "Changed;" << std::endl
           << "    const " << i.type << " &" << i.name << "() const {" << std::endl
           << "        return m_" << i.name << ";" << std::endl
           << "    }" << std::endl
@@ -186,22 +205,48 @@ void CodeGenerator::writeResources(std::ostream &s, Class *clazz)
 {
     s << "    // resources" << std::endl;
     for (auto i : clazz->resources) {
-        s << "    " << i.type << " *" << i.name << ";" << std::endl;
+        s << "    " << i.type << " *" << i.name << " = nullptr;" << std::endl;
     }
     s << std::endl
-      << "    void initResources(ResourceHandler *handler) {" << std::endl;
+      << "    void initResources(rengine::ResourceHandler *handler) {" << std::endl;
     for (auto i : clazz->resources) {
-        s << "        " << i.name << " = handler->create<" << i.type << ">(\"" << i.initializer << "\");" << std::endl;
+        s << "        " << i.name << " = handler->acquire<" << i.type << ">(\"" << i.initializer << "\");" << std::endl;
     }
     s << "    }" << std::endl
       << std::endl;
 }
 
+inline std::string cg_default_value_for_type(const std::string &type)
+{
+    if (type == "bool") return "false";
+    else if (type == "boolean") return "false";
+    else if (type == "char") return "0";
+    else if (type == "unsigned char") return "0";
+    else if (type == "short") return "0";
+    else if (type == "unsigned short") return "0";
+    else if (type == "int") return "0";
+    else if (type == "unsigned int") return "0";
+    else if (type == "unsigned") return "0";
+    else if (type == "long") return "0";
+    else if (type == "unsigned long") return "0";
+    else if (type == "long long") return "0";
+    else if (type == "unsigned long long") return "0";
+    else if (type == "float") return "0.0f";
+    else if (type == "double") return "0.0";
+    else if (type.find("*") != std::string::npos) return "nullptr";
+    return "";
+}
+
 void CodeGenerator::writePropertyMemberVars(std::ostream &s, Class *clazz)
 {
     s << "    // property member vars" << std::endl;
-    for (auto i : clazz->properties)
-        s << "    " << i.type << " m_" << i.name << ";" << std::endl;
+    for (auto i : clazz->properties) {
+        s << "    " << i.type << " m_" << i.name;
+        std::string init = cg_default_value_for_type(i.type);
+        if (!init.empty())
+            s << " = " << init;
+        s << ";" << std::endl;
+    }
     s << std::endl;
 }
 
@@ -220,7 +265,7 @@ void CodeGenerator::writeObjectMemberVars(std::ostream &s, Object *object)
     if (!object->parent)
         s << "    // object member variables..." << std::endl;
 
-    s << "    " << object->clazz->name << " *" << object->id << ";" << std::endl;
+    s << "    " << object->clazz->name << " *" << object->id << " = nullptr;" << std::endl;
     for (auto i : object->children)
         writeObjectMemberVars(s, i);
 
@@ -242,23 +287,23 @@ void CodeGenerator::writeObject(std::ostream &s, Object *object)
         std::string name = i.first;
         name[0] = std::toupper(name[0]);
         const Value &value = i.second;
-        std::cout << i.first << std::endl;
         if (value.type == Value::StringValue) {
-            s << "        " << object->id << "->set" << name << "(" << value.stringValue << "):" << std::endl;
+            s << "        " << object->id << "->set" << name << "(" << value.stringValue << ");" << std::endl;
         } else if (value.type == Value::NumberValue) {
-            s << "        " << object->id << "->set" << name << "(" << value.numberValue << "):" << std::endl;
+            s << "        " << object->id << "->set" << name << "(" << value.numberValue << ");" << std::endl;
         } else if (value.type == Value::BindingValue) {
             for (const Binding::Dependency &dep : value.bindingValue->dependencies) {
                 std::string property = dep.propertyName;
                 property[0] = std::toupper(property[0]);
-                s << "        " << dep.objectId << "->on" << property << "Changed.connect(&"
+                s << "        " << dep.objectId << "->on" << property << "Changed.connect("
+                  << dep.objectId << ", &"
                   << cg_binding_name(object->id, i.first) << ");" << std::endl;
             }
             s << "        " << cg_binding_name(object->id, i.first) << ".self = this;" << std::endl;
         }
     }
     if (object->parent)
-        s << "        " << object->parent->id << "->add(" << object->id << ");" << std::endl;
+        s << "        " << object->parent->id << "->append(" << object->id << ");" << std::endl;
     for (auto i : object->children)
         writeObject(s, i);
 }
@@ -273,11 +318,13 @@ void CodeGenerator::writeSignalHandlers(std::ostream &s, Object *object, Class *
         const Value &value = i.second;
         if (value.type == Value::BindingValue) {
             propertyName[0] = std::toupper(propertyName[0]);
-            s << "    struct : public SignalHandler<> {" << std::endl
-              << "        " << clazz->name << " *self;" << std::endl
-              << "        void onSignal() override {" << std::endl
-              << "            self->" << object->id << "->set" << propertyName << "(" <<  value.bindingValue->expression << ");" << std::endl
-              << "        }" << std::endl
+            std::string bindexpr = "expression_" + cg_binding_name(object->id, i.first);
+            s << "    void " << bindexpr << "() { " << std::endl
+              << "        " << object->id << "->set" << propertyName << "(" << value.bindingValue->expression << ");" << std::endl
+              << "    }" << std::endl
+              << "    struct : public rengine::SignalHandler<> {" << std::endl
+              << "        " << clazz->name << " *self = nullptr;" << std::endl
+              << "        void onSignal() override { self->" << bindexpr << "(); }" << std::endl
               << "    } " << cg_binding_name(object->id, i.first) << ";" << std::endl;
         }
     }
@@ -286,4 +333,11 @@ void CodeGenerator::writeSignalHandlers(std::ostream &s, Object *object, Class *
 
     if (!object->parent)
         s << std::endl;
+}
+
+void CodeGenerator::writeDummyMain(std::ostream &s, Class *clazz)
+{
+    s << "#include \"generated_" << clazz->name << ".h\"" << std::endl
+      << std::endl
+      << "RENGINE_MAIN(rengine::SurfaceInterfaceForGenerated<" << clazz->name << ">);" << std::endl;
 }

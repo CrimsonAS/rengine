@@ -29,19 +29,21 @@
             "id"       : "root",
             "width"    : 320,
             "height"   : 480,
+            "color"    : "rengine::vec4(1, 0, 0, 1)",
             "children" : {
-                "class"           : "rengine::TransformNode",
-                "id"              : "rotation",
-                "dx"              : "root->width() / 2.0f",
-                "dy"              : "root->height() / 2.0f",
-                "rotationAroundY" : "0.789f",
-                "children"        : {
-                    "class"  : "rengine::TextureNode",
+                "class"    : "rengine::SimplifiedTransformNode",
+                "id"       : "rotation",
+                "dx"       : "root->width() / 2.0f",
+                "dy"       : "root->height() / 2.0f",
+                "rotation" : "0.789f",
+                "children" : {
+                    "class"  : "rengine::RectangleNode",
                     "id"     : "image",
-                    "width"  : { "bind" : "sourceTexture->width()", "to": "sourceTexture->width" },
-                    "height" : { "bind" : "sourceTexture->height()", "to": "sourceTexture->height" },
-                    "x"      : { "bind" : "-width() / 2.0f", "to" : "image->width" },
-                    "y"      : { "bind" : "-height() / 2.0f", "to" : "image->height" }
+                    "color"  : "rengine::vec4(0, 0, 1, 1)",
+                    "width"  : 100,
+                    "height" : 100,
+                    "x"      : { "bind" : "-image->width() / 2.0f", "to" : "image->width" },
+                    "y"      : { "bind" : "-image->height() / 2.0f", "to" : "image->height" }
                 }
             }
         }

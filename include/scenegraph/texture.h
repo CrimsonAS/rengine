@@ -43,6 +43,9 @@ public:
      */
     virtual vec2 size() const = 0;
 
+    unsigned width() const { return size().x; }
+    unsigned height() const { return size().y; }
+
     /*!
         Returns the format of this surface.
      */

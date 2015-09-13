@@ -37,6 +37,7 @@ struct Options {
     vector<string> includeDirs;
     bool verbose;
     bool dumpJson;
+    bool includeMain;
 } options;
 
 static void printHelp(char *cmd)
@@ -45,8 +46,9 @@ static void printHelp(char *cmd)
          << " > " << cmd << "[options] inputfile" << endl
          << endl
          << "Options: " << endl
-         << "  -v   --verbose    Print extra output to stderr" << endl
-         << "  -d   --dump-json  Dump the complete json file" << endl
+         << "  -v   --verbose        Print extra output to stderr" << endl
+         << "  -d   --dump-json      Dump the complete json file" << endl
+         << "  -m   --include-main   Include a dummy main() for easy testing" << endl
          << endl;
 }
 
@@ -136,6 +138,8 @@ int main(int argc, char **argv)
             options.verbose = true;
         } else if (arg == "-d" || arg == "--dump-json") {
             options.dumpJson = true;
+        } else if (arg == "-m" || arg == "--include-main") {
+            options.includeMain = true;
         } else {
             std::string file(argv[i]);
             options.inputFile = file;
@@ -152,9 +156,6 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    for (auto i : options.includeDirs)
-        cerr << "include dir: " << i << endl;
-
     value content;
     if (!loadFile(options.inputFile, &content))
         return 1;
@@ -170,6 +171,7 @@ int main(int argc, char **argv)
 
     CodeGenerator generator;
     generator.setClasses(builder.classes());
+    generator.setIncludeMain(options.includeMain);
     generator.generate();
 
     return 0;
