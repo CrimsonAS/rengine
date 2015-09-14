@@ -103,6 +103,15 @@ struct Value
     }
 };
 
+struct Replicator
+{
+    std::string id;
+    std::string clazz;
+    std::string parentId;
+    Value count;
+    std::string initializor;
+    std::string terminator;
+};
 
 struct Class
 {
@@ -113,6 +122,7 @@ struct Class
     std::vector<Signal> signals;
     std::vector<Function> functions;
     std::vector<Resource> resources;
+    std::vector<Replicator> replicators;
 
     Object *root;
 
@@ -127,4 +137,5 @@ struct Object
     std::map<std::string, Value> propertyValues;
     std::vector<Object *> children;
 };
+
 

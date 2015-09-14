@@ -10,7 +10,7 @@
         ],
 
         "root": {
-            "class:": "rengine::RectangleNode",
+            "class": "rengine::RectangleNode",
             "id": "rect",
             "width": 100,
             "height": 100,
@@ -18,43 +18,25 @@
         }
     },
 
-
     {
-        "name": "Sample",
-
-        "resources": [
-            "rengine::Texture sourceTexture = walker.png"
-        ],
-
-        "properties": [
-            "float width",
-            "float height"
-        ],
-
-        "signals": [
-            "onAction",
-            "onCompexAction<std::string, int>"
-        ],
-
-        "functions": [
-            "void foo()",
-            "float evaluate(const std::string &, int)"
-        ],
+        "name": "Replicator",
 
         "root": {
             "class"    : "rengine::RectangleNode",
             "id"       : "root",
-            "width"    : { "bind": "width()", "to": "width" },
-            "height"   : { "bind": "height()", "to": "height" },
-            "color"    : "rengine::vec4(1, 0, 0, 1)",
-            "children" : {
-                "id"    : "myReplicator",
-                "class" : "rengine::Replicator",
-                "type"  : "Billboard",
-                "count" : 20,
-                "initializer": "float c = index / (float) count; instance->setColor(vec4(c, 0.5, 1-c, 0.8))"
-            }
+            "width"    : 800,
+            "height"   : 480,
+            "color"    : "rengine::vec4(1, 0, 0, 1)"
+        },
+
+        "replicators" : [ {
+            "id"    : "myReplicator",
+            "class" : "Billboard",
+            "count" : 20,
+            "parent": "root",
+            "initializor": "float c = index / (float) count; instance->setColor(vec4(c, 0.5, 1-c, 0.8))"
         }
+        ]
     }
     ]
 }

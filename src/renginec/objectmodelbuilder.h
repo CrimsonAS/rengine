@@ -43,6 +43,7 @@ public:
 
 private:
     bool registerId(Class *clazz, const std::string &id);
+    std::string uniqueIdentifier(Class *clazz, const std::string &id);
     bool buildClasses(const picojson::value &value, bool isDeclaration);
     bool buildMaybeClass(const picojson::value &value, bool isDeclaration);
     bool buildClass(const picojson::object &object, bool declaration);
@@ -56,6 +57,8 @@ private:
     bool buildMaybeResource(const picojson::value &value, Class *clazz);
     bool buildObject(const picojson::value &value, Object *parent, Class *clazz);
     bool buildBindingDependency(Binding *binding, const std::string &dependency, Object *instance, Class *clazz);
+    bool buildMaybeReplicator(const picojson::value &value, Class *clazz);
+    bool buildReplicator(const picojson::object &object, Class *clazz);
 
     static std::string findStringInObject(const picojson::object &o, const char *key);
 
@@ -75,6 +78,15 @@ bool ObjectModelBuilder::registerId(Class *clazz, const std::string &id)
         return false;
     ids.insert(id);
     return true;
+}
+
+std::string ObjectModelBuilder::uniqueIdentifier(Class *clazz, const std::string &id)
+{
+    if (id.empty()) {
+        ++m_unnamedCounter;
+        return std::string("unnamable") + std::to_string(m_unnamedCounter);
+    }
+    return id;
 }
 
 bool ObjectModelBuilder::build(const picojson::value &value)
@@ -247,7 +259,7 @@ bool ObjectModelBuilder::buildClass(const picojson::object &classObject, bool de
             if (!buildResource(resources.get<std::string>(), clazz))
                 return false;
         } else {
-            std::cerr << "error: invalid function in class=" << name << std::endl;
+            std::cerr << "error: invalid resource in class=" << name << std::endl;
             return false;
         }
     }
@@ -262,6 +274,21 @@ bool ObjectModelBuilder::buildClass(const picojson::object &classObject, bool de
 
     }
 
+    auto replicatorsIt = classObject.find("replicators");
+    if (replicatorsIt != classObject.end()) {
+        const picojson::value &replicators = replicatorsIt->second;
+        if (replicators.is<picojson::array>()) {
+            for (auto replicator : replicators.get<picojson::array>())
+                if (!buildMaybeReplicator(replicator, clazz))
+                    return false;
+        } else if (replicators.is<picojson::object>()) {
+            if (!buildReplicator(replicators.get<picojson::object>(), clazz))
+                return false;
+        } else {
+            std::cerr << "error: invalid 'replicators' in class=" << name << std::endl;
+            return false;
+        }
+    }
 
     return true;
 }
@@ -415,11 +442,7 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
         return false;
     }
 
-    std::string id = findStringInObject(object, "id");
-    if (id.empty()) {
-        ++m_unnamedCounter;
-        id = std::string("unnamable") + std::to_string(m_unnamedCounter);
-    }
+    std::string id = uniqueIdentifier(clazz, (findStringInObject(object, "id")));
 
     Object *instance = new Object();
     instance->parent = parent;
@@ -570,5 +593,59 @@ bool ObjectModelBuilder::buildBindingDependency(Binding *binding, const std::str
     if (d.objectId.empty() || d.propertyName.empty())
         return false;
     binding->dependencies.push_back(d);
+    return true;
+}
+
+bool ObjectModelBuilder::buildMaybeReplicator(const picojson::value &value, Class *clazz)
+{
+    if (!value.is<picojson::object>()) {
+        std::cerr << "error: 'replicator' in class=" << clazz->name << " is no a JSON object" << std::endl;
+        return false;
+    }
+
+    return buildReplicator(value.get<picojson::object>(), clazz);
+}
+
+bool ObjectModelBuilder::buildReplicator(const picojson::object &object, Class *clazz)
+{
+    std::string id = uniqueIdentifier(clazz, findStringInObject(object, "id"));
+    std::string className = findStringInObject(object, "class");
+    if (className.empty()) {
+        std::cerr << "error: 'replciator' missing 'class' tag, id=" << id << std::endl;
+        return false;
+    }
+    std::string parentName = findStringInObject(object, "parent");
+    if (parentName.empty()) {
+        std::cerr << "error: 'replciator' missing 'parent' tag, id=" << id << std::endl;
+        return false;
+    }
+
+    Replicator r;
+    r.id = id;
+    r.clazz = className;
+    r.parentId = parentName;
+
+    auto countIt = object.find("count");
+    if (countIt != object.end()) {
+        const picojson::value &countValue = countIt->second;
+        if (countValue.is<double>()) {
+            r.count = Value::number(countValue.get<double>());
+        } else {
+            std::cerr << "error: malformed value for replicator id=" << id << ", in class=" << className << std::endl;
+            return false;
+        }
+    } else {
+        r.count = Value::number(0);
+    }
+
+    r.initializor = findStringInObject(object, "initializor");
+    r.terminator = findStringInObject(object, "terminator");
+
+    if (m_verbose) {
+        std::cerr << " - replicator, id=" << id << ": " << r.count.numberValue << "x '" << className << "' under parent=" << parentName << std::endl;
+    }
+
+    clazz->replicators.push_back(r);
+
     return true;
 }

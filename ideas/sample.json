@@ -35,7 +35,7 @@
                 "id"       : "rotation",
                 "dx"       : "root->width() / 2.0f",
                 "dy"       : "root->height() / 2.0f",
-                "rotation" : "0",
+                "rotation" : "0.789f",
                 "children" : {
                     "class"  : "rengine::RectangleNode",
                     "id"     : "image",
