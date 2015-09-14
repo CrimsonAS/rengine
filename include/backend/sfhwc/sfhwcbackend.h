@@ -88,6 +88,18 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
     return surface;
 }
 
+inline void sfhwc_hooks_invalidate(const hwc_procs_t *procs) {
+    static_cast<const SfHwcBackend *>(procs)->cb_invalidate();
+}
+
+inline void sfhwc_hooks_vsync(const hwc_procs_t *procs, int display, int64_t timestamp) {
+    static_cast<const SfHwcBackend *>(procs)->cb_vsync(display, timestamp);
+}
+
+inline void sfhwc_hooks_hotplug(const hwc_procs_t *procs, int display, int connected) {
+    static_cast<const SfHwcBackend *>(procs)->cb_hotplug(display, connected);
+}
+
 SfHwcBackend::SfHwcBackend()
 {
     if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **) &grallocModule) != 0 || !grallocModule) {
@@ -137,6 +149,12 @@ SfHwcBackend::SfHwcBackend()
         logi << "Hwc Device Dump ...: n/a" << std::endl;
     }
 #endif
+
+    // Register callbacks
+    invalidate = sfhwc_hooks_invalidate;
+    vsync = sfhwc_hooks_vsync;
+    hotplug = sfhwc_hooks_hotplug;
+    hwcDevice->registerProcs(hwcDevice, this);
 }
 
 void SfHwcBackend::run()

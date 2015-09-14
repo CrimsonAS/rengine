@@ -68,7 +68,7 @@ public:
     EGLContext m_eglContext;
 };
 
-class SfHwcBackend : public Backend
+class SfHwcBackend : public Backend, public hwc_procs_t
 {
 public:
 	SfHwcBackend();
@@ -83,6 +83,10 @@ public:
     	renderer->setTargetSurface(surface);
     	return renderer;
     }
+
+    void cb_invalidate() const { logw << std::endl; }
+    void cb_vsync(int display, int64_t timestamp) const { logw << "display=" << display << ", timestamp=" << timestamp << std::endl; }
+    void cb_hotplug(int display, int connected) const { logw << "display=" << display << ", connected=" << connected << std::endl; }
 
     SfHwcSurface *surface = nullptr;
     gralloc_module_t *grallocModule = 0;
