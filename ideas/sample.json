@@ -10,8 +10,8 @@
         ],
 
         "properties": [
-            "std::string name",
-            "int id"
+            "float width",
+            "float height"
         ],
 
         "signals": [
@@ -35,7 +35,7 @@
                 "id"       : "rotation",
                 "dx"       : "root->width() / 2.0f",
                 "dy"       : "root->height() / 2.0f",
-                "rotation" : "0.789f",
+                "rotation" : "0",
                 "children" : {
                     "class"  : "rengine::RectangleNode",
                     "id"     : "image",

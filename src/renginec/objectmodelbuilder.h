@@ -55,7 +55,7 @@ private:
     bool buildResource(const std::string &resource, Class *clazz);
     bool buildMaybeResource(const picojson::value &value, Class *clazz);
     bool buildObject(const picojson::value &value, Object *parent, Class *clazz);
-    bool buildBindingDependency(Binding *binding, const std::string &dependency);
+    bool buildBindingDependency(Binding *binding, const std::string &dependency, Object *instance, Class *clazz);
 
     static std::string findStringInObject(const picojson::object &o, const char *key);
 
@@ -467,7 +467,7 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
                 && to != binding.end() && (to->second.is<std::string>() || to->second.is<picojson::array>())) {
                 std::shared_ptr<Binding> binding(new Binding());
                 if (to->second.is<std::string>()) {
-                    if (!buildBindingDependency(binding.get(), to->second.get<std::string>())) {
+                    if (!buildBindingDependency(binding.get(), to->second.get<std::string>(), instance, clazz)) {
                         std::cerr << "error: malformed binding dependency=" << to->second.get<std::string>() << ", in object id="
                                   << id << ", class=" << typeName << ", property=" << key << std::endl;
                         return false;
@@ -479,7 +479,7 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
                                       << key << ", class=" << typeName << std::endl;
                             return false;
                         }
-                        if (!buildBindingDependency(binding.get(), i.get<std::string>())) {
+                        if (!buildBindingDependency(binding.get(), i.get<std::string>(), instance, clazz)) {
                             std::cerr << "error: malformed binding dependency=" << i.get<std::string>() << ", in object id="
                                       << id << ", class=" << typeName << ", property=" << key << std::endl;
                             return false;
@@ -531,16 +531,42 @@ bool ObjectModelBuilder::buildObject(const picojson::value &value, Object *paren
     return true;
 }
 
-bool ObjectModelBuilder::buildBindingDependency(Binding *binding, const std::string &dep)
+bool ObjectModelBuilder::buildBindingDependency(Binding *binding, const std::string &dep, Object *object, Class *clazz)
 {
     // parse out "objectId->propertyName" and add as a Binding::Depencency to the Binding
     std::string dependency = string_trim(dep);
     size_t pos = dependency.find("->");
-    if (pos == std::string::npos)
-        return false;
+
     Binding::Dependency d;
-    d.objectId = dependency.substr(0, pos);
-    d.propertyName = dependency.substr(pos + 2);
+
+    // If we didn't find a ->, look in the class we're generating to see if the
+    // binding matches that..
+    if (pos == std::string::npos) {
+        std::cout << "didn't find any match.." << std::endl;
+        bool propertyInInstance = false;
+        for (auto i : object->clazz->properties) {
+            std::cout << "looking object, matching " << i.name << dependency << std::endl;
+            if (i.name == dependency) {
+                propertyInInstance = true;
+                d.objectId = object->id;
+                d.propertyName = dependency;
+                break;
+            }
+        }
+        if (!propertyInInstance) {
+            for (auto i : clazz->properties) {
+                std::cout << "looking class, matching " << i.name << dependency << std::endl;
+                if (i.name == dependency) {
+                    d.objectId = "this"; // refers to the instance of the class being generated
+                    d.propertyName = dependency;
+                    break;
+                }
+            }
+        }
+    } else {
+        d.objectId = dependency.substr(0, pos);
+        d.propertyName = dependency.substr(pos + 2);
+    }
     if (d.objectId.empty() || d.propertyName.empty())
         return false;
     binding->dependencies.push_back(d);

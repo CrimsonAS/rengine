@@ -150,9 +150,9 @@ void CodeGenerator::writeBeginningOfClass(std::ostream &s, Class *clazz)
       << "public:" << std::endl
       << "    bool initialized = false;" << std::endl
       << "    // initialize function.." << std::endl
-      << "    void initialize(rengine::ResourceHandler *handler)" << std::endl
+      << "    void initialize(rengine::ResourceManager *manager)" << std::endl
       << "    {" << std::endl
-      << "        initResources(handler);" << std::endl
+      << "        initResources(manager);" << std::endl
       << "        initObjects();" << std::endl
       << "        initialized = true;" << std::endl
       << "    }" << std::endl
@@ -208,9 +208,9 @@ void CodeGenerator::writeResources(std::ostream &s, Class *clazz)
         s << "    " << i.type << " *" << i.name << " = nullptr;" << std::endl;
     }
     s << std::endl
-      << "    void initResources(rengine::ResourceHandler *handler) {" << std::endl;
+      << "    void initResources(rengine::ResourceManager *manager) {" << std::endl;
     for (auto i : clazz->resources) {
-        s << "        " << i.name << " = handler->acquire<" << i.type << ">(\"" << i.initializer << "\");" << std::endl;
+        s << "        " << i.name << " = manager->acquire<" << i.type << ">(\"" << i.initializer << "\");" << std::endl;
     }
     s << "    }" << std::endl
       << std::endl;

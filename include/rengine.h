@@ -99,7 +99,7 @@ RENGINE_END_NAMESPACE
 
 #include "backend/backend.h"
 
-#include "util/resourcehandler.h"
+#include "util/resourcemanager.h"
 #include "util/standardsurfaceinterface.h"
 #include "util/surfaceinterfaceforgenerated.h"
 #include "util/maindefine.h"
