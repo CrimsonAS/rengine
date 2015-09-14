@@ -1,0 +1,60 @@
+{
+    "import": "rengine.json",
+
+    "classes": [
+    {
+        "name": "Billboard",
+
+        "properties": [
+            "vec4 color"
+        ],
+
+        "root": {
+            "class:": "rengine::RectangleNode",
+            "id": "rect",
+            "width": 100,
+            "height": 100,
+            "color": { "bind": "this->color()", "to": "this->color" }
+        }
+    },
+
+
+    {
+        "name": "Sample",
+
+        "resources": [
+            "rengine::Texture sourceTexture = walker.png"
+        ],
+
+        "properties": [
+            "float width",
+            "float height"
+        ],
+
+        "signals": [
+            "onAction",
+            "onCompexAction<std::string, int>"
+        ],
+
+        "functions": [
+            "void foo()",
+            "float evaluate(const std::string &, int)"
+        ],
+
+        "root": {
+            "class"    : "rengine::RectangleNode",
+            "id"       : "root",
+            "width"    : { "bind": "width()", "to": "width" },
+            "height"   : { "bind": "height()", "to": "height" },
+            "color"    : "rengine::vec4(1, 0, 0, 1)",
+            "children" : {
+                "id"    : "myReplicator",
+                "class" : "rengine::Replicator",
+                "type"  : "Billboard",
+                "count" : 20,
+                "initializer": "float c = index / (float) count; instance->setColor(vec4(c, 0.5, 1-c, 0.8))"
+            }
+        }
+    }
+    ]
+}
