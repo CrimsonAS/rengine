@@ -54,13 +54,14 @@ inline Texture *rengine_fractalTexture(Renderer *renderer, const vec2 &size)
             }
 
             float fv = i / float(iter);
-            if (fv > 1.0)
-                fv = 1.0;
+            if (fv >= 1.0f)
+                fv = 0.0f;
+            fv = fv * 3.0f;
 
-            unsigned pa = (int) (fv * 255);
-            unsigned pr = (int) (fv * r);
-            unsigned pg = (int) (fv * g);
-            unsigned pb = (int) (fv * b);
+            unsigned pa = std::min<unsigned>(255, (fv * 255));
+            unsigned pr = std::min<unsigned>(255, (fv * r));
+            unsigned pg = std::min<unsigned>(255, (fv * g));
+            unsigned pb = std::min<unsigned>(255, (fv * b));
             bits[ix + iy * stride] = (pa << 24) | (pb << 16) | (pg << 8) | (pr);
         }
     }
