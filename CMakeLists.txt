@@ -79,6 +79,7 @@ elseif(RENGINE_USE_SFHWC)
         -lhybris-common
         -lhybris-eglplatformcommon
         -lhybris-hwcomposerwindow
+        -lsync
         -lEGL)
 
 else()
