@@ -1,30 +1,7 @@
-/*
-    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
-
-    1. Redistributions of source code must retain the above copyright notice, this
-       list of conditions and the following disclaimer.
-    2. Redistributions in binary form must reproduce the above copyright notice,
-       this list of conditions and the following disclaimer in the documentation
-       and/or other materials provided with the distribution.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
 
 #pragma once
 
+#include <assert.h>
 #include <fstream>
 #include "objectmodel.h"
 
@@ -40,7 +17,7 @@ private:
     bool generateClass(Class *clazz);
 
     void writeDisclaimer(std::ostream &stream);
-    void writeIncludes(std::ostream &stream);
+    void writeIncludes(std::ostream &stream, Class *clazz);
     void writeBeginningOfClass(std::ostream &stream, Class *clazz);
     void writeEndOfClass(std::ostream &stream, Class *clazz);
     void writeFunctions(std::ostream &stream, Class *clazz);
@@ -52,6 +29,7 @@ private:
     void writeObject(std::ostream &stream, Object *object);
     void writeObjectMemberVars(std::ostream &stream, Object *object);
     void writeSignalHandlers(std::ostream &stream, Object *object, Class *clazz);
+    void writeReplicators(std::ostream &stream, Class *clazz);
     void writeDummyMain(std::ostream &stream, Class *clazz);
 
     std::map<std::string, Class *> m_classes;
@@ -88,20 +66,19 @@ bool CodeGenerator::generateClass(Class *clazz)
 
     writeDisclaimer(stream);
     stream << "#pragma once" << std::endl << std::endl;
-    writeIncludes(stream);
+    writeIncludes(stream, clazz);
     writeBeginningOfClass(stream, clazz);
     writeFunctions(stream, clazz);
     writeProperties(stream, clazz);
     writeSignals(stream, clazz);
-
     writeResources(stream, clazz);
     writePropertyMemberVars(stream, clazz);
-
     writeObjectMemberVars(stream, clazz->root);
-
     writeSignalHandlers(stream, clazz->root, clazz);
-
     writeObjects(stream, clazz);
+
+    if (!clazz->replicators.empty())
+        writeReplicators(stream, clazz);
 
     writeEndOfClass(stream, clazz);
     stream.close();
@@ -131,13 +108,31 @@ void CodeGenerator::writeDisclaimer(std::ostream &s)
       << " */" << std::endl << std::endl;
 }
 
-void CodeGenerator::writeIncludes(std::ostream &s)
+void CodeGenerator::writeIncludes(std::ostream &s, Class *clazz)
 {
     std::set<std::string> includes;
+
+    // First add all imported classes' includes.
     for (auto i : m_classes) {
-        if (!i.second->include.empty())
+        const Class *c = i.second;
+        if (!c->include.empty())
             includes.insert(i.second->include);
     }
+    // Then include all includes to classes we're replecating..
+    // ### We should be checking for cyclic deps here..
+    for (auto replicator : clazz->replicators) {
+        auto classIt = m_classes.find(replicator.clazz);
+        if (classIt != m_classes.end()) {
+            Class *c = classIt->second;
+            if (!c->declarationOnly) {
+                // a generated class,
+                includes.insert("generated_" + c->name + ".h");
+            } else if (!c->include.empty()) {
+                includes.insert(c->include);
+            }
+        }
+    }
+
     for (auto i : includes)
         s << "#include \"" << i << "\"" << std::endl;
     s << std::endl;
@@ -152,9 +147,12 @@ void CodeGenerator::writeBeginningOfClass(std::ostream &s, Class *clazz)
       << "    // initialize function.." << std::endl
       << "    void initialize(rengine::ResourceManager *manager)" << std::endl
       << "    {" << std::endl
+      << "        assert(!initialized);" << std::endl
       << "        initResources(manager);" << std::endl
-      << "        initObjects();" << std::endl
-      << "        initialized = true;" << std::endl
+      << "        initObjects();" << std::endl;
+    if (!clazz->replicators.empty())
+        s << "        initReplicators(manager);" << std::endl;
+    s << "        initialized = true;" << std::endl
       << "    }" << std::endl
       << std::endl;
 }
@@ -340,4 +338,29 @@ void CodeGenerator::writeDummyMain(std::ostream &s, Class *clazz)
     s << "#include \"generated_" << clazz->name << ".h\"" << std::endl
       << std::endl
       << "RENGINE_MAIN(rengine::SurfaceInterfaceForGenerated<" << clazz->name << ">);" << std::endl;
+}
+
+void CodeGenerator::writeReplicators(std::ostream &s, Class *clazz)
+{
+    s << "    // replicators" << std::endl;
+
+    for (const Replicator &r : clazz->replicators)
+        s << "    std::vector<" << r.clazz << "> replicator_" << r.id << ";" << std::endl;
+
+    s << "    void initReplicators(rengine::ResourceManager *manager) {" << std::endl
+      << "        int count;" << std::endl;
+    for (const Replicator &r : clazz->replicators) {
+        assert(m_classes.find(r.clazz) != m_classes.end());
+        Class *instanceClass = m_classes.find(r.clazz)->second;
+        s << "        count = " << r.count.numberValue << ";" << std::endl
+          << "        for (int index=0; i<count; ++i) {" << std::endl
+          // ### TODO also handle declaratationOnly classes
+          << "            " << instanceClass->name << " *instance = new " << instanceClass->name << "()" << std::endl
+          << "            instance->initialize(manager);" << std::endl
+          << "            replicator_" << r.id << ".push_back(instance);" << std::endl
+          << "            " << r.initializor << std::endl
+          << "            " << r.parentId << "->append(instance->root);" << std::endl
+          << "        }" << std::endl;
+    }
+    s << std::endl;
 }
