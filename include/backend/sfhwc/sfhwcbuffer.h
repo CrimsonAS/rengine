@@ -123,13 +123,14 @@ void SfHwcBuffer::fillWithCrap()
             }
 
             float fv = i / float(iter);
-            if (fv > 1.0)
-                fv = 1.0;
+            if (fv >= 1.0f)
+                fv = 0.0f;
+            fv = fv * 3.0f;
 
-            unsigned pa = (int) (fv * 255); // rand() & 255;
-            unsigned pr = (int) (fv * r); // rand() & 255;
-            unsigned pg = (int) (fv * g); // rand() & 255;
-            unsigned pb = (int) (fv * b); // rand() & 255;
+            unsigned pa = std::min<unsigned>(255, (fv * 255));
+            unsigned pr = std::min<unsigned>(255, (fv * r));
+            unsigned pg = std::min<unsigned>(255, (fv * g));
+            unsigned pb = std::min<unsigned>(255, (fv * b));
             bits[ix + iy * m_stride] = (pa << 24) | (pb << 16) | (pg << 8) | (pr);
         }
     }
