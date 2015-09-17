@@ -82,6 +82,7 @@ RENGINE_END_NAMESPACE
 
 #include "object/property.h"
 #include "object/signal.h"
+#include "object/replicator.h"
 
 #include "windowsystem/event.h"
 #include "windowsystem/surface.h"

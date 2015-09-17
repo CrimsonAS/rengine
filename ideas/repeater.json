@@ -3,7 +3,7 @@
 
     "classes": [
     {
-        "name": "TestBillboard",
+        "name": "Billboard",
 
         "properties": [
             "rengine::vec4 color"
@@ -19,7 +19,7 @@
     },
 
     {
-        "name": "TestReplicator",
+        "name": "Replicator",
 
         "root": {
             "class"    : "rengine::RectangleNode",
@@ -31,7 +31,7 @@
 
         "replicators" : [ {
             "id"    : "myReplicator",
-            "class" : "TestBillboard",
+            "class" : "Billboard",
             "count" : 20,
             "parent": "root",
             "initializor": "float c = index / (float) count; instance->setColor(rengine::vec4(c, 0.5, 1-c, 0.8));"
