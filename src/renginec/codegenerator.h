@@ -31,6 +31,7 @@ private:
     void writeSignalHandlers(std::ostream &stream, Object *object, Class *clazz);
     void writeReplicators(std::ostream &stream, Class *clazz);
     void writeDummyMain(std::ostream &stream, Class *clazz);
+    void writeSignalImplDefine(std::ostream &stream, Class *clazz);
 
     std::map<std::string, Class *> m_classes;
 
@@ -81,6 +82,7 @@ bool CodeGenerator::generateClass(Class *clazz)
         writeReplicators(stream, clazz);
 
     writeEndOfClass(stream, clazz);
+    writeSignalImplDefine(stream, clazz);
     stream.close();
 
     std::cerr << "wrote: " << fileName << std::endl;
@@ -159,7 +161,7 @@ void CodeGenerator::writeBeginningOfClass(std::ostream &s, Class *clazz)
 
 void CodeGenerator::writeEndOfClass(std::ostream &s, Class *clazz)
 {
-    s << "}; // end of class " << clazz->name << std::endl << std::endl;
+    s << "};" << std::endl << std::endl;
 }
 
 void CodeGenerator::writeFunctions(std::ostream &s, Class *clazz)
@@ -337,6 +339,10 @@ void CodeGenerator::writeDummyMain(std::ostream &s, Class *clazz)
 {
     s << "#include \"generated_" << clazz->name << ".h\"" << std::endl
       << std::endl
+      << "RENGINE_DEFINE_SIGNALS_" << clazz->name << std::endl;
+    for (const Replicator &r : clazz->replicators)
+        s << "RENGINE_DEFINE_SIGNALS_" << r.clazz << std::endl;
+    s << std::endl
       << "RENGINE_MAIN(rengine::SurfaceInterfaceForGenerated<" << clazz->name << ">);" << std::endl;
 }
 
@@ -348,7 +354,7 @@ void CodeGenerator::writeReplicators(std::ostream &s, Class *clazz)
     for (const Replicator &r : clazz->replicators) {
         assert(m_classes.find(r.clazz) != m_classes.end());
         Class *instanceClass = m_classes.find(r.clazz)->second;
-        s << "    struct : public rengine::Replicator<" << instanceClass->name << ", " << clazz->name << "> {" << std::endl
+        s << "    struct Replicator_" << r.id << " : public rengine::Replicator<" << instanceClass->name << ", " << clazz->name << "> {" << std::endl
           << "        rengine::ResourceManager *resourceManager;" << std::endl
           << "        " << clazz->name << " *context;" << std::endl
           << "        " << instanceClass->name << " *onCreateInstance(unsigned index, unsigned count) {" << std::endl
@@ -371,6 +377,27 @@ void CodeGenerator::writeReplicators(std::ostream &s, Class *clazz)
           << "        " << r.id << ".setCount(" << r.count.numberValue << ");" << std::endl;
       }
     s << "    }" << std::endl;
+
+    s << std::endl;
+}
+
+
+
+void CodeGenerator::writeSignalImplDefine(std::ostream &s, Class *clazz)
+{
+    // ### Won't work with classes in namespaces, but then again, that will
+    // need changes all around..
+    s << "// Signal definitions" << std::endl
+      << "#define RENGINE_DEFINE_SIGNALS_" << clazz->name << " \\" << std::endl;
+    for (const Signal &sig : clazz->signals)
+        s << "    rengine::Signal<" << sig.signature << "> " << clazz->name << "::" << sig.name << ";";
+    for (const Property &prop : clazz->properties) {
+        std::string name = prop.name;
+        name[0] = std::toupper(name[0]);
+        s << "    rengine::Signal<> " << clazz->name << "::on" << name << "Changed;" << std::endl;
+    }
+    // for (const Replicator &r : clazz->replicators)
+    //     s << "    rengine::Signal<> " << clazz->name << "::Replicator_" << r.id << "::onCountChanged;";
 
     s << std::endl;
 }
