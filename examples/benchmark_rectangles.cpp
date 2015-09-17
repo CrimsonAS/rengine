@@ -30,12 +30,16 @@ RENGINE_NODE_DEFINE_ALLOCATION_POOLS;
 RENGINE_NODE_DEFINE_SIGNALS
 RENGINE_BACKEND_DEFINE
 
+static int nodeCount = 1000;
+
 class Rectangles : public StandardSurfaceInterface
 {
 public:
     Node *update(Node *root) {
         if (root)
             root->destroy();
+
+        rengine_countFps();
 
         root = Node::create();
 
@@ -46,7 +50,7 @@ public:
         int w = size.x - rw;
         int h = size.y - rh;
 
-        int count = 1000;
+        int count = nodeCount;
 
         static int c = 1;
         c = (c + 1) % 2;
@@ -69,6 +73,14 @@ public:
 
 
 int main(int argc, char **argv) {
+    for (int i=0; i<argc; ++i) {
+        std::string arg(argv[i]);
+        if (i + 1 < argc && arg == "--count") {
+            nodeCount = atoi(argv[++i]);
+        }
+    }
+    std::cout << "Using " << nodeCount << " nodes...";
+
     RENGINE_ALLOCATION_POOL(RectangleNode, rengine_RectangleNode, 1024);
     RENGINE_ALLOCATION_POOL(Node, rengine_Node, 64);
     rengine_main<Rectangles>(argc, argv);
