@@ -29,7 +29,7 @@
             "class"    : "rengine::SimplifiedTransformNode",
             "id"       : "root",
             "dx"       : 200,
-            "dy"       : 200,
+            "dy"       : 100,
             "rotationAroundY": -1,
             "projectionDepth": 1000
         },
