@@ -19,7 +19,7 @@
     },
 
     {
-        "name": "Replicator",
+        "name": "Repeater",
 
         "root": {
             "class"    : "rengine::RectangleNode",

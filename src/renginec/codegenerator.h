@@ -344,23 +344,33 @@ void CodeGenerator::writeReplicators(std::ostream &s, Class *clazz)
 {
     s << "    // replicators" << std::endl;
 
-    for (const Replicator &r : clazz->replicators)
-        s << "    std::vector<" << r.clazz << "> replicator_" << r.id << ";" << std::endl;
-
-    s << "    void initReplicators(rengine::ResourceManager *manager) {" << std::endl
-      << "        int count;" << std::endl;
+    // ### this only supports replecating other generated classes..
     for (const Replicator &r : clazz->replicators) {
         assert(m_classes.find(r.clazz) != m_classes.end());
         Class *instanceClass = m_classes.find(r.clazz)->second;
-        s << "        count = " << r.count.numberValue << ";" << std::endl
-          << "        for (int index=0; i<count; ++i) {" << std::endl
-          // ### TODO also handle declaratationOnly classes
-          << "            " << instanceClass->name << " *instance = new " << instanceClass->name << "()" << std::endl
-          << "            instance->initialize(manager);" << std::endl
-          << "            replicator_" << r.id << ".push_back(instance);" << std::endl
+        s << "    struct : public rengine::Replicator<" << instanceClass->name << ", " << clazz->name << "> {" << std::endl
+          << "        rengine::ResourceManager *resourceManager;" << std::endl
+          << "        " << clazz->name << " *context;" << std::endl
+          << "        " << instanceClass->name << " *onCreateInstance(unsigned index, unsigned count) {" << std::endl
+          << "            " << instanceClass->name << " *instance = new " << instanceClass->name << "();" << std::endl
+          << "            instance->initialize(resourceManager);" << std::endl
           << "            " << r.initializor << std::endl
-          << "            " << r.parentId << "->append(instance->root);" << std::endl
-          << "        }" << std::endl;
+          << "            context->" << r.parentId << "->append(instance->" << instanceClass->root->id << ");" << std::endl
+          << "            return instance;" << std::endl
+          << "        }" << std::endl
+          << "        void onDestroyInstance(" << instanceClass->name << " *instance) {" << std::endl
+          << "            delete instance;" << std::endl
+          << "        }" << std::endl
+          << "    } " << r.id << ";" << std::endl;
     }
+
+    s << "    void initReplicators(rengine::ResourceManager *manager) {" << std::endl;
+    for (const Replicator &r : clazz->replicators) {
+        s << "        " << r.id << ".resourceManager = manager;" << std::endl
+          << "        " << r.id << ".context = this;" << std::endl
+          << "        " << r.id << ".setCount(" << r.count.numberValue << ");" << std::endl;
+      }
+    s << "    }" << std::endl;
+
     s << std::endl;
 }
