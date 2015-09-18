@@ -44,6 +44,22 @@ RENGINE_BEGIN_NAMESPACE
                : 0;                                    \
     }                                                  \
 
+// ### Is this the right place for this macro?
+#define RENGINE_IMPLEMENT_PROPERTY(type, name, setter, signal) \
+    protected:                                \
+        type m_##name;                        \
+    public:                                   \
+        static Signal<> signal;               \
+        type (name)() const {                 \
+            return m_##name;                  \
+        }                                     \
+        void setter(const type &name) {       \
+            if (m_##name == name)             \
+                return;                       \
+            m_##name = name;                  \
+            signal.emit(this);                \
+        }
+
 class Node : public SignalEmitter
 {
 public:
@@ -410,7 +426,7 @@ public:
         requestPreprocess();
     }
 
-    float dy() const { return m_dx; }
+    float dy() const { return m_dy; }
     void setDy(float dy) {
         if (m_dy == dy)
             return;
@@ -418,6 +434,8 @@ public:
         onDyChanged.emit(this);
         requestPreprocess();
     }
+
+    RENGINE_IMPLEMENT_PROPERTY(float, dz, setDz, onDzChanged);
 
     float rotationAroundX() const { return m_rotx; }
     void setRotationAroundX(float rx) {
@@ -460,10 +478,12 @@ public:
 
     void onPreprocess() override {
         mat4 m;
+        if (m_dz)
+            m = m * mat4::translate(0, 0, m_dz);
         if (m_dx != 0 || m_dy != 0)
-            m = mat4::translate2D(m_dx, m_dy);
+            m = m * mat4::translate2D(m_dx, m_dy);
         if (m_scale != 0)
-            m = m * mat4::scale2D(m_scale, m_scale);
+            m = mat4::scale2D(m_scale, m_scale);
         if (m_rotx != 0)
             m = m * mat4::rotateAroundX(m_rotx);
         if (m_roty != 0)
@@ -725,6 +745,7 @@ protected:
                                                                                     \
     rengine::Signal<> rengine::SimplifiedTransformNode::onDxChanged;                \
     rengine::Signal<> rengine::SimplifiedTransformNode::onDyChanged;                \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onDzChanged;                \
     rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundXChanged;   \
     rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundYChanged;   \
     rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundZChanged;   \

@@ -21,6 +21,8 @@ RENGINE_END_NAMESPACE
     RENGINE_BACKEND_DEFINE                                                                             \
     RENGINE_NODE_DEFINE_ALLOCATION_POOLS                                                               \
     RENGINE_NODE_DEFINE_SIGNALS                                                                        \
+    RENGINE_LAYOUTNODE_DEFINE_SIGNALS                                                                  \
+    RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS                                                         \
                                                                                                        \
 int main(int argc, char **argv) {                                                                      \
     RENGINE_ALLOCATION_POOL(rengine::Node, rengine_Node, 256);                                         \
@@ -28,9 +30,9 @@ int main(int argc, char **argv) {                                               
     RENGINE_ALLOCATION_POOL(rengine::SimplifiedTransformNode, rengine_SimplifiedTransformNode, 256);   \
     RENGINE_ALLOCATION_POOL(rengine::RectangleNode, rengine_RectangleNode, 256);                       \
     RENGINE_ALLOCATION_POOL(rengine::TextureNode, rengine_TextureNode, 256);                           \
-    RENGINE_ALLOCATION_POOL(rengine::OpacityNode, rengine_OpacityNode, 64);                            \
-    RENGINE_ALLOCATION_POOL(rengine::ColorFilterNode, rengine_ColorFilterNode, 16);                    \
-    RENGINE_ALLOCATION_POOL(rengine::BlurNode, rengine_BlurNode, 16);                                  \
-    RENGINE_ALLOCATION_POOL(rengine::ShadowNode, rengine_ShadowNode, 16);                              \
+    RENGINE_ALLOCATION_POOL(rengine::OpacityNode, rengine_OpacityNode, 32);                            \
+    RENGINE_ALLOCATION_POOL(rengine::ColorFilterNode, rengine_ColorFilterNode, 8);                     \
+    RENGINE_ALLOCATION_POOL(rengine::BlurNode, rengine_BlurNode, 8);                                   \
+    RENGINE_ALLOCATION_POOL(rengine::ShadowNode, rengine_ShadowNode, 8);                               \
     return RENGINE_NAMESPACE_PREFIX rengine_main<InterfaceName>(argc, argv);                           \
 }

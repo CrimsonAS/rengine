@@ -6,19 +6,13 @@
         "name": "Billboard",
 
         "properties": [
-            "rengine::vec4 color",
-            "float x",
-            "float y"
+            "rengine::vec4 color"
         ],
 
         "root": {
             "class": "rengine::RectangleNode",
             "id": "root",
-            "width": 100,
-            "height": 100,
-            "color": { "bind": "this->color()", "to": "this->color" },
-            "x": { "bind": "this->x()", "to": "this->x" },
-            "y": { "bind": "this->y()", "to": "this->y" }
+            "color": { "bind": "this->color()", "to": "this->color" }
         }
     },
 
@@ -28,20 +22,34 @@
         "root": {
             "class"    : "rengine::SimplifiedTransformNode",
             "id"       : "root",
-            "dx"       : 200,
+            "dx"       : 100,
             "dy"       : 100,
-            "rotationAroundY": -1,
-            "projectionDepth": 1000
+            "children" : [ {
+                "class"    : "rengine::RectangleNode",
+                "id"       : "background",
+                "width"    : 600,
+                "height"   : 300,
+                "color"    : "rengine::vec4(0.2, 0.2, 0.2, 1.0)"
+            }, {
+                "class"         : "rengine::LayoutNode",
+                "id"            : "grid",
+                "columnCount"   : 8,
+                "rowCount"      : 8,
+                "margin"        : 10,
+                "spacing"       : 10,
+                "width"         : 600,
+                "height"        : 300
+            } ]
         },
 
-        "replicators" : [ {
+        "replicators" : {
             "id"    : "myReplicator",
             "class" : "Billboard",
-            "count" : 20,
-            "parent": "root",
-            "initializor": "float c = index / (float) count; instance->setColor(rengine::vec4(c, 0.5, 1-c, 0.8)); instance->setX((index % 5) * 102); instance->setY(std::floor(index / 5) * 102);"
+            "count" : 64,
+            "parent": "grid",
+            "initializor": "float c = index / (float) count; instance->setColor(rengine::vec4(c, 0.5, 1-c, 0.8));"
         }
-        ]
+
     }
     ]
 }
