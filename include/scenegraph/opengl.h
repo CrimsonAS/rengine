@@ -25,19 +25,19 @@
 
 #pragma once
 
-#if defined(__APPLE__)
-// OSX
-# include <OpenGL/gl.h>
-
-#else
-// Other
-#include <EGL/egl.h>
-#include <GLES2/gl2.h>
-#define RENGINE_OPENGL_ES_2
-#endif
-
 #ifdef RENGINE_OPENGL_DESKTOP
-# define RENGINE_GLSL(code) "#define highp\n#define mediump\n#define lowp\n"#code
+#    ifdef __APPLE__
+#        include <OpenGL/gl.h>
+#    else
+         // This is a bit questionable.. We're using gl2.h headers to avoid
+         // having to resolve GL2 functions, but we'll still be linkings
+         // agsinst libGL.so, so this might not be compatible. If so, resolve
+         // the functions in openglrenderer.h
+#        include <GLES2/gl2.h>
+#    endif
+#    define RENGINE_GLSL(code) "#define highp\n#define mediump\n#define lowp\n"#code
 #else
-# define RENGINE_GLSL(code) #code
+#    include <EGL/egl.h>
+#    include <GLES2/gl2.h>
+#    define RENGINE_GLSL(code) #code
 #endif
