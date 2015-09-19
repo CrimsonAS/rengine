@@ -12,6 +12,8 @@
         "root": {
             "class": "rengine::RectangleNode",
             "id": "root",
+            "width": "20 + rand() % 20",
+            "height": "20 + rand() % 20",
             "color": { "bind": "this->color()", "to": "this->color" }
         }
     },
@@ -33,13 +35,13 @@
             }, {
                 "class"         : "rengine::LayoutNode",
                 "id"            : "grid",
-                "columnCount"   : 8,
-                "rowCount"      : 8,
-                "margin"        : 10,
-                "spacing"       : 10,
+                "columnCount"   : 80,
+                "rowCount"      : 80,
+                "margin"        : 2,
+                "spacing"       : 2,
                 "width"         : 600,
                 "height"        : 300,
-                "layoutTypeAsInt" : 1
+                "layoutTypeAsInt" : 2
             } ]
         },
 

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <limits>
+
 RENGINE_BEGIN_NAMESPACE
 
 /*!
@@ -108,7 +110,7 @@ protected:
         requestPreprocess();
     }
 
-    void onPreprocess() {
+    void onPreprocess() override {
         updateLayout();
         // Ensure that we get called again before the next frame..
         if (m_activationMode == Automatic)
@@ -127,12 +129,23 @@ void LayoutNode::updateLayout()
 
         int index = 0;
 
-        float cellWidth = m_cellWidth != 0
-                          ? m_cellWidth
-                          : (m_width - 2 * m_margin - (m_columnCount - 1) * m_spacing) / m_columnCount;
-        float cellHeight = m_cellHeight != 0
-                           ? m_cellHeight
-                           : (m_height - 2 * m_margin - (m_rowCount - 1) * m_spacing) / m_rowCount;
+        float cellWidth, cellHeight, xSign, ySign;
+
+        if (m_cellHeight != 0) {
+             cellWidth = std::abs(m_cellWidth);
+             xSign = m_cellWidth > 0 ? 1 : -1;
+        } else {
+            cellWidth = (std::abs(m_width) - 2 * m_margin - (m_columnCount - 1) * m_spacing) / m_columnCount;
+            xSign = m_width > 0 ? 1 : -1;
+        }
+
+        if (m_cellHeight != 0) {
+            cellHeight = std::abs(m_cellHeight);
+            ySign = m_cellHeight > 0 ? 1 : -1;
+        } else {
+            cellHeight = (std::abs(m_height) - 2 * m_margin - (m_rowCount - 1) * m_spacing) / m_rowCount;
+            ySign = m_height > 0 ? 1 : -1;
+        }
 
         logd << (m_layoutType == Grid_Horizontal ? "horizontal" : "vertical")
              << "-grid: cell=" << cellWidth << "x" << cellHeight
@@ -154,17 +167,74 @@ void LayoutNode::updateLayout()
                     r = index % itemsPer;
                     c = index / itemsPer;
                 }
-                rectNode->setGeometry(rect2d::fromXywh(m_margin + c * cellWidth + c * m_spacing,
-                                                       m_margin + r * cellHeight + r * m_spacing,
-                                                       cellWidth,
-                                                       cellHeight));
+
+                rectNode->setGeometry(rect2d::fromXywh(xSign * (m_margin + c * cellWidth + c * m_spacing),
+                                                       ySign * (m_margin + r * cellHeight + r * m_spacing),
+                                                       xSign * cellWidth,
+                                                       ySign * cellHeight).normalized());
                 ++index;
             }
             node = node->sibling();
         }
 
     } else {
-        std::cout << __PRETTY_FUNCTION__ << " - not implemented layout type.." << std::endl;
+
+        int index = 0;
+        int itemLimit;
+        float sizeLimit;
+
+        if (m_layoutType == Flow_Horizontal) {
+            itemLimit = m_columnCount > 0 ? m_columnCount : std::numeric_limits<int>::max();
+            sizeLimit = m_width != 0 ? m_width - m_margin : std::numeric_limits<float>::infinity();
+        } else {
+            itemLimit = m_rowCount > 0 ? m_rowCount : std::numeric_limits<int>::max();
+            sizeLimit = m_height != 0 ? m_height - m_margin : std::numeric_limits<float>::infinity();
+        }
+
+        float flow = m_margin; // The position in the direction of the flow
+        float step = m_margin; // The position in the direction normal to the flow
+        float stepIncrement = 0;
+
+        logd << (m_layoutType == Flow_Horizontal ? "horizontal" : "vertical")
+             << "-flow: itemLimit=" << itemLimit << ", sizeLimit=" << sizeLimit
+             << ", margin=" << m_margin << ", spacing=" << m_spacing
+             << std::endl;
+
+        Node *node = child();
+        while (node) {
+            RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
+            if (rectNode) {
+                float dim = m_layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
+                float end = flow + dim;
+                std::cout << " - " << rectNode->geometry() << " index=" << index << ", flow=" << flow << ", step=" << step << ", end=" << end << " - " << rectNode->width();
+                if (index == 0 || (end < sizeLimit && index < itemLimit)) {
+                    std::cout << " - inside - ";
+                    index++;
+                    if (m_layoutType == Flow_Horizontal) {
+                        stepIncrement = std::max(stepIncrement, rectNode->height());
+                        rectNode->setPosition(flow, step);
+                    } else {
+                        stepIncrement = std::max(stepIncrement, rectNode->width());
+                        rectNode->setPosition(step, flow);
+                    }
+                    flow = end + m_spacing;
+                } else {
+                    std::cout << " - outside - ";
+                    index = 0;
+                    step += stepIncrement + m_spacing;
+                    stepIncrement = 0;
+                    flow = m_margin + dim + m_spacing;
+                    if (m_layoutType == Flow_Horizontal)
+                        rectNode->setPosition(m_margin, step);
+                    else
+                        rectNode->setPosition(step, m_margin);
+                }
+                std::cout << rectNode->geometry() << std::endl;
+            }
+
+            node = node->sibling();
+        }
+
     }
 }
 
