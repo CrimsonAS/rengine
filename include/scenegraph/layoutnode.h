@@ -141,10 +141,10 @@ void LayoutNode::updateLayout()
 
         if (m_cellHeight != 0) {
             cellHeight = std::abs(m_cellHeight);
-            ySign = m_cellHeight > 0 ? 1 : -1;
+            ySign = m_cellHeight < 0 ? -1 : 1;
         } else {
             cellHeight = (std::abs(m_height) - 2 * m_margin - (m_rowCount - 1) * m_spacing) / m_rowCount;
-            ySign = m_height > 0 ? 1 : -1;
+            ySign = m_height < 0 ? -1 : 1;
         }
 
         logd << (m_layoutType == Grid_Horizontal ? "horizontal" : "vertical")
@@ -183,16 +183,22 @@ void LayoutNode::updateLayout()
         int itemLimit;
         float sizeLimit;
 
+        float flowSign, stepSign;
+
         if (m_layoutType == Flow_Horizontal) {
+            flowSign = m_width < 0 ? -1 : 1;
+            stepSign = m_height < 0 ? -1 : 1;
             itemLimit = m_columnCount > 0 ? m_columnCount : std::numeric_limits<int>::max();
-            sizeLimit = m_width != 0 ? m_width - m_margin : std::numeric_limits<float>::infinity();
+            sizeLimit = m_width != 0 ? m_width - flowSign * m_margin : flowSign * std::numeric_limits<float>::infinity();
         } else {
+            flowSign = m_height < 0 ? -1 : 1;
+            stepSign = m_width < 0 ? -1 : 1;
             itemLimit = m_rowCount > 0 ? m_rowCount : std::numeric_limits<int>::max();
-            sizeLimit = m_height != 0 ? m_height - m_margin : std::numeric_limits<float>::infinity();
+            sizeLimit = m_height != 0 ? m_height - flowSign * m_margin : flowSign * std::numeric_limits<float>::infinity();
         }
 
-        float flow = m_margin; // The position in the direction of the flow
-        float step = m_margin; // The position in the direction normal to the flow
+        float flow = flowSign * m_margin; // The position in the direction of the flow
+        float step = stepSign * m_margin; // The position in the direction normal to the flow
         float stepIncrement = 0;
 
         logd << (m_layoutType == Flow_Horizontal ? "horizontal" : "vertical")
@@ -205,31 +211,33 @@ void LayoutNode::updateLayout()
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
             if (rectNode) {
                 float dim = m_layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
-                float end = flow + dim;
-                std::cout << " - " << rectNode->geometry() << " index=" << index << ", flow=" << flow << ", step=" << step << ", end=" << end << " - " << rectNode->width();
-                if (index == 0 || (end < sizeLimit && index < itemLimit)) {
-                    std::cout << " - inside - ";
+                float end = flow + flowSign * dim;
+                if (index == 0 || (flowSign * end < flowSign * sizeLimit && index < itemLimit)) {
                     index++;
                     if (m_layoutType == Flow_Horizontal) {
                         stepIncrement = std::max(stepIncrement, rectNode->height());
-                        rectNode->setPosition(flow, step);
+                        rectNode->setPosition(flowSign > 0 ? flow : flow - rectNode->width(),
+                                              stepSign > 0 ? step : step - rectNode->height());
                     } else {
                         stepIncrement = std::max(stepIncrement, rectNode->width());
-                        rectNode->setPosition(step, flow);
+                        rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
+                                              flowSign > 0 ? flow : flow - rectNode->height());
                     }
-                    flow = end + m_spacing;
+                    flow = end + flowSign * m_spacing;
                 } else {
-                    std::cout << " - outside - ";
                     index = 0;
-                    step += stepIncrement + m_spacing;
-                    stepIncrement = 0;
-                    flow = m_margin + dim + m_spacing;
-                    if (m_layoutType == Flow_Horizontal)
-                        rectNode->setPosition(m_margin, step);
-                    else
-                        rectNode->setPosition(step, m_margin);
+                    step += stepSign * (stepIncrement + m_spacing);
+                    flow = flowSign * (m_margin + dim + m_spacing);
+                    if (m_layoutType == Flow_Horizontal) {
+                        stepIncrement = rectNode->height();
+                        rectNode->setPosition(flowSign > 0 ? m_margin : -m_margin - rectNode->width(),
+                                              stepSign > 0 ? step : step - rectNode->height());
+                    } else {
+                        stepIncrement = rectNode->width();
+                        rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
+                                              flowSign > 0 ? m_margin : -m_margin - rectNode->height());
+                    }
                 }
-                std::cout << rectNode->geometry() << std::endl;
             }
 
             node = node->sibling();
