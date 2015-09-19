@@ -99,11 +99,11 @@ public:
     OpenGLRenderer();
     ~OpenGLRenderer();
 
-    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data);
-    void initialize();
+    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data) override;
+    void initialize() override;
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
-    bool readPixels(int x, int y, int w, int h, unsigned *pixels);
+    bool readPixels(int x, int y, int w, int h, unsigned *pixels) override;
 
     void prepass(Node *n);
     void build(Node *n);

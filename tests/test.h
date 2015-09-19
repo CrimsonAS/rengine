@@ -170,7 +170,7 @@ public:
             surface()->requestRender();
     }
 
-    Node *update(Node *root) {
+    Node *update(Node *root) override {
         if (root)
             root->destroy();
 

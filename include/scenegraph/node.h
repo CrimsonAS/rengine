@@ -263,7 +263,7 @@ public:
         }
     }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(Node, rengine_Node);
+    RENGINE_ALLOCATION_POOL_DECLARATION_IN_BASECLASS(Node, rengine_Node);
 
     void __mark_as_pool_allocated() { m_poolAllocated = true; }
     bool __is_pool_allocated() const { return m_poolAllocated; }
@@ -525,6 +525,15 @@ public:
             return;
         m_geometry.setY(y);
         onYChanged.emit(this);
+    }
+
+    void setPosition(const vec2 &position) {
+        setX(position.x);
+        setY(position.y);
+    }
+    void setPosition(float x, float y) {
+        setX(x);
+        setY(y);
     }
 
     float width() const { return m_geometry.width(); }

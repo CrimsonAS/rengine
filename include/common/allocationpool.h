@@ -118,11 +118,30 @@ private:
             return t;                                       \
         }                                                   \
     }                                                       \
-    virtual void destroy() {                                \
+    virtual void destroy() override {                       \
         if (__is_pool_allocated())                          \
             __allocation_pool_##Name.deallocate(this);      \
         else                                                \
             delete this;                                    \
+    }
+
+#define RENGINE_ALLOCATION_POOL_DECLARATION_IN_BASECLASS(Type, Name)     \
+    friend class AllocationPool<Type>;                                   \
+    static AllocationPool<Type> __allocation_pool_##Name;                \
+    static Type *create() {                                              \
+        if (__allocation_pool_##Name.isExhausted())                      \
+            return new Type();                                           \
+        else  {                                                          \
+            Type *t = __allocation_pool_##Name.allocate();               \
+            t->__mark_as_pool_allocated();                               \
+            return t;                                                    \
+        }                                                                \
+    }                                                                    \
+    virtual void destroy() {                                             \
+        if (__is_pool_allocated())                                       \
+            __allocation_pool_##Name.deallocate(this);                   \
+        else                                                             \
+            delete this;                                                 \
     }
 
 #define RENGINE_ALLOCATION_POOL_DEFINITION(Type, Name)      \
