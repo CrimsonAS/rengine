@@ -38,7 +38,8 @@
                 "margin"        : 10,
                 "spacing"       : 10,
                 "width"         : 600,
-                "height"        : 300
+                "height"        : 300,
+                "layoutTypeAsInt" : 1
             } ]
         },
 

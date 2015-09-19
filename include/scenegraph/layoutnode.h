@@ -34,6 +34,19 @@ RENGINE_BEGIN_NAMESPACE
 class LayoutNode : public Node
 {
 public:
+    enum LayoutType {
+        Grid_Horizontal,
+        Grid_Vertical,
+        Flow_Horizontal,
+        Flow_Vertical
+        // packed in a bit field, expand when adding new members.
+    };
+
+    enum ActivationMode {
+        Automatic,
+        Explicit
+        // packed in a bit field, expand when adding new members.
+    };
 
     RENGINE_ALLOCATION_POOL_DECLARATION(LayoutNode, rengine_LayoutNode);
 
@@ -48,20 +61,6 @@ public:
     RENGINE_IMPLEMENT_PROPERTY(int, columnCount, setColumnCount, onColumnCountchanged);
     RENGINE_IMPLEMENT_PROPERTY(int, rowCount, setRowCount, onRowCountChanged);
 
-    enum LayoutType {
-        Grid_Horizontal,
-        Grid_Vertical,
-        Flow_Horizontal,
-        Flow_Vergical
-        // packed in a bit field, expand when adding new members.
-    };
-
-    enum ActivationMode {
-        Automatic,
-        Explicit
-        // packed in a bit field, expand when adding new members.
-    };
-
     ActivationMode activationMode() const { return m_activationMode; }
 
     void setActivationMode(ActivationMode mode) {
@@ -70,6 +69,23 @@ public:
         m_activationMode = mode;
         if (m_activationMode == Automatic)
             requestPreprocess();
+    }
+
+    static Signal<> onLayoutTypeChanged;
+    LayoutType layoutType() const { return m_layoutType; }
+    void setLayoutType(LayoutType type) {
+        if (type == m_layoutType)
+            return;
+        m_layoutType = type;
+        onLayoutTypeChanged.emit(this);
+    }
+
+    // ### Remove when code generation supports enums...
+    static Signal<> onLayoutTypeAsIntChanged;
+    int layoutTypeAsInt() const { return m_layoutType; }
+    void setLayoutTypeAsInt(int layoutType) {
+        assert(layoutType >= 0 && layoutType <= Flow_Vertical);
+        setLayoutType((LayoutType) layoutType);
     }
 
     void updateLayout();
@@ -105,7 +121,7 @@ protected:
 
 void LayoutNode::updateLayout()
 {
-    if (m_layoutType == Grid_Horizontal) {
+    if (m_layoutType == Grid_Horizontal || m_layoutType == Grid_Vertical) {
         assert(m_cellWidth != 0 || (m_width != 0 && m_columnCount > 0));
         assert(m_cellHeight != 0 || (m_height != 0 && m_rowCount > 0));
 
@@ -118,18 +134,26 @@ void LayoutNode::updateLayout()
                            ? m_cellHeight
                            : (m_height - 2 * m_margin - (m_rowCount - 1) * m_spacing) / m_rowCount;
 
-        logd << "horizontal-grid: cell=" << cellWidth << "x" << cellHeight
+        logd << (m_layoutType == Grid_Horizontal ? "horizontal" : "vertical")
+             << "-grid: cell=" << cellWidth << "x" << cellHeight
              << ", dim=" << m_width << "x" << m_height << ", margin=" << m_margin << ", spacing=" << m_spacing
              << std::endl;
 
-        const int itemsPer = m_columnCount > 0 ? m_columnCount : 1;
-
+        const int itemsPer = m_layoutType == Grid_Horizontal
+                             ? (m_columnCount > 0 ? m_columnCount : 1)
+                             : (m_rowCount > 0 ? m_rowCount : 1);
         Node *node = child();
         while (node) {
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
             if (rectNode) {
-                int r = index / itemsPer;
-                int c = index % itemsPer;
+                int r, c;
+                if (m_layoutType == Grid_Horizontal) {
+                    r = index / itemsPer;
+                    c = index % itemsPer;
+                } else {
+                    r = index % itemsPer;
+                    c = index / itemsPer;
+                }
                 rectNode->setGeometry(rect2d::fromXywh(m_margin + c * cellWidth + c * m_spacing,
                                                        m_margin + r * cellHeight + r * m_spacing,
                                                        cellWidth,
@@ -144,15 +168,18 @@ void LayoutNode::updateLayout()
     }
 }
 
-#define RENGINE_LAYOUTNODE_DEFINE_SIGNALS                          \
-    rengine::Signal<> rengine::LayoutNode::onMarginChanged;        \
-    rengine::Signal<> rengine::LayoutNode::onSpacingChanged;       \
-    rengine::Signal<> rengine::LayoutNode::onWidthChanged;         \
-    rengine::Signal<> rengine::LayoutNode::onHeightChanged;        \
-    rengine::Signal<> rengine::LayoutNode::onCellWidthChanged;     \
-    rengine::Signal<> rengine::LayoutNode::onCellHeightChanged;    \
-    rengine::Signal<> rengine::LayoutNode::onColumnCountchanged;   \
-    rengine::Signal<> rengine::LayoutNode::onRowCountChanged;
+#define RENGINE_LAYOUTNODE_DEFINE_SIGNALS                              \
+    rengine::Signal<> rengine::LayoutNode::onMarginChanged;            \
+    rengine::Signal<> rengine::LayoutNode::onSpacingChanged;           \
+    rengine::Signal<> rengine::LayoutNode::onWidthChanged;             \
+    rengine::Signal<> rengine::LayoutNode::onHeightChanged;            \
+    rengine::Signal<> rengine::LayoutNode::onCellWidthChanged;         \
+    rengine::Signal<> rengine::LayoutNode::onCellHeightChanged;        \
+    rengine::Signal<> rengine::LayoutNode::onColumnCountchanged;       \
+    rengine::Signal<> rengine::LayoutNode::onRowCountChanged;          \
+    rengine::Signal<> rengine::LayoutNode::onLayoutTypeChanged;        \
+    rengine::Signal<> rengine::LayoutNode::onLayoutTypeAsIntChanged;
+
 
 #define RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS \
     RENGINE_ALLOCATION_POOL_DEFINITION(rengine::LayoutNode, rengine_LayoutNode);

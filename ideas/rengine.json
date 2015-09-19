@@ -53,7 +53,8 @@
             "float cellWidth",
             "float cellHeight",
             "int columnCount",
-            "int rowCount"
+            "int rowCount",
+            "int layoutTypeAsInt"
         ]
     }
     ]
