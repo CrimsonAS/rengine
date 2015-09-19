@@ -68,6 +68,9 @@ struct Binding
     std::vector<Dependency> dependencies;
 };
 
+bool operator<(const Binding::Dependency &a, const Binding::Dependency &b) { return a.propertyName + a.objectId < b.propertyName + b.objectId; }
+
+
 struct Value
 {
     enum {

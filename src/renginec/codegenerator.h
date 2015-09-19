@@ -35,6 +35,8 @@ private:
 
     std::map<std::string, Class *> m_classes;
 
+    std::set<Binding::Dependency> m_usedSignals;
+
     std::string m_outputDir;
 
     bool m_includeMain = false;
@@ -64,6 +66,8 @@ bool CodeGenerator::generateClass(Class *clazz)
         std::cerr << "Failed to open file='" << fileName << "'" << std::endl;
         return false;
     }
+
+    m_usedSignals.clear();
 
     writeDisclaimer(stream);
     stream << "#pragma once" << std::endl << std::endl;
@@ -255,6 +259,11 @@ void CodeGenerator::writeObjects(std::ostream &s, Class *clazz)
     s << "    // The objects.." << std::endl
       << "    void initObjects() {" << std::endl;
     writeObject(s, clazz->root);
+    for (const Binding::Dependency &dep : m_usedSignals) {
+        std::string name = dep.propertyName;
+        name[0] = std::toupper(name[0]);
+        s << "        " << dep.objectId << "->on" << name << "Changed.emit(" << dep.objectId << ");" << std::endl;
+    }
     s << "    }" << std::endl
       << std::endl;
 }
@@ -298,6 +307,7 @@ void CodeGenerator::writeObject(std::ostream &s, Object *object)
                 s << "        " << dep.objectId << "->on" << property << "Changed.connect("
                   << dep.objectId << ", &"
                   << cg_binding_name(object->id, i.first) << ");" << std::endl;
+                m_usedSignals.insert(dep);
             }
             s << "        " << cg_binding_name(object->id, i.first) << ".self = this;" << std::endl;
         }

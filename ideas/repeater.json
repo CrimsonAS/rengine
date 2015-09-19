@@ -24,24 +24,24 @@
         "root": {
             "class"    : "rengine::SimplifiedTransformNode",
             "id"       : "root",
-            "dx"       : 100,
+            "dx"       : 700,
             "dy"       : 100,
             "children" : [ {
                 "class"    : "rengine::RectangleNode",
                 "id"       : "background",
-                "width"    : 600,
+                "width"    : -600,
                 "height"   : 300,
                 "color"    : "rengine::vec4(0.2, 0.2, 0.2, 1.0)"
             }, {
                 "class"         : "rengine::LayoutNode",
                 "id"            : "grid",
-                "columnCount"   : 80,
-                "rowCount"      : 80,
+                "columnCount"   : 8,
+                "rowCount"      : 8,
                 "margin"        : 2,
                 "spacing"       : 2,
-                "width"         : 600,
+                "width"         : { "bind": "background->width()", "to": "background->width" },
                 "height"        : 300,
-                "layoutTypeAsInt" : 2
+                "layoutTypeAsInt" : 1
             } ]
         },
 
