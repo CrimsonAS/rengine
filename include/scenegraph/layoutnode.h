@@ -177,7 +177,10 @@ public:
     int layoutTypeAsInt() const { return m_engine.layoutType; }
     void setLayoutTypeAsInt(int layoutType) {
         assert(layoutType >= 0 && layoutType < LayoutEngine::LastLayoutType);
+        if (layoutType == m_engine.layoutType)
+            return;
         setLayoutType((LayoutEngine::LayoutType) layoutType);
+        onLayoutTypeAsIntChanged.emit(this);
     }
 
     void updateLayout() { m_engine.updateLayout(this); }
