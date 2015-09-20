@@ -134,106 +134,93 @@ void tst_layoutnode_horizontal_grid()
         root->append(r[i]);
     }
 
-    // Layout out in a single row, based on cell size
+    // cellsize, one row
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 0, 0, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 0, 0, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(10, 0, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(20, 0, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(30, 0, 10, 20));
-    // Layout out in a single row, negative cell width
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 0, 0, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-10, 0, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-20, 0, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-30, 0, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-40, 0, 10, 20));
-    // Layout out in a single row, negative cell dimensions
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 0, 0, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-20, -20, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-30, -20, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-40, -20, 10, 20));
-    // Layout out in a single row, negative cell height
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 0, 0, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 0, -20, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(10, -20, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(20, -20, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(30, -20, 10, 20));
 
-    // Layout out in a single row, based on cell size. With margin/spacing
+    // cellsize, margin/spacing
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 0, 0, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 1, 1, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(13, 1, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(25, 1, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(37, 1, 10, 20));
-    // Layout out in a single row, negative cellwidth, with margin/spacing
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 0, 0, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-11, 1, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-23, 1, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-35, 1, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-47, 1, 10, 20));
-    // Layout out in a single row, negative cell dimensions, with margin/spacing
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 0, 0, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-23, -21, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-35, -21, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-47, -21, 10, 20));
-    // Layout out in a single row, negative cell height, with margin/spacing
     apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 0, 0, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 1, -21, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(13, -21, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(25, -21, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(37, -21, 10, 20));
 
-    // Layout out in a single row, based on width/4cols
+    // width/height, 1x4 grid
     apply_w_h_cw_ch_r_c_m_s(root, 40, 20, 0, 0, 1, 4, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 0, 0, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(10, 0, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(20, 0, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(30, 0, 10, 20));
-    // Layout out in a single row, negative width/4cols
     apply_w_h_cw_ch_r_c_m_s(root, -40, 20, 0, 0, 1, 4, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-10, 0, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-20, 0, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-30, 0, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-40, 0, 10, 20));
-    // Layout out in a single row, negative width/4cols negative height
     apply_w_h_cw_ch_r_c_m_s(root, -40, -20, 0, 0, 1, 4, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-20, -20, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-30, -20, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-40, -20, 10, 20));
-    // Layout out in a single row, width/4cols and negative height
     apply_w_h_cw_ch_r_c_m_s(root, 40, -20, 0, 0, 1, 4, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 0, -20, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(10, -20, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(20, -20, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(30, -20, 10, 20));
 
-    // Layout out in a single row, based on width/4cols + margin/space
+    // width/height, 1x4 grid, space/margin
     apply_w_h_cw_ch_r_c_m_s(root, 48, 22, 0, 0, 1, 4, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 1, 1, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(13, 1, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(25, 1, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(37, 1, 10, 20));
-    // Layout out in a single row, negative width/4cols + margin/space
     apply_w_h_cw_ch_r_c_m_s(root, -48, 22, 0, 0, 1, 4, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-11, 1, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-23, 1, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-35, 1, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-47, 1, 10, 20));
-    // Layout out in a single row, negative width/4cols negative height + margin/space
     apply_w_h_cw_ch_r_c_m_s(root, -48, -22, 0, 0, 1, 4, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(-23, -21, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(-35, -21, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-47, -21, 10, 20));
-    // Layout out in a single row, width/4cols and negative height + margin/space
     apply_w_h_cw_ch_r_c_m_s(root, 48, -22, 0, 0, 1, 4, 1, 2);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 1, -21, 10, 20));
     check_equal(r[1]->geometry(), rect2d::fromXywh(13, -21, 10, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh(25, -21, 10, 20));
     check_equal(r[3]->geometry(), rect2d::fromXywh(37, -21, 10, 20));
-
 
     // And then all the same tests, but this time limited to 2 columns
 
@@ -331,10 +318,207 @@ void tst_layoutnode_horizontal_grid()
     root->destroy();
 }
 
+
+void tst_layoutnode_vertical_grid()
+{
+    LayoutNode *root = LayoutNode::create();
+    root->setActivationMode(LayoutNode::Explicit);
+    root->setLayoutType(LayoutEngine::Grid_Vertical);
+
+    RectangleNode *r[4];
+    for (int i=0; i<4; ++i) {
+        r[i] = RectangleNode::create();
+        root->append(r[i]);
+    }
+
+    // cellsize, one column
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0, 40, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, 60, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-10, 40, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-10, 60, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-10, -60, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-10, -80, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0, -60, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, -80, 10, 20));
+
+    // cellsize, one column, margin/spacing
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 0, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(1,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(1, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(1, 45, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(1, 67, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 0, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-11, 45, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-11, 67, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 0, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-11, -65, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-11, -87, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 0, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(1, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(1, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(1, -65, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(1, -87, 10, 20));
+
+    // width/height, 4x1 grid
+    apply_w_h_cw_ch_r_c_m_s(root, 10, 80, 0, 0, 4, 1, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0, 40, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, 60, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -10, 80, 0, 0, 4, 1, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-10, 40, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-10, 60, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -10, -80, 0, 0, 4, 1, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-10, -60, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-10, -80, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 10, -80, 0, 0, 4, 1, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0, -60, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, -80, 10, 20));
+
+    // width/height, 4x1 grid, space/margin
+    apply_w_h_cw_ch_r_c_m_s(root, 12, 88, 0, 0, 4, 1, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(1, 1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(1, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(1, 45, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(1, 67, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -12, 88, 0, 0, 4, 1, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-11, 45, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-11, 67, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -12, -88, 0, 0, 4, 1, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-11, -65, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-11, -87, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 12, -88, 0, 0, 4, 1, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(1, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(1, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(1, -65, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(1, -87, 10, 20));
+
+    // And then all the same tests, but this time limited to 2 rows
+
+    // cell size, 2 rows
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 2, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 0, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(10,  0, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(10, 20, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 2, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-20,  0, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-20, 20, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 2, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-20, -20, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-20, -40, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 2, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 0, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(10, -20, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(10, -40, 10, 20));
+
+    // cell size, space/margin, 2 rows
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, 20, 2, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 1,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 1, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(13,  1, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(13, 23, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, 20, 2, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-23,  1, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-23, 23, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, -10, -20, 2, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-23, -21, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-23, -43, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 0, 0, 10, -20, 2, 0, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 1, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 1, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(13, -21, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(13, -43, 10, 20));
+
+    // width/height, 2x2 grid
+    apply_w_h_cw_ch_r_c_m_s(root, 20, 40, 0, 0, 2, 2, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 0, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(10,  0, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(10, 20, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -20, 40, 0, 0, 2, 2, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  0, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, 20, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-20,  0, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-20, 20, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -20, -40, 0, 0, 2, 2, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-10, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-20, -20, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-20, -40, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 20, -40, 0, 0, 2, 2, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0, -20, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 0, -40, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(10, -20, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(10, -40, 10, 20));
+
+    // width/height, 2x2 grid
+    apply_w_h_cw_ch_r_c_m_s(root, 24, 44, 0, 0, 2, 2, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 1,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 1, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(13,  1, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(13, 23, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -24, 44, 0, 0, 2, 2, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11,  1, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, 23, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-23,  1, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-23, 23, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, -24, -44, 0, 0, 2, 2, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-11, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-11, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-23, -21, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-23, -43, 10, 20));
+    apply_w_h_cw_ch_r_c_m_s(root, 24, -44, 0, 0, 2, 2, 1, 2);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 1, -21, 10, 20));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 1, -43, 10, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(13, -21, 10, 20));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(13, -43, 10, 20));
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+
+    root->destroy();
+}
+
 int main(int argc, char **argv)
 {
     tst_layoutnode_properties();
     tst_layoutnode_horizontal_grid();
+    tst_layoutnode_vertical_grid();
 
     return 0;
 }
