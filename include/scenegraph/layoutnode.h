@@ -233,8 +233,8 @@ void LayoutEngine::updateLayout(Node *parentNode)
              << std::endl;
 
         const int itemsPer = layoutType == Grid_Horizontal
-                             ? (columnCount > 0 ? columnCount : 1)
-                             : (rowCount > 0 ? rowCount : 1);
+                             ? (columnCount > 0 ? columnCount : std::numeric_limits<int>::max())
+                             : (rowCount > 0 ? rowCount : std::numeric_limits<int>::max());
         Node *node = parentNode->child();
         while (node) {
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);

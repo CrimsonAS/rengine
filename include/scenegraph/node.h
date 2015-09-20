@@ -330,7 +330,6 @@ protected:
     unsigned m_reserved : 20; // 32 - 12
 };
 
-
 class OpacityNode : public Node {
 public:
     float opacity() const { return m_opacity; }

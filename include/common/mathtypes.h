@@ -591,6 +591,8 @@ public:
         return (*this) | r.tl | r.br;
     }
 
+    bool operator==(const rect2d &o) const { return tl == o.tl && br == o.br; }
+
     bool contains(const vec2 &p) const {
         assert(tl.x < br.x);
         assert(tl.y < br.y);
