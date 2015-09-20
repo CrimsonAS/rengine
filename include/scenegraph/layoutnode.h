@@ -29,21 +29,51 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-/*!
-
- */
-
-class LayoutNode : public Node
+class LayoutEngine
 {
 public:
     enum LayoutType {
         Grid_Horizontal,
         Grid_Vertical,
         Flow_Horizontal,
-        Flow_Vertical
+        Flow_Vertical,
+        LastLayoutType // ### Remove once we remove LayoutNode::setLayoutTypeAsInt()
         // packed in a bit field, expand when adding new members.
     };
 
+    LayoutEngine()
+        : margin(0.0f)
+        , spacing(0.0f)
+        , width(0.0f)
+        , height(0.0f)
+        , cellWidth(0.0f)
+        , cellHeight(0.0f)
+        , columnCount(0)
+        , rowCount(0)
+        , layoutType(Grid_Horizontal)
+        , reserved1b_1(0) // corresponds to LayoutNode::Automatic
+    {
+    }
+
+    void updateLayout(Node *parentNode);
+
+    float margin;
+    float spacing;
+    float width;
+    float height;
+    float cellWidth;
+    float cellHeight;
+    int columnCount;
+    int rowCount;
+
+    unsigned layoutType : 2;
+    unsigned reserved1b_1 : 1; // used by layout node to avoid having another 4 bytes to store activation mode..
+};
+
+
+class LayoutNode : public Node
+{
+public:
     enum ActivationMode {
         Automatic,
         Explicit
@@ -52,115 +82,162 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(LayoutNode, rengine_LayoutNode);
 
-    RENGINE_IMPLEMENT_PROPERTY(float, margin, setMargin, onMarginChanged);
-    RENGINE_IMPLEMENT_PROPERTY(float, spacing, setSpacing, onSpacingChanged);
-    RENGINE_IMPLEMENT_PROPERTY(float, width, setWidth, onWidthChanged);
-    RENGINE_IMPLEMENT_PROPERTY(float, height, setHeight, onHeightChanged);
-
-    // Only used by grid..
-    RENGINE_IMPLEMENT_PROPERTY(float, cellWidth, setCellWidth, onCellWidthChanged);
-    RENGINE_IMPLEMENT_PROPERTY(float, cellHeight, setCellHeight, onCellHeightChanged);
-    RENGINE_IMPLEMENT_PROPERTY(int, columnCount, setColumnCount, onColumnCountchanged);
-    RENGINE_IMPLEMENT_PROPERTY(int, rowCount, setRowCount, onRowCountChanged);
-
-    ActivationMode activationMode() const { return m_activationMode; }
-
-    void setActivationMode(ActivationMode mode) {
-        if (mode == m_activationMode)
+    static Signal<> onMarginChanged;
+    float margin() const { return m_engine.margin; }
+    void setMargin(float margin) {
+        if (margin == m_engine.margin)
             return;
-        m_activationMode = mode;
-        if (m_activationMode == Automatic)
+        m_engine.margin = margin;
+        onMarginChanged.emit(this);
+    }
+
+    static Signal<> onSpacingChanged;
+    float spacing() const { return m_engine.spacing; }
+    void setSpacing(float spacing) {
+        if (spacing == m_engine.spacing)
+            return;
+        m_engine.spacing = spacing;
+        onSpacingChanged.emit(this);
+    }
+
+    static Signal<> onWidthChanged;
+    float width() const { return m_engine.width; }
+    void setWidth(float width) {
+        if (width == m_engine.width)
+            return;
+        m_engine.width = width;
+        onWidthChanged.emit(this);
+    }
+
+    static Signal<> onHeightChanged;
+    float height() const { return m_engine.height; }
+    void setHeight(float height) {
+        if (height == m_engine.height)
+            return;
+        m_engine.height = height;
+        onHeightChanged.emit(this);
+    }
+
+    static Signal<> onCellWidthChanged;
+    float cellWidth() const { return m_engine.cellWidth; }
+    void setCellWidth(float cellWidth) {
+        if (cellWidth == m_engine.cellWidth)
+            return;
+        m_engine.cellWidth = cellWidth;
+        onCellWidthChanged.emit(this);
+    }
+
+    static Signal<> onCellHeightChanged;
+    float cellHeight() const { return m_engine.cellHeight; }
+    void setCellHeight(float cellHeight) {
+        if (cellHeight == m_engine.cellHeight)
+            return;
+        m_engine.cellHeight = cellHeight;
+        onCellHeightChanged.emit(this);
+    }
+
+    static Signal<> onRowCountChanged;
+    int rowCount() const { return m_engine.rowCount; }
+    void setRowCount(int rowCount) {
+        if (rowCount == m_engine.rowCount)
+            return;
+        m_engine.rowCount = rowCount;
+        onRowCountChanged.emit(this);
+    }
+
+    static Signal<> onColumnCountchanged;
+    int columnCount() const { return m_engine.columnCount; }
+    void setColumnCount(int columnCount) {
+        if (columnCount == m_engine.columnCount)
+            return;
+        m_engine.columnCount = columnCount;
+        onColumnCountchanged.emit(this);
+    }
+
+    ActivationMode activationMode() const { return (ActivationMode) m_engine.reserved1b_1; }
+    void setActivationMode(ActivationMode mode) {
+        if (mode == m_engine.reserved1b_1)
+            return;
+        m_engine.reserved1b_1 = mode;
+        if (mode == Automatic)
             requestPreprocess();
     }
 
     static Signal<> onLayoutTypeChanged;
-    LayoutType layoutType() const { return m_layoutType; }
-    void setLayoutType(LayoutType type) {
-        if (type == m_layoutType)
+    LayoutEngine::LayoutType layoutType() const { return (LayoutEngine::LayoutType) m_engine.layoutType; }
+    void setLayoutType(LayoutEngine::LayoutType type) {
+        if (type == m_engine.layoutType)
             return;
-        m_layoutType = type;
+        m_engine.layoutType = type;
         onLayoutTypeChanged.emit(this);
     }
 
     // ### Remove when code generation supports enums...
     static Signal<> onLayoutTypeAsIntChanged;
-    int layoutTypeAsInt() const { return m_layoutType; }
+    int layoutTypeAsInt() const { return m_engine.layoutType; }
     void setLayoutTypeAsInt(int layoutType) {
-        assert(layoutType >= 0 && layoutType <= Flow_Vertical);
-        setLayoutType((LayoutType) layoutType);
+        assert(layoutType >= 0 && layoutType < LayoutEngine::LastLayoutType);
+        setLayoutType((LayoutEngine::LayoutType) layoutType);
     }
 
-    void updateLayout();
-
+    void updateLayout() { m_engine.updateLayout(this); }
 
 protected:
     LayoutNode()
-        : m_activationMode(Automatic)
-        , m_layoutType(Grid_Horizontal)
     {
-        m_columnCount = 0;
-        m_rowCount = 0;
-        m_cellWidth = 0;
-        m_cellHeight = 0;
-        m_width = 0;
-        m_height = 0;
-        m_margin = 0;
-        m_spacing = 0;
-
         requestPreprocess();
     }
 
     void onPreprocess() override {
         updateLayout();
         // Ensure that we get called again before the next frame..
-        if (m_activationMode == Automatic)
+        if (activationMode() == Automatic)
             requestPreprocess();
     }
 
-    ActivationMode m_activationMode : 1;
-    LayoutType m_layoutType : 2;
+    LayoutEngine m_engine;
 };
 
-void LayoutNode::updateLayout()
+void LayoutEngine::updateLayout(Node *parentNode)
 {
-    if (m_layoutType == Grid_Horizontal || m_layoutType == Grid_Vertical) {
-        assert(m_cellWidth != 0 || (m_width != 0 && m_columnCount > 0));
-        assert(m_cellHeight != 0 || (m_height != 0 && m_rowCount > 0));
+    if (layoutType == Grid_Horizontal || layoutType == Grid_Vertical) {
+        assert(cellWidth != 0 || (width != 0 && columnCount > 0));
+        assert(cellHeight != 0 || (height != 0 && rowCount > 0));
 
         int index = 0;
 
-        float cellWidth, cellHeight, xSign, ySign;
+        float cw, ch, xSign, ySign;
 
-        if (m_cellHeight != 0) {
-             cellWidth = std::abs(m_cellWidth);
-             xSign = m_cellWidth > 0 ? 1 : -1;
+        if (cellHeight != 0) {
+             cw = std::abs(cellWidth);
+             xSign = cellWidth > 0 ? 1 : -1;
         } else {
-            cellWidth = (std::abs(m_width) - 2 * m_margin - (m_columnCount - 1) * m_spacing) / m_columnCount;
-            xSign = m_width > 0 ? 1 : -1;
+            cw = (std::abs(width) - 2 * margin - (columnCount - 1) * spacing) / columnCount;
+            xSign = width > 0 ? 1 : -1;
         }
 
-        if (m_cellHeight != 0) {
-            cellHeight = std::abs(m_cellHeight);
-            ySign = m_cellHeight < 0 ? -1 : 1;
+        if (cellHeight != 0) {
+            ch = std::abs(cellHeight);
+            ySign = cellHeight < 0 ? -1 : 1;
         } else {
-            cellHeight = (std::abs(m_height) - 2 * m_margin - (m_rowCount - 1) * m_spacing) / m_rowCount;
-            ySign = m_height < 0 ? -1 : 1;
+            ch = (std::abs(height) - 2 * margin - (rowCount - 1) * spacing) / rowCount;
+            ySign = height < 0 ? -1 : 1;
         }
 
-        logd << (m_layoutType == Grid_Horizontal ? "horizontal" : "vertical")
-             << "-grid: cell=" << cellWidth << "x" << cellHeight
-             << ", dim=" << m_width << "x" << m_height << ", margin=" << m_margin << ", spacing=" << m_spacing
+        logd << (layoutType == Grid_Horizontal ? "horizontal" : "vertical")
+             << "-grid: cell=" << cw << "x" << ch
+             << ", dim=" << width << "x" << height << ", margin=" << margin << ", spacing=" << spacing
              << std::endl;
 
-        const int itemsPer = m_layoutType == Grid_Horizontal
-                             ? (m_columnCount > 0 ? m_columnCount : 1)
-                             : (m_rowCount > 0 ? m_rowCount : 1);
-        Node *node = child();
+        const int itemsPer = layoutType == Grid_Horizontal
+                             ? (columnCount > 0 ? columnCount : 1)
+                             : (rowCount > 0 ? rowCount : 1);
+        Node *node = parentNode->child();
         while (node) {
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
             if (rectNode) {
                 int r, c;
-                if (m_layoutType == Grid_Horizontal) {
+                if (layoutType == Grid_Horizontal) {
                     r = index / itemsPer;
                     c = index % itemsPer;
                 } else {
@@ -168,10 +245,10 @@ void LayoutNode::updateLayout()
                     c = index / itemsPer;
                 }
 
-                rectNode->setGeometry(rect2d::fromXywh(xSign * (m_margin + c * cellWidth + c * m_spacing),
-                                                       ySign * (m_margin + r * cellHeight + r * m_spacing),
-                                                       xSign * cellWidth,
-                                                       ySign * cellHeight).normalized());
+                rectNode->setGeometry(rect2d::fromXywh(xSign * (margin + c * cw + c * spacing),
+                                                       ySign * (margin + r * ch + r * spacing),
+                                                       xSign * cw,
+                                                       ySign * ch).normalized());
                 ++index;
             }
             node = node->sibling();
@@ -185,36 +262,36 @@ void LayoutNode::updateLayout()
 
         float flowSign, stepSign;
 
-        if (m_layoutType == Flow_Horizontal) {
-            flowSign = m_width < 0 ? -1 : 1;
-            stepSign = m_height < 0 ? -1 : 1;
-            itemLimit = m_columnCount > 0 ? m_columnCount : std::numeric_limits<int>::max();
-            sizeLimit = m_width != 0 ? m_width - flowSign * m_margin : flowSign * std::numeric_limits<float>::infinity();
+        if (layoutType == Flow_Horizontal) {
+            flowSign = width < 0 ? -1 : 1;
+            stepSign = height < 0 ? -1 : 1;
+            itemLimit = columnCount > 0 ? columnCount : std::numeric_limits<int>::max();
+            sizeLimit = width != 0 ? width - flowSign * margin : flowSign * std::numeric_limits<float>::infinity();
         } else {
-            flowSign = m_height < 0 ? -1 : 1;
-            stepSign = m_width < 0 ? -1 : 1;
-            itemLimit = m_rowCount > 0 ? m_rowCount : std::numeric_limits<int>::max();
-            sizeLimit = m_height != 0 ? m_height - flowSign * m_margin : flowSign * std::numeric_limits<float>::infinity();
+            flowSign = height < 0 ? -1 : 1;
+            stepSign = width < 0 ? -1 : 1;
+            itemLimit = rowCount > 0 ? rowCount : std::numeric_limits<int>::max();
+            sizeLimit = height != 0 ? height - flowSign * margin : flowSign * std::numeric_limits<float>::infinity();
         }
 
-        float flow = flowSign * m_margin; // The position in the direction of the flow
-        float step = stepSign * m_margin; // The position in the direction normal to the flow
+        float flow = flowSign * margin; // The position in the direction of the flow
+        float step = stepSign * margin; // The position in the direction normal to the flow
         float stepIncrement = 0;
 
-        logd << (m_layoutType == Flow_Horizontal ? "horizontal" : "vertical")
+        logd << (layoutType == Flow_Horizontal ? "horizontal" : "vertical")
              << "-flow: itemLimit=" << itemLimit << ", sizeLimit=" << sizeLimit
-             << ", margin=" << m_margin << ", spacing=" << m_spacing
+             << ", margin=" << margin << ", spacing=" << spacing
              << std::endl;
 
-        Node *node = child();
+        Node *node = parentNode->child();
         while (node) {
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
             if (rectNode) {
-                float dim = m_layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
+                float dim = layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
                 float end = flow + flowSign * dim;
                 if (index == 0 || (flowSign * end < flowSign * sizeLimit && index < itemLimit)) {
                     index++;
-                    if (m_layoutType == Flow_Horizontal) {
+                    if (layoutType == Flow_Horizontal) {
                         stepIncrement = std::max(stepIncrement, rectNode->height());
                         rectNode->setPosition(flowSign > 0 ? flow : flow - rectNode->width(),
                                               stepSign > 0 ? step : step - rectNode->height());
@@ -223,19 +300,19 @@ void LayoutNode::updateLayout()
                         rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
                                               flowSign > 0 ? flow : flow - rectNode->height());
                     }
-                    flow = end + flowSign * m_spacing;
+                    flow = end + flowSign * spacing;
                 } else {
                     index = 0;
-                    step += stepSign * (stepIncrement + m_spacing);
-                    flow = flowSign * (m_margin + dim + m_spacing);
-                    if (m_layoutType == Flow_Horizontal) {
+                    step += stepSign * (stepIncrement + spacing);
+                    flow = flowSign * (margin + dim + spacing);
+                    if (layoutType == Flow_Horizontal) {
                         stepIncrement = rectNode->height();
-                        rectNode->setPosition(flowSign > 0 ? m_margin : -m_margin - rectNode->width(),
+                        rectNode->setPosition(flowSign > 0 ? margin : -margin - rectNode->width(),
                                               stepSign > 0 ? step : step - rectNode->height());
                     } else {
                         stepIncrement = rectNode->width();
                         rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
-                                              flowSign > 0 ? m_margin : -m_margin - rectNode->height());
+                                              flowSign > 0 ? margin : -margin - rectNode->height());
                     }
                 }
             }
