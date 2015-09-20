@@ -94,7 +94,7 @@ public:
         surface()->requestRender();
     }
 
-    bool onPointerEvent(Node *n, PointerEvent *event) {
+    bool onPointerEvent(Node *n, PointerEvent *event) override {
         if (event->type() == Event::PointerDown) {
             assert(n);
             assert(n == m_left || n == m_right || n == m_center);
