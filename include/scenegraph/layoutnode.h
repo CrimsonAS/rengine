@@ -292,7 +292,7 @@ void LayoutEngine::updateLayout(Node *parentNode)
             if (rectNode) {
                 float dim = layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
                 float end = flow + flowSign * dim;
-                if (index == 0 || (flowSign * end < flowSign * sizeLimit && index < itemLimit)) {
+                if (index == 0 || (flowSign * end <= flowSign * sizeLimit && index < itemLimit)) {
                     index++;
                     if (layoutType == Flow_Horizontal) {
                         stepIncrement = std::max(stepIncrement, rectNode->height());

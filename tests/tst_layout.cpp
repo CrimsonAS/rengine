@@ -514,11 +514,71 @@ void tst_layoutnode_vertical_grid()
     root->destroy();
 }
 
+static void apply_w_h_r_c_m_s(LayoutNode *node, float width, float height, int rowCount, int columnCount, float margin, float spacing)
+{
+    node->setWidth(width);
+    node->setHeight(height);
+    node->setRowCount(rowCount);
+    node->setColumnCount(columnCount);
+    node->setSpacing(spacing);
+    node->setMargin(margin);
+    node->updateLayout();
+}
+
+
+static void tst_layoutnode_horizontal_flow()
+{
+    LayoutNode *root = LayoutNode::create();
+    root->setActivationMode(LayoutNode::Explicit);
+    root->setLayoutType(LayoutEngine::Flow_Horizontal);
+
+    RectangleNode *r[4]; // sizes: 10, 20, 40, 80
+    for (int i=0; i<4; ++i) {
+        float s = std::pow(2, (float)i) * 10;
+        r[i] = RectangleNode::create(rect2d(0, 0, s, s));
+        root->append(r[i]);
+    }
+
+    apply_w_h_r_c_m_s(root, 0, 0, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0, 0, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(10, 0, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(30, 0, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(70, 0, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 0, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, 2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, 2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, 2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, 2, 80, 80));
+    apply_w_h_r_c_m_s(root, 76, 0, 0, 0, 2, 1); // r[2] ends on 74, +2 margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13,  2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34,  2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh( 2, 43, 80, 80));
+    apply_w_h_r_c_m_s(root, 75, 0, 0, 0, 2, 1); // will not fit the margin, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13,  2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( 2, 23, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(43, 23, 80, 80));
+    apply_w_h_r_c_m_s(root, 3, 0, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh(2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(2, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(2, 34, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(2, 75, 80, 80));
+
+
+    // test wrapping by width and columns..
+
+
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
 int main(int argc, char **argv)
 {
     tst_layoutnode_properties();
     tst_layoutnode_horizontal_grid();
     tst_layoutnode_vertical_grid();
+    tst_layoutnode_horizontal_flow();
 
     return 0;
 }
