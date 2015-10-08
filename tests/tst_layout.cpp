@@ -541,6 +541,7 @@ static void tst_layoutnode_horizontal_flow()
         root->append(r[i]);
     }
 
+    // Horizontal, positive width/height
     apply_w_h_r_c_m_s(root, 0, 0, 0, 0, 0, 0);
     check_equal(r[0]->geometry(), rect2d::fromXywh( 0, 0, 10, 10));
     check_equal(r[1]->geometry(), rect2d::fromXywh(10, 0, 20, 20));
@@ -614,9 +615,251 @@ static void tst_layoutnode_horizontal_flow()
     check_equal(r[2]->geometry(), rect2d::fromXywh(-42, 34, 40, 40));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-82, 75, 80, 80));
 
+    // Horizontal, positive width, negative height
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 0, -10, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(10, -20, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(30, -40, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(70, -80, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, 78, -inf, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13,  -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34,  -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh( 2, -123, 80, 80));
+    apply_w_h_r_c_m_s(root, 77.99, -inf, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( 2, -63, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh( 2, -144, 80, 80));
+    apply_w_h_r_c_m_s(root, 4, -inf, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh(2,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(2,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(2,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(2, -155, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 2, 2, 1); // will not fit the number of items, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13,  -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( 2,  -63, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(43, -103, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 1, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh(2,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(2,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(2,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(2, -155, 80, 80));
+
+    // Horizontal, negative directions...
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -10, -10, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -30, -20, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -70, -40, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-150, -80, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -74, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-155, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, -78, -inf, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-33,  -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-74,  -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -123, 80, 80));
+    apply_w_h_r_c_m_s(root, -77.99, -inf, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-33,  -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-42,  -63, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -144, 80, 80));
+    apply_w_h_r_c_m_s(root, -4, -inf, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-22,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-42,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -155, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 2, 2, 1); // will not fit rows, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33,  -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -42,  -63, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-123, -103 , 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 1, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-22,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-42,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -155, 80, 80));
+
 
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
+
+static void tst_layoutnode_vertical_flow()
+{
+    LayoutNode *root = LayoutNode::create();
+    root->setActivationMode(LayoutNode::Explicit);
+    root->setLayoutType(LayoutEngine::Flow_Vertical);
+
+    float inf = std::numeric_limits<float>::infinity();
+
+    RectangleNode *r[4]; // sizes: 10, 20, 40, 80
+    for (int i=0; i<4; ++i) {
+        float s = std::pow(2, (float)i) * 10;
+        r[i] = RectangleNode::create(rect2d(0, 0, s, s));
+        root->append(r[i]);
+    }
+
+    // Vertical, positive width/height
+    apply_w_h_r_c_m_s(root, 0, 0, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0,  0, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0, 10, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0, 30, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, 70, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 0, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(2, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(2, 34, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(2, 75, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 78, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( 2, 34, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(43,  2, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 77.99, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(23,  2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(64,  2, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 4, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, 2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, 2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, 2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, 2, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 0, 2, 0, 2, 1); // will not fit the number of items, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(23,  2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(23, 43, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, 0, 1, 0, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, 2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, 2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, 2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, 2, 80, 80));
+
+    // Vertical, negative layout direction..
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(0,  -10, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(0,  -30, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(0,  -70, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(0, -150, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(2,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(2,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(2,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(2, -155, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -78, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( 2, -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(43, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -77.99, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(23, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(64, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -4, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 2, 0, 2, 1); // will not fit rows, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12,  10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( 2, -33,  20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(23, -42,  40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(23, -123, 80, 80));
+    apply_w_h_r_c_m_s(root, 0, -inf, 1, 0, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh( 2, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(13, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(34, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(75, -82, 80, 80));
+
+    // Vertical, positive layout direction, negative other direction
+    apply_w_h_r_c_m_s(root, -inf, 0, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  0, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-20, 10, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-40, 30, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-80, 70, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 0, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-22, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-42, 34, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, 75, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 78, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -22, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -42, 34, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-123,  2, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 77.99, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-22, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-63,  2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-144, 2,  80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 4, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, 2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33, 2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -74, 2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-155, 2, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 0, 2, 0, 2, 1); // will not fit the number of items, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12,  2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -22, 13, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -63,  2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-103, 43, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, 0, 1, 0, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, 2, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33, 2, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -74, 2, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-155, 2, 80, 80));
+
+    // Vertical, negative directions...
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 0, 0, 0);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-10,  -10, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-20,  -30, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-40,  -70, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-80, -150, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 0, 0, 2, 1);
+    check_equal(r[0]->geometry(), rect2d::fromXywh(-12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh(-22,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh(-42,  -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -155, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -78, 0, 0, 2, 1); // r[2] ends on 74, +4 (2+2) margin
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -22, -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -42, -74, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-123, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -77.99, 0, 0, 2, 1); // will not fit the, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -22, -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -63, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-144, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -4, 0, 0, 2, 1); // too narrow width, but we always have one per row
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -74, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-155, -82, 80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 2, 0, 2, 1); // will not fit rows, so r[2] wraps
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12,  -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -22,  -33, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -63,  -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-103, -123,  80, 80));
+    apply_w_h_r_c_m_s(root, -inf, -inf, 1, 0, 2, 1); // single-column, wrap all
+    check_equal(r[0]->geometry(), rect2d::fromXywh( -12, -12, 10, 10));
+    check_equal(r[1]->geometry(), rect2d::fromXywh( -33, -22, 20, 20));
+    check_equal(r[2]->geometry(), rect2d::fromXywh( -74, -42, 40, 40));
+    check_equal(r[3]->geometry(), rect2d::fromXywh(-155, -82, 80, 80));
+
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -624,6 +867,7 @@ int main(int argc, char **argv)
     tst_layoutnode_horizontal_grid();
     tst_layoutnode_vertical_grid();
     tst_layoutnode_horizontal_flow();
+    tst_layoutnode_vertical_flow();
 
     return 0;
 }
