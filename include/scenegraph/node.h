@@ -74,6 +74,7 @@ public:
         RectangleNodeBaseType = (1 << 6),
         RectangleNodeType     = 0 | RectangleNodeBaseType,
         TextureNodeType       = 1 | RectangleNodeBaseType,
+        RenderNodeType        = 2 | RectangleNodeBaseType,
     };
 
     /*!
@@ -730,6 +731,35 @@ protected:
     vec2 m_offset;
     vec4 m_color;
 };
+
+
+class RenderNode : public RectangleNodeBase {
+public:
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(RenderNode, RenderNodeType);
+
+    /*
+        The OpenGL code should take the following things into account when it
+        is called:
+         - GL_BLEND is enabled
+         - GL_DEPTH_TEST is disabled
+         - GL_STENCIL_TEST is disabled
+         - glDepthMask(false) is used
+         - glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA) is used
+         - No buffers are bound and all attributes are disabled
+         - No program is bound
+
+        Upon leaving this function, the code should leave the OpenGL context
+        in a similar state, especially with regards to array and index buffers
+        and attribute registers.
+     */
+    virtual void render() = 0;
+
+    // Does not allow pool allocation as it is pure virtual..
+
+protected:
+    RenderNode(Type type = RenderNodeType) : RectangleNodeBase(type) { }
+};
+
 
 #define RENGINE_NODE_DEFINE_ALLOCATION_POOLS                                                                  \
     RENGINE_ALLOCATION_POOL_DEFINITION(rengine::Node, rengine_Node);                                          \

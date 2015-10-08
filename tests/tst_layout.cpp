@@ -689,7 +689,6 @@ static void tst_layoutnode_horizontal_flow()
     check_equal(r[2]->geometry(), rect2d::fromXywh(-42,  -74, 40, 40));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-82, -155, 80, 80));
 
-
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
 
@@ -855,7 +854,6 @@ static void tst_layoutnode_vertical_flow()
     check_equal(r[1]->geometry(), rect2d::fromXywh( -33, -22, 20, 20));
     check_equal(r[2]->geometry(), rect2d::fromXywh( -74, -42, 40, 40));
     check_equal(r[3]->geometry(), rect2d::fromXywh(-155, -82, 80, 80));
-
 
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
