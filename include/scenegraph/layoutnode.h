@@ -263,23 +263,23 @@ void LayoutEngine::updateLayout(Node *parentNode)
         int itemLimit;
         float sizeLimit;
 
-        float flowSign, stepSign;
+        float posSign, offsetSign;
 
         if (layoutType == Flow_Horizontal) {
-            flowSign = width < 0 ? -1 : 1;
-            stepSign = height < 0 ? -1 : 1;
+            posSign = width < 0 ? -1 : 1;
+            offsetSign = height < 0 ? -1 : 1;
             itemLimit = columnCount > 0 ? columnCount : std::numeric_limits<int>::max();
-            sizeLimit = width != 0 ? width - flowSign * margin : flowSign * std::numeric_limits<float>::infinity();
+            sizeLimit = width != 0 ? width - posSign * margin * 2 : posSign * std::numeric_limits<float>::infinity();
         } else {
-            flowSign = height < 0 ? -1 : 1;
-            stepSign = width < 0 ? -1 : 1;
+            posSign = height < 0 ? -1 : 1;
+            offsetSign = width < 0 ? -1 : 1;
             itemLimit = rowCount > 0 ? rowCount : std::numeric_limits<int>::max();
-            sizeLimit = height != 0 ? height - flowSign * margin : flowSign * std::numeric_limits<float>::infinity();
+            sizeLimit = height != 0 ? height - posSign * margin * 2 : posSign * std::numeric_limits<float>::infinity();
         }
 
-        float flow = flowSign * margin; // The position in the direction of the flow
-        float step = stepSign * margin; // The position in the direction normal to the flow
-        float stepIncrement = 0;
+        float pos = posSign * margin; // The position to place the node on the current line
+        float offset = offsetSign * margin; // The position in the direction normal to the pos
+        float offsetIncrement = 0;
 
         logd << (layoutType == Flow_Horizontal ? "horizontal" : "vertical")
              << "-flow: itemLimit=" << itemLimit << ", sizeLimit=" << sizeLimit
@@ -291,38 +291,33 @@ void LayoutEngine::updateLayout(Node *parentNode)
             RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
             if (rectNode) {
                 float dim = layoutType == Flow_Horizontal ? rectNode->width() : rectNode->height();
-                float end = flow + flowSign * dim;
-                if (index == 0 || (flowSign * end <= flowSign * sizeLimit && index < itemLimit)) {
-                    index++;
+                float end = pos + posSign * dim;
+                bool fitsOnLine = (posSign * end <= posSign * sizeLimit && index < itemLimit);
+                logd << " - pos=" << pos << ", dim=" << dim << ", end=" << end  << ", index=" << index << ", fitsOnLine=" << fitsOnLine << std::endl;
+
+                if (fitsOnLine || index == 0) {
                     if (layoutType == Flow_Horizontal) {
-                        stepIncrement = std::max(stepIncrement, rectNode->height());
-                        rectNode->setPosition(flowSign > 0 ? flow : flow - rectNode->width(),
-                                              stepSign > 0 ? step : step - rectNode->height());
+                        offsetIncrement = std::max(offsetIncrement, rectNode->height());
+                        rectNode->setPosition(posSign > 0 ? pos : pos - rectNode->width(),
+                                              offsetSign > 0 ? offset : offset - rectNode->height());
                     } else {
-                        stepIncrement = std::max(stepIncrement, rectNode->width());
-                        rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
-                                              flowSign > 0 ? flow : flow - rectNode->height());
+                        offsetIncrement = std::max(offsetIncrement, rectNode->width());
+                        rectNode->setPosition(offsetSign > 0 ? offset : offset - rectNode->width(),
+                                              posSign > 0 ? pos : pos - rectNode->height());
                     }
-                    flow = end + flowSign * spacing;
+                    ++index;
+                    pos = end + posSign * spacing;
+                    node = node->sibling();
                 } else {
+                    // If it doesn't fit, wrap to the next line..
+                    offset += offsetSign * (offsetIncrement + spacing);
+                    pos = posSign * margin;
                     index = 0;
-                    step += stepSign * (stepIncrement + spacing);
-                    flow = flowSign * (margin + dim + spacing);
-                    if (layoutType == Flow_Horizontal) {
-                        stepIncrement = rectNode->height();
-                        rectNode->setPosition(flowSign > 0 ? margin : -margin - rectNode->width(),
-                                              stepSign > 0 ? step : step - rectNode->height());
-                    } else {
-                        stepIncrement = rectNode->width();
-                        rectNode->setPosition(stepSign > 0 ? step : step - rectNode->width(),
-                                              flowSign > 0 ? margin : -margin - rectNode->height());
-                    }
                 }
+            } else {
+                node = node->sibling();
             }
-
-            node = node->sibling();
         }
-
     }
 }
 
