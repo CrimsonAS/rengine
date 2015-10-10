@@ -16,13 +16,17 @@ int rengine_main(int argc, char **argv) {
 
 RENGINE_END_NAMESPACE
 
-#define RENGINE_MAIN(InterfaceName)                                                                    \
-                                                                                                       \
+#define RENGINE_DEFINE_GLOBALS                                                                         \
     RENGINE_BACKEND_DEFINE                                                                             \
     RENGINE_NODE_DEFINE_ALLOCATION_POOLS                                                               \
     RENGINE_NODE_DEFINE_SIGNALS                                                                        \
     RENGINE_LAYOUTNODE_DEFINE_SIGNALS                                                                  \
     RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS                                                         \
+                                                                                                       \
+
+
+#define RENGINE_MAIN(InterfaceName)                                                                    \
+    RENGINE_DEFINE_GLOBALS                                                                             \
                                                                                                        \
 int main(int argc, char **argv) {                                                                      \
     RENGINE_ALLOCATION_POOL(rengine::Node, rengine_Node, 256);                                         \
