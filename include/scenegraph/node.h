@@ -95,6 +95,7 @@ public:
      * or is already a child of this node.
      */
     void append(Node *child) {
+        assert(child);
         assert(!hasChild(child));
         assert(child->m_parent == 0);
         assert(child->m_next == 0);
@@ -753,6 +754,7 @@ public:
         and attribute registers.
      */
     virtual void render() = 0;
+
 
     // Does not allow pool allocation as it is pure virtual..
 
