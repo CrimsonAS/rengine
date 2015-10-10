@@ -864,10 +864,13 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
             std::sort(e + 1, e + e->groupSize + 1);
             // std::cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << std::endl;
         } else if (e->node->type() == Node::RenderNodeType) {
-            activateShader(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            static_cast<RenderNode *>(e->node)->render();
-            setDefaultOpenGLState();
+            RenderNode *rn = static_cast<RenderNode *>(e->node);
+            if (rn->width() != 0 && rn->height() != 0) {
+                activateShader(0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                rn->render();
+                setDefaultOpenGLState();
+            }
         }
 
         e->completed = true;
