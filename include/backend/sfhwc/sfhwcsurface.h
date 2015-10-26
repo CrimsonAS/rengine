@@ -27,6 +27,8 @@
 #pragma once
 
 #include <cstring>
+#include <chrono>
+#include <sync/sync.h>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -54,14 +56,24 @@ inline const char *sfhwc_decode_egl_error(EGLint error)
 	return "unknown error";
 }
 
+inline void sfhwc_dump_hwc_device(hwc_composer_device_1_t *hwc)
+{
+    int maxLength = 64 * 1024;
+    char *bytes = (char *) malloc(maxLength);
+    hwc->dump(hwc, bytes, maxLength);
+    std::cout << "Hwc Device Dump ...: " << bytes << std::endl;
+    free(bytes);
+}
+
 inline void sfhwc_dump_display_contents(hwc_display_contents_1_t *dc)
 {
-    printf(" - displayContents, retireFence=%d, outbuf=%p, outAcqFence=%d, flags=%x, numLayers=%d\n",
+    printf(" - displayContents, retireFence=%d, outbuf=%p, outAcqFence=%d, flags=%x, numLayers=%d, dc=%p\n",
             dc->retireFenceFd,
             dc->outbuf,
             dc->outbufAcquireFenceFd,
             (int) dc->flags,
-            (int) dc->numHwLayers);
+            (int) dc->numHwLayers,
+            dc);
     for (unsigned int i=0; i<dc->numHwLayers; ++i) {
         const hwc_layer_1_t &l = dc->hwLayers[i];
         printf("    - layer comp=%x, hints=%x, flags=%x, handle=%p, transform=%x, blending=%x, "
@@ -78,6 +90,29 @@ inline void sfhwc_dump_display_contents(hwc_display_contents_1_t *dc)
     }
 }
 
+inline void sfhwc_initialize_layer(hwc_layer_1_t *l, unsigned compositionType, int x, int y, int w, int h)
+{
+    l->compositionType = compositionType;
+    l->hints = 0;
+    l->flags = 0;
+    l->handle = 0;
+    l->transform = 0;
+    l->blending = HWC_BLENDING_NONE;
+    l->sourceCropf.left = x;
+    l->sourceCropf.top = y;
+    l->sourceCropf.right = w;
+    l->sourceCropf.bottom = h;
+    l->displayFrame.left = x;
+    l->displayFrame.top = y;
+    l->displayFrame.right = w;
+    l->displayFrame.bottom = h;
+    l->visibleRegionScreen.numRects = 1;
+    l->visibleRegionScreen.rects = &l->displayFrame;
+    l->acquireFenceFd = -1;
+    l->releaseFenceFd = -1;
+    l->planeAlpha = 0xff;
+}
+
 SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const vec2 &size)
 	: HWComposerNativeWindow(size.x, size.y, HAL_PIXEL_FORMAT_RGBA_8888)
 	, m_iface(iface)
@@ -85,6 +120,7 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const
 	, m_vsyncDelta(0)
 	, m_size(size)
 {
+    setBufferCount(2);
 	setSurfaceToInterface(iface);
 	initHwc();
 	initEgl();
@@ -148,48 +184,8 @@ void SfHwcSurface::initHwc()
     m_hwcList->flags = HWC_GEOMETRY_CHANGED;
     m_hwcList->numHwLayers = 2;
 
-    hwc_layer_1_t *l = &m_hwcList->hwLayers[0];
-    l->compositionType = HWC_FRAMEBUFFER;
-    l->hints = 0;
-    l->flags = 0;
-    l->handle = 0;
-    l->transform = 0;
-    l->blending = HWC_BLENDING_NONE;
-    l->sourceCropf.left = 0.0f;
-    l->sourceCropf.top = 0.0f;
-    l->sourceCropf.right = m_size.x;
-    l->sourceCropf.bottom = m_size.y;
-    l->displayFrame.left = 0;
-    l->displayFrame.top = 0;
-    l->displayFrame.right = (int) m_size.x;
-    l->displayFrame.bottom = (int) m_size.y;
-    l->visibleRegionScreen.numRects = 1;
-    l->visibleRegionScreen.rects = &l->displayFrame;
-    l->acquireFenceFd = -1;
-    l->releaseFenceFd = -1;
-    l->planeAlpha = 0xff;
-
-	l = &m_hwcList->hwLayers[1];
-    l->compositionType = HWC_FRAMEBUFFER_TARGET;
-    l->hints = 0;
-    l->flags = 0;
-    l->handle = 0;
-    l->transform = 0;
-    l->blending = HWC_BLENDING_NONE;
-    l->sourceCropf.left = 0.0f;
-    l->sourceCropf.top = 0.0f;
-    l->sourceCropf.right = m_size.x;
-    l->sourceCropf.bottom = m_size.y;
-    l->displayFrame.left = 0;
-    l->displayFrame.top = 0;
-    l->displayFrame.right = (int) m_size.x;
-    l->displayFrame.bottom = (int) m_size.y;
-    l->visibleRegionScreen.numRects = 1;
-    l->visibleRegionScreen.rects = &l->displayFrame;
-    l->acquireFenceFd = -1;
-    l->releaseFenceFd = -1;
-    l->planeAlpha = 0xff;
-
+    sfhwc_initialize_layer(&m_hwcList->hwLayers[0], HWC_FRAMEBUFFER, 0, 0, m_size.x, m_size.y);
+    sfhwc_initialize_layer(&m_hwcList->hwLayers[1], HWC_FRAMEBUFFER_TARGET, 0, 0, m_size.x, m_size.y);
     sfhwc_dump_display_contents(m_hwcList);
 }
 
@@ -244,32 +240,112 @@ void SfHwcSurface::initEgl()
 	logi << " - Depth / Stencil .: " << d << " " << s << std::endl;
 }
 
-
 void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	logd << "buffer=" << (void *) buffer << std::endl;
+	// logw << "buffer=" << (void *) buffer << std::endl;
 
-	int status; (void) status;
+    int status = 0; (void) status;
+
+    static SfHwcBuffer *staticBuffer = 0;
+    if (!staticBuffer) {
+        staticBuffer = new SfHwcBuffer(m_backend, 720, 1280);
+        // staticBuffer->lock();
+        // staticBuffer->fillWithCrap();
+        // staticBuffer->unlock();
+    }
+
+    static SfHwcBuffer *staticBuffer2 = 0;
+    if (!staticBuffer2) {
+        staticBuffer2 = new SfHwcBuffer(m_backend, 720, 1280);
+        // staticBuffer2->lock();
+        // staticBuffer2->fillWithCrap();
+        // staticBuffer2->unlock();
+    }
+
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 
-	hwc_layer_1_t &l = m_hwcList->hwLayers[1];
-	l.handle = buffer->handle;
-	l.acquireFenceFd = getFenceBufferFd(buffer);
-	l.releaseFenceFd = -1;
+    static auto lastFrame = std::chrono::steady_clock::now();
+    auto thisFrame = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
+    if (delta > 20)
+        logw << "MISSED A FRAME: " << delta << std::endl;
+    lastFrame = thisFrame;
+
+    int fd = getFenceBufferFd(buffer);
+    setFenceBufferFd(buffer, -1);
+#if 0
+    if (fd != -1) {
+        auto start = std::chrono::steady_clock::now();
+        sync_wait(fd, -1);
+        close(fd);
+        auto end = std::chrono::steady_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+        logw << " - sync waited on libhybris buffer: "  << delta << ", buffer=" << buffer << std::endl;
+        fd = -1;
+    }
+#endif
+
+	hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
+	fb->handle = buffer->handle;
+	fb->acquireFenceFd = fd;
+	fb->releaseFenceFd = -1;
+    fb->blending = 1;
+
+    static int counter = 0;
+    // counter = counter == 1 ? 0 : 1;
+
+	hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
+	fbt->handle = counter == 0 ? staticBuffer->handle() : staticBuffer2->handle();
+	fbt->acquireFenceFd = -1;
+	fbt->releaseFenceFd = -1;
+
+    // sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_hwc_device(hwc);
 
 	status = hwc->prepare(hwc, 1, &m_hwcList);
 	assert(status == 0);
     // sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_hwc_device(hwc);
+
+    // auto start = std::chrono::steady_clock::now();
 
 	status = hwc->set(hwc, 1, &m_hwcList);
 	assert(status == 0);
+    // sfhwc_dump_hwc_device(hwc);
 
-	setFenceBufferFd(buffer, l.releaseFenceFd);
+    // auto end = std::chrono::steady_clock::now();
+    // auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+
+    // logw << " - set completed in " << delta << std::endl;
+
+    if (fb->releaseFenceFd != -1) {
+#if 1
+        setFenceBufferFd(buffer, fb->releaseFenceFd);
+        fb->releaseFenceFd = -1;
+#else
+        auto start = std::chrono::steady_clock::now();
+        sync_wait(fb->releaseFenceFd, -1);
+        close(fb->releaseFenceFd);
+        fb->releaseFenceFd = -1;
+        auto end = std::chrono::steady_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+        logw << " - waited for fb release fd, " << delta << std::endl;
+#endif
+    }
+
+    if (fbt->releaseFenceFd != -1) {
+        close(fbt->releaseFenceFd);
+        fbt->releaseFenceFd = -1;
+        // logw << " - closed fbt release fd" << std::endl;
+    }
 
 	if (m_hwcList->retireFenceFd != -1) {
 		close(m_hwcList->retireFenceFd);
 		m_hwcList->retireFenceFd = -1;
+        // logw << " - closed retire fence fd.." << std::endl;
 	}
+
+    logd << " -> frame on screen" << std::endl;
 }
 
 RENGINE_END_NAMESPACE

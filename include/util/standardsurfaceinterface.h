@@ -53,7 +53,8 @@ public:
     ResourceManager *resourceManager() const { return m_resourceManager; }
 
     void onRender() override {
-        surface()->makeCurrent();
+        if (!surface()->makeCurrent())
+            return;
 
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {

@@ -899,9 +899,11 @@ inline void OpenGLRenderer::setDefaultOpenGLState()
 inline bool OpenGLRenderer::render()
 {
     if (sceneRoot() == 0) {
-        std::cout << __PRETTY_FUNCTION__ << " - no 'sceneRoot', surely this is not what you intended?" << std::endl;
+        logw << " - no 'sceneRoot', surely this is not what you intended?" << std::endl;
         return false;
     }
+
+    logd << std::endl;
 
     m_numLayeredNodes = 0;
     m_numTextureNodes = 0;
@@ -968,6 +970,8 @@ inline bool OpenGLRenderer::render()
     assert(m_fbo == 0);
     m_vertices = 0;
     m_elements = 0;
+
+    logd << std::endl;
 
     return true;
 }

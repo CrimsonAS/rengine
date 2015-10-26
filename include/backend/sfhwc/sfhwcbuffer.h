@@ -103,6 +103,8 @@ void SfHwcBuffer::fillWithCrap()
     int w = m_width;
     int h = m_height;
 
+    unsigned *bits = (unsigned *) m_bits;
+
     for (int iy=0; iy<h; ++iy) {
         float ty = iy / (float) h;
         for (int ix=0; ix<w; ++ix) {
@@ -121,14 +123,15 @@ void SfHwcBuffer::fillWithCrap()
             }
 
             float fv = i / float(iter);
-            if (fv > 1.0)
-                fv = 1.0;
+            if (fv >= 1.0f)
+                fv = 0.0f;
+            fv = fv * 3.0f;
 
-            unsigned pa = (int) (fv * 255);
-            unsigned pr = (int) (fv * r);
-            unsigned pg = (int) (fv * g);
-            unsigned pb = (int) (fv * b);
-            m_bits[ix + iy * m_stride] = (pa << 24) | (pb << 16) | (pg << 8) | (pr);
+            unsigned pa = std::min<unsigned>(255, (fv * 255));
+            unsigned pr = std::min<unsigned>(255, (fv * r));
+            unsigned pg = std::min<unsigned>(255, (fv * g));
+            unsigned pb = std::min<unsigned>(255, (fv * b));
+            bits[ix + iy * m_stride] = (pa << 24) | (pb << 16) | (pg << 8) | (pr);
         }
     }
 }
