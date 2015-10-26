@@ -99,11 +99,11 @@ public:
     OpenGLRenderer();
     ~OpenGLRenderer();
 
-    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data);
-    void initialize();
+    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data) override;
+    void initialize() override;
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
-    bool readPixels(int x, int y, int w, int h, unsigned *pixels);
+    bool readPixels(int x, int y, int w, int h, unsigned *pixels) override;
 
     void prepass(Node *n);
     void build(Node *n);
@@ -116,6 +116,7 @@ public:
     void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
     void render(Element *first, Element *last);
     void renderToLayer(Element *e);
+    void setDefaultOpenGLState();
     rect2d boundingRectFor(unsigned vertexOffset) const { return rect2d(m_vertices[vertexOffset], m_vertices[vertexOffset + 3]); }
 
     void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
@@ -147,6 +148,7 @@ public:
     unsigned m_numRectangleNodes;
     unsigned m_numTransformNodes;
     unsigned m_numTransformNodesWith3d;
+    unsigned m_numRenderNodes;
     unsigned m_additionalQuads;
 
     unsigned m_vertexIndex;
@@ -472,6 +474,10 @@ inline void OpenGLRenderer::prepass(Node *n)
             m_additionalQuads += 3;
         }
         break;
+    case Node::RenderNodeType:
+        ++m_numRenderNodes;
+        break;
+
     default:
         // ignore...
         break;
@@ -486,9 +492,7 @@ inline void OpenGLRenderer::build(Node *n)
     switch (n->type()) {
     case Node::TextureNodeType:
     case Node::RectangleNodeType: {
-        const rect2d &geometry = n->type() == Node::TextureNodeType
-                                 ? static_cast<TextureNode *>(n)->geometry()
-                                 : static_cast<RectangleNode *>(n)->geometry();
+        const rect2d &geometry = static_cast<RectangleNodeBase *>(n)->geometry();
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
@@ -635,6 +639,21 @@ inline void OpenGLRenderer::build(Node *n)
         }
 
     } return;
+
+    case Node::RenderNodeType: {
+        Element *e = m_elements + m_elementIndex++;
+        e->node = n;
+        const rect2d &geometry = static_cast<RectangleNodeBase *>(n)->geometry();
+        const vec2 &p1 = geometry.tl;
+        const vec2 &p2 = geometry.br;
+        // This will "kinda" work. As long as our 3d support is based on back-
+        // to-front ordering of the center of primitives, we might as well
+        // order render nodes back-to-front as well. The usercase is a bit
+        // broken though..
+        if (m_render3d)
+            e->z = (m_m3d * vec3((p1 + p2) / 2.0f)).z;
+        break;
+    }
 
     default:
         break;
@@ -844,11 +863,37 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
         } else if (e->projection) {
             std::sort(e + 1, e + e->groupSize + 1);
             // std::cout << space << "---> projection, sorting range: " << (e+1) << " -> " << (e+e->groupSize) << std::endl;
+        } else if (e->node->type() == Node::RenderNodeType) {
+            RenderNode *rn = static_cast<RenderNode *>(e->node);
+            if (rn->width() != 0 && rn->height() != 0) {
+                activateShader(0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                rn->render();
+                setDefaultOpenGLState();
+            }
         }
 
         e->completed = true;
         ++e;
     }
+}
+
+inline void OpenGLRenderer::setDefaultOpenGLState()
+{
+    // Assign our static texture coordinate buffer to attribute 1.
+    glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // Bind the vertices
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+
+    // Set our default GL state..
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDepthMask(false);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 }
 
 inline bool OpenGLRenderer::render()
@@ -863,6 +908,7 @@ inline bool OpenGLRenderer::render()
     m_numRectangleNodes = 0;
     m_numTransformNodes = 0;
     m_numTransformNodesWith3d = 0;
+    m_numRenderNodes = 0;
     m_additionalQuads = 0;
     m_vertexIndex = 0;
     m_elementIndex = 0;
@@ -876,7 +922,7 @@ inline bool OpenGLRenderer::render()
         return true;
 
     m_vertices = (vec2 *) alloca(vertexCount * sizeof(vec2));
-    unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d);
+    unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d + m_numRenderNodes);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
     memset(m_elements, 0, elementCount * sizeof(Element));
     // std::cout << "render: " << m_numTextureNodes << " layers, "
@@ -901,26 +947,15 @@ inline bool OpenGLRenderer::render()
     // for (unsigned i=0; i<m_vertexIndex; ++i)
     //     std::cout << "vertex[" << std::setw(5) << i << "]=" << m_vertices[i] << std::endl;
 
-    // Assign our static texture coordinate buffer to attribute 1.
-    glBindBuffer(GL_ARRAY_BUFFER, m_texCoordBuffer);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    setDefaultOpenGLState();
 
-    // Upload the vertices for this frame
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    // setDefaultOpenGLState will leave m_vertexBuffer bound, so we just upload into it..
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec2), m_vertices, GL_STATIC_DRAW);
 
     m_surfaceSize = targetSurface()->size();
-
     vec4 c = fillColor();
     glClearColor(c.x, c.y, c.z, c.w);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_STENCIL_TEST);
-    glDepthMask(false);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
     m_proj = mat4::translate2D(-1.0, 1.0)
              * mat4::scale2D(2.0f / m_surfaceSize.x, -2.0f / m_surfaceSize.y);
 

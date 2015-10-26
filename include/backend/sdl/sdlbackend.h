@@ -260,10 +260,10 @@ inline Renderer *SdlBackend::createRenderer(Surface *surface)
     return r;
 }
 
-#define RENGINE_BACKEND_DEFINE                           \
-    Backend *Backend::get() {                            \
-        static SdlBackend *singleton = new SdlBackend(); \
-        return singleton;                                \
+#define RENGINE_BACKEND_DEFINE                                             \
+    rengine::Backend *rengine::Backend::get() {                            \
+        static rengine::SdlBackend *singleton = new rengine::SdlBackend(); \
+        return singleton;                                                  \
     }
 
 

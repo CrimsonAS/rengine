@@ -82,6 +82,7 @@ RENGINE_END_NAMESPACE
 
 #include "object/property.h"
 #include "object/signal.h"
+#include "object/replicator.h"
 
 #include "windowsystem/event.h"
 #include "windowsystem/surface.h"
@@ -93,13 +94,16 @@ RENGINE_END_NAMESPACE
 #include "scenegraph/openglshaderprogram.h"
 #include "scenegraph/opengltexture.h"
 #include "scenegraph/openglrenderer.h"
+#include "scenegraph/layoutnode.h"
 
 #include "animationsystem/animation.h"
 #include "animationsystem/animationappliers.h"
 
 #include "backend/backend.h"
 
+#include "util/resourcemanager.h"
 #include "util/standardsurfaceinterface.h"
+#include "util/surfaceinterfaceforgenerated.h"
 #include "util/maindefine.h"
 
 #if defined RENGINE_BACKEND_QT

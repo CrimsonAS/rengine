@@ -140,7 +140,7 @@ void tst_node_addRemoveParent()
 
 void tst_node_allocator()
 {
-    RENGINE_ALLOCATION_POOL(Node, 16);
+    RENGINE_ALLOCATION_POOL(Node, rengine_Node, 16);
 
     // Create the node
     Node *n = Node::create();

@@ -27,48 +27,61 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class Texture {
+template <typename T, typename Context>
+class Replicator
+{
 public:
 
-    virtual ~Texture() { }
+    int count() const { return m_instances.size(); }
 
-    enum Format {
-        AlphaFormatMask = 0x1000,
-        RGBA_32 = 1 | AlphaFormatMask,
-        RGBx_32 = 2,
-    };
+    /*
+        Sets the number of objects this replicator should instantiate.
 
-    /*!
-       The size of the surface in pixels
+        The instances are synchronously created and onInstanceCreated()
+        will be called for each instance.
+
+        The function assumes that the class to instantiate has a ::create()
+        and ::destroy function.
      */
-    virtual vec2 size() const = 0;
+    void setCount(unsigned count) {
+        // add missing elements
+        while (count > m_instances.size()) {
+            T *t = onCreateInstance(m_instances.size(), count);
+            m_instances.push_back(t);
+        }
 
-    unsigned width() const { return size().x; }
-    unsigned height() const { return size().y; }
+        // remove overflowing elements
+        while (count < m_instances.size()) {
+            T *t = m_instances.back();
+            m_instances.pop_back();
+            onDestroyInstance(t);
+        }
+    }
 
-    /*!
-        Returns the format of this surface.
+    /*
+        Returns the replicated instance for \a index.
      */
-    virtual Format format() const = 0;
+    T *at(unsigned index) const {
+        assert(index < count());
+        return m_instances.at(index);
+    }
 
-    /*!
-        Returns true if the surface has alpha
+    /*
+        Called to replicate a new instance, the instance being number \a index
+        out of the total \a count to replicate.
      */
-    bool hasAlpha() const { return (format() & AlphaFormatMask) != 0; }
 
-    /*!
-        Returns the texture id of the surface
+    virtual T *onCreateInstance(unsigned index, unsigned count) = 0;
+
+    /*
+        This function is called to destroy a given instance when the
+        replicator's count is reduced.
      */
-    virtual GLuint textureId() const = 0;
 
+    virtual void onDestroyInstance(T *instance) = 0;
 
-    /*!
-        A pointer to the backend that created this texture. Can be
-        used as a type specifier inside the renderer/backend to
-        perform downcasting.
-     */
-    virtual Backend *backend() const { return 0; }
-
+private:
+    std::vector<T *> m_instances;
 };
 
 RENGINE_END_NAMESPACE

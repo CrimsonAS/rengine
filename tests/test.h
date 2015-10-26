@@ -170,7 +170,7 @@ public:
             surface()->requestRender();
     }
 
-    Node *update(Node *root) {
+    Node *update(Node *root) override {
         if (root)
             root->destroy();
 
@@ -230,5 +230,7 @@ RENGINE_USE_NAMESPACE
 // test.h is only included in a single file, it is ok..
 RENGINE_NODE_DEFINE_ALLOCATION_POOLS
 RENGINE_NODE_DEFINE_SIGNALS
+RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS
+RENGINE_LAYOUTNODE_DEFINE_SIGNALS
 RENGINE_BACKEND_DEFINE
 

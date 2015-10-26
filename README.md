@@ -7,14 +7,14 @@ OpenGL and the C++ standard library (C++11).
 
 The idea is provide a simple scene graph and animation api that is capable of
 support HTML/CSS style layer composition. That means:
- - CSS keyframe animations
- - CSS filters (grayscale, blur, etc)
+ - CSS keyframe inspired animation system
+ - CSS inspired filters (grayscale, blur, etc)
  - (not the css parsing and logic itself, just the rendering and animation
    primitives for it)
- - only textures and solids
+ - only textures and rects
  - "dumb" 3D support
-   - at least for now..
    - Sort center of layers front to back and render them (like chrome does)
+   - Could in theory be expanded to proper 3D, but
  - replacable backends to handle windowsystem/eventloop/input
    - optional backend code to hardware compositor
 
@@ -53,7 +53,7 @@ lots and lots...
  - property api needs to improve
    - Property<float> takes up 32 bytes: 4 from float, 24 from std::vector, 4 bytes of padding
    - both signal and property's disconnect are broken, as the id is an integer
-     removing one in the middle will invalidate all ids after that position...
+     removing one in the middle will invalidate all ids after that position... doh!
 
 
 

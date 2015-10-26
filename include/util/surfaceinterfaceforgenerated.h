@@ -25,19 +25,22 @@
 
 #pragma once
 
-#ifdef RENGINE_OPENGL_DESKTOP
-#    ifdef __APPLE__
-#        include <OpenGL/gl.h>
-#    else
-         // This is a bit questionable.. We're using gl2.h headers to avoid
-         // having to resolve GL2 functions, but we'll still be linkings
-         // agsinst libGL.so, so this might not be compatible. If so, resolve
-         // the functions in openglrenderer.h
-#        include <GLES2/gl2.h>
-#    endif
-#    define RENGINE_GLSL(code) "#define highp\n#define mediump\n#define lowp\n"#code
-#else
-#    include <EGL/egl.h>
-#    include <GLES2/gl2.h>
-#    define RENGINE_GLSL(code) #code
-#endif
+RENGINE_BEGIN_NAMESPACE
+
+template <typename Code>
+class SurfaceInterfaceForGenerated : public StandardSurfaceInterface
+{
+public:
+    Code code;
+
+    Node *update(Node *old) override {
+        if (code.initialized) {
+            assert(old == code.root);
+        } else {
+            code.initialize(resourceManager());
+        }
+        return code.root;
+    }
+};
+
+RENGINE_END_NAMESPACE

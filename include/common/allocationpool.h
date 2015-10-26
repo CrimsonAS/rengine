@@ -103,30 +103,49 @@ private:
     unsigned m_poolSize;
 };
 
-#define RENGINE_ALLOCATION_POOL(Type, Count) \
-    Type::__allocation_pool_##Type.setMemory(alloca(Count * (sizeof(Type) + sizeof(unsigned))), Count)
+#define RENGINE_ALLOCATION_POOL(Type, Name, Count) \
+    Type::__allocation_pool_##Name.setMemory(alloca(Count * (sizeof(Type) + sizeof(unsigned))), Count)
 
-#define RENGINE_ALLOCATION_POOL_DECLARATION(Type)           \
+#define RENGINE_ALLOCATION_POOL_DECLARATION(Type, Name)     \
     friend class AllocationPool<Type>;                      \
-    static AllocationPool<Type> __allocation_pool_##Type;   \
+    static AllocationPool<Type> __allocation_pool_##Name;   \
     static Type *create() {                                 \
-        if (__allocation_pool_##Type.isExhausted())         \
+        if (__allocation_pool_##Name.isExhausted())         \
             return new Type();                              \
         else  {                                             \
-            Type *t = __allocation_pool_##Type.allocate();  \
+            Type *t = __allocation_pool_##Name.allocate();  \
             t->__mark_as_pool_allocated();                  \
             return t;                                       \
         }                                                   \
     }                                                       \
-    virtual void destroy() {                                \
+    virtual void destroy() override {                       \
         if (__is_pool_allocated())                          \
-            __allocation_pool_##Type.deallocate(this);      \
+            __allocation_pool_##Name.deallocate(this);      \
         else                                                \
             delete this;                                    \
     }
 
-#define RENGINE_ALLOCATION_POOL_DEFINITION(Type)             \
-    AllocationPool<Type> Type::__allocation_pool_##Type
+#define RENGINE_ALLOCATION_POOL_DECLARATION_IN_BASECLASS(Type, Name)     \
+    friend class AllocationPool<Type>;                                   \
+    static AllocationPool<Type> __allocation_pool_##Name;                \
+    static Type *create() {                                              \
+        if (__allocation_pool_##Name.isExhausted())                      \
+            return new Type();                                           \
+        else  {                                                          \
+            Type *t = __allocation_pool_##Name.allocate();               \
+            t->__mark_as_pool_allocated();                               \
+            return t;                                                    \
+        }                                                                \
+    }                                                                    \
+    virtual void destroy() {                                             \
+        if (__is_pool_allocated())                                       \
+            __allocation_pool_##Name.deallocate(this);                   \
+        else                                                             \
+            delete this;                                                 \
+    }
+
+#define RENGINE_ALLOCATION_POOL_DEFINITION(Type, Name)      \
+    rengine::AllocationPool<Type> Type::__allocation_pool_##Name
 
 
 RENGINE_END_NAMESPACE

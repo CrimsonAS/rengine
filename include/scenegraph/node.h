@@ -44,6 +44,22 @@ RENGINE_BEGIN_NAMESPACE
                : 0;                                    \
     }                                                  \
 
+// ### Is this the right place for this macro?
+#define RENGINE_IMPLEMENT_PROPERTY(type, name, setter, signal) \
+    protected:                                \
+        type m_##name;                        \
+    public:                                   \
+        static Signal<> signal;               \
+        type (name)() const {                 \
+            return m_##name;                  \
+        }                                     \
+        void setter(const type &name) {       \
+            if (m_##name == name)             \
+                return;                       \
+            m_##name = name;                  \
+            signal.emit(this);                \
+        }
+
 class Node : public SignalEmitter
 {
 public:
@@ -58,6 +74,7 @@ public:
         RectangleNodeBaseType = (1 << 6),
         RectangleNodeType     = 0 | RectangleNodeBaseType,
         TextureNodeType       = 1 | RectangleNodeBaseType,
+        RenderNodeType        = 2 | RectangleNodeBaseType,
     };
 
     /*!
@@ -78,6 +95,7 @@ public:
      * or is already a child of this node.
      */
     void append(Node *child) {
+        assert(child);
         assert(!hasChild(child));
         assert(child->m_parent == 0);
         assert(child->m_next == 0);
@@ -247,7 +265,7 @@ public:
         }
     }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(Node);
+    RENGINE_ALLOCATION_POOL_DECLARATION_IN_BASECLASS(Node, rengine_Node);
 
     void __mark_as_pool_allocated() { m_poolAllocated = true; }
     bool __is_pool_allocated() const { return m_poolAllocated; }
@@ -314,13 +332,12 @@ protected:
     unsigned m_reserved : 20; // 32 - 12
 };
 
-
 class OpacityNode : public Node {
 public:
     float opacity() const { return m_opacity; }
     void setOpacity(float opacity) { m_opacity = opacity; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(OpacityNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(OpacityNode, rengine_OpacityNode);
 
     static OpacityNode *create(float opacity) {
         auto node = create();
@@ -350,7 +367,7 @@ public:
     float projectionDepth() const { return m_projectionDepth; }
     void setProjectionDepth(float d) { m_projectionDepth = d; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(TransformNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(TransformNode, rengine_TransformNode);
 
     static TransformNode *create(const mat4 &matrix, float projectionDepth = 0) {
         auto node = create();
@@ -387,21 +404,120 @@ protected:
     float m_projectionDepth;
 };
 
+class SimplifiedTransformNode : public TransformNode
+{
+public:
+
+    RENGINE_ALLOCATION_POOL_DECLARATION(SimplifiedTransformNode, rengine_SimplifiedTransformNode);
+
+    static Signal<> onDxChanged;
+    static Signal<> onDyChanged;
+    static Signal<> onRotationAroundXChanged;
+    static Signal<> onRotationAroundYChanged;
+    static Signal<> onRotationAroundZChanged;
+    static Signal<> onRotationChanged;
+    static Signal<> onScaleChanged;
+
+    float dx() const { return m_dx; }
+    void setDx(float dx) {
+        if (m_dx == dx)
+            return;
+        m_dx = dx;
+        onDxChanged.emit(this);
+        requestPreprocess();
+    }
+
+    float dy() const { return m_dy; }
+    void setDy(float dy) {
+        if (m_dy == dy)
+            return;
+        m_dy = dy;
+        onDyChanged.emit(this);
+        requestPreprocess();
+    }
+
+    RENGINE_IMPLEMENT_PROPERTY(float, dz, setDz, onDzChanged);
+
+    float rotationAroundX() const { return m_rotx; }
+    void setRotationAroundX(float rx) {
+        if (m_rotx == rx)
+            return;
+        m_rotx = rx;
+        onRotationAroundXChanged.emit(this);
+        requestPreprocess();
+    }
+
+    float rotationAroundY() const { return m_roty; }
+    void setRotationAroundY(float ry) {
+        if (m_roty == ry)
+            return;
+        m_roty = ry;
+        onRotationAroundYChanged.emit(this);
+        requestPreprocess();
+    }
+
+    float rotationAroundZ() const { return m_rotz; }
+    void setRotationAroundZ(float rz) {
+        if (m_rotz == rz)
+            return;
+        m_rotz = rz;
+        onRotationAroundZChanged.emit(this);
+        requestPreprocess();
+    }
+
+    float rotation() const { return rotationAroundZ(); }
+    void setRotation(float rz) { setRotationAroundZ(rz); }
+
+    float scale() const { return m_scale; }
+    void setScale(float s) {
+        if (m_scale == s)
+            return;
+        m_scale = s;
+        onScaleChanged.emit(this);
+        requestPreprocess();
+    }
+
+    void onPreprocess() override {
+        mat4 m;
+        if (m_dz)
+            m = m * mat4::translate(0, 0, m_dz);
+        if (m_dx != 0 || m_dy != 0)
+            m = m * mat4::translate2D(m_dx, m_dy);
+        if (m_scale != 0)
+            m = mat4::scale2D(m_scale, m_scale);
+        if (m_rotx != 0)
+            m = m * mat4::rotateAroundX(m_rotx);
+        if (m_roty != 0)
+            m = m * mat4::rotateAroundY(m_roty);
+        if (m_rotz != 0)
+            m = m * mat4::rotateAroundZ(m_rotz);
+        setMatrix(m);
+    }
+
+protected:
+    float m_dx;
+    float m_dy;
+    float m_rotx;
+    float m_roty;
+    float m_rotz;
+    float m_scale;
+};
+
 
 class RectangleNodeBase : public Node {
 public:
 
-    static Signal<> xChanged;
-    static Signal<> yChanged;
-    static Signal<> widthChanged;
-    static Signal<> heightChanged;
+    static Signal<> onXChanged;
+    static Signal<> onYChanged;
+    static Signal<> onWidthChanged;
+    static Signal<> onHeightChanged;
 
     float x() const { return m_geometry.x(); }
     void setX(float x) {
         if (x == m_geometry.x())
             return;
         m_geometry.setX(x);
-        xChanged.emit(this);
+        onXChanged.emit(this);
     }
 
     float y() const { return m_geometry.y(); }
@@ -409,7 +525,16 @@ public:
         if (y == m_geometry.y())
             return;
         m_geometry.setY(y);
-        yChanged.emit(this);
+        onYChanged.emit(this);
+    }
+
+    void setPosition(const vec2 &position) {
+        setX(position.x);
+        setY(position.y);
+    }
+    void setPosition(float x, float y) {
+        setX(x);
+        setY(y);
     }
 
     float width() const { return m_geometry.width(); }
@@ -417,7 +542,7 @@ public:
         if (w == m_geometry.width())
             return;
         m_geometry.setWidth(w);
-        widthChanged.emit(this);
+        onWidthChanged.emit(this);
     }
 
     float height() const { return m_geometry.height(); }
@@ -425,7 +550,7 @@ public:
         if (h == m_geometry.height())
             return;
         m_geometry.setHeight(h);
-        heightChanged.emit(this);
+        onHeightChanged.emit(this);
     }
 
     const rect2d &geometry() const { return m_geometry; }
@@ -437,10 +562,10 @@ public:
         if (!updateX && !updateY && !updateW && !updateH)
             return;
         m_geometry = rect;
-        if (updateX) xChanged.emit(this);
-        if (updateY) yChanged.emit(this);
-        if (updateW) widthChanged.emit(this);
-        if (updateH) heightChanged.emit(this);
+        if (updateX) onXChanged.emit(this);
+        if (updateY) onYChanged.emit(this);
+        if (updateW) onWidthChanged.emit(this);
+        if (updateH) onHeightChanged.emit(this);
     }
 
     // Uses & BaseType, so can't use the macro
@@ -468,16 +593,23 @@ protected:
 
 class RectangleNode : public RectangleNodeBase {
 public:
+
+    static Signal<> onColorChanged;
+
     const vec4 &color() const { return m_color; }
     void setColor(const vec4 &color) {
+        vec4 c = color;
+        c.x = std::max(std::min(c.x, 1.0f), 0.0f);
+        c.y = std::max(std::min(c.y, 1.0f), 0.0f);
+        c.z = std::max(std::min(c.z, 1.0f), 0.0f);
+        c.w = std::max(std::min(c.w, 1.0f), 0.0f);
+        if (c == m_color)
+            return;
         m_color = color;
-        m_color.x = std::max(std::min(m_color.x, 1.0f), 0.0f);
-        m_color.y = std::max(std::min(m_color.y, 1.0f), 0.0f);
-        m_color.z = std::max(std::min(m_color.z, 1.0f), 0.0f);
-        m_color.w = std::max(std::min(m_color.w, 1.0f), 0.0f);
+        onColorChanged.emit(this);
     }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(RectangleNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(RectangleNode, rengine_RectangleNode);
 
     static RectangleNode *create(const rect2d &geometry, const vec4 &color = vec4()) {
         auto node = create();
@@ -500,7 +632,7 @@ public:
     const Texture *layer() const { return m_layer; }
     void setTexture(const Texture *layer) { m_layer = layer; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode, rengine_TextureNode);
 
     static TextureNode *create(const rect2d &geometry, const Texture *layer) {
         auto node = create();
@@ -526,7 +658,7 @@ public:
     void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
     const mat4 &colorMatrix() const { return m_colorMatrix; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(ColorFilterNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(ColorFilterNode, rengine_ColorFilterNode);
 
     ColorFilterNode *create(const mat4 &matrix) {
         auto node = create();
@@ -552,7 +684,7 @@ public:
     void setRadius(unsigned radius) { m_radius = radius; }
     unsigned radius() const { return m_radius; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(BlurNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(BlurNode, rengine_BlurNode);
 
     static BlurNode *create(unsigned radius) {
         auto node = create();
@@ -581,7 +713,7 @@ public:
     void setColor(const vec4 &color) { m_color = color; }
     const vec4 &color() const { return m_color; }
 
-    RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode);
+    RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode, rengine_ShadowNode);
 
     static ShadowNode *create(unsigned radius, const vec2 &offset, const vec4 &color) {
         auto node = create();
@@ -601,20 +733,63 @@ protected:
     vec4 m_color;
 };
 
-#define RENGINE_NODE_DEFINE_ALLOCATION_POOLS              \
-    RENGINE_ALLOCATION_POOL_DEFINITION(Node);             \
-    RENGINE_ALLOCATION_POOL_DEFINITION(TransformNode);    \
-    RENGINE_ALLOCATION_POOL_DEFINITION(OpacityNode);      \
-    RENGINE_ALLOCATION_POOL_DEFINITION(TextureNode);      \
-    RENGINE_ALLOCATION_POOL_DEFINITION(RectangleNode);    \
-    RENGINE_ALLOCATION_POOL_DEFINITION(ColorFilterNode);  \
-    RENGINE_ALLOCATION_POOL_DEFINITION(BlurNode);         \
-    RENGINE_ALLOCATION_POOL_DEFINITION(ShadowNode);
 
-#define RENGINE_NODE_DEFINE_SIGNALS                               \
-    rengine::Signal<> rengine::RectangleNodeBase::xChanged;       \
-    rengine::Signal<> rengine::RectangleNodeBase::yChanged;       \
-    rengine::Signal<> rengine::RectangleNodeBase::widthChanged;   \
-    rengine::Signal<> rengine::RectangleNodeBase::heightChanged;  \
+class RenderNode : public RectangleNodeBase {
+public:
+    RENGINE_NODE_DEFINE_FROM_FUNCTION(RenderNode, RenderNodeType);
+
+    /*
+        The OpenGL code should take the following things into account when it
+        is called:
+         - GL_BLEND is enabled
+         - GL_DEPTH_TEST is disabled
+         - GL_STENCIL_TEST is disabled
+         - glDepthMask(false) is used
+         - glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA) is used
+         - No buffers are bound and all attributes are disabled
+         - No program is bound
+
+        Upon leaving this function, the code should leave the OpenGL context
+        in a similar state, especially with regards to array and index buffers
+        and attribute registers.
+     */
+    virtual void render() = 0;
+
+
+    // Does not allow pool allocation as it is pure virtual..
+
+protected:
+    RenderNode(Type type = RenderNodeType) : RectangleNodeBase(type) { }
+};
+
+
+#define RENGINE_NODE_DEFINE_ALLOCATION_POOLS                                                                  \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::Node, rengine_Node);                                          \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::TransformNode, rengine_TransformNode);                        \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::SimplifiedTransformNode, rengine_SimplifiedTransformNode);    \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::OpacityNode, rengine_OpacityNode);                            \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::TextureNode, rengine_TextureNode);                            \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::RectangleNode, rengine_RectangleNode);                        \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::ColorFilterNode, rengine_ColorFilterNode);                    \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::BlurNode, rengine_BlurNode);                                  \
+    RENGINE_ALLOCATION_POOL_DEFINITION(rengine::ShadowNode, rengine_ShadowNode);
+
+#define RENGINE_NODE_DEFINE_SIGNALS                                                 \
+                                                                                    \
+    rengine::Signal<> rengine::RectangleNodeBase::onXChanged;                       \
+    rengine::Signal<> rengine::RectangleNodeBase::onYChanged;                       \
+    rengine::Signal<> rengine::RectangleNodeBase::onWidthChanged;                   \
+    rengine::Signal<> rengine::RectangleNodeBase::onHeightChanged;                  \
+                                                                                    \
+    rengine::Signal<> rengine::RectangleNode::onColorChanged;                       \
+                                                                                    \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onDxChanged;                \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onDyChanged;                \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onDzChanged;                \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundXChanged;   \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundYChanged;   \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onRotationAroundZChanged;   \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onRotationChanged;          \
+    rengine::Signal<> rengine::SimplifiedTransformNode::onScaleChanged;             \
 
 RENGINE_END_NAMESPACE

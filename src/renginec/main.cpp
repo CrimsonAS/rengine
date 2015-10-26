@@ -1,6 +1,33 @@
+/*
+    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include "picojson.h"
 #include <fstream>
 #include "objectmodel.h"
+#include "objectmodelbuilder.h"
+#include "codegenerator.h"
 
 using namespace std;
 using namespace picojson;
@@ -8,12 +35,20 @@ using namespace picojson;
 struct Options {
     string inputFile;
     vector<string> includeDirs;
+    bool verbose;
+    bool dumpJson;
+    bool includeMain;
 } options;
 
 static void printHelp(char *cmd)
 {
     cout << "Usage:" << endl
          << " > " << cmd << "[options] inputfile" << endl
+         << endl
+         << "Options: " << endl
+         << "  -v   --verbose        Print extra output to stderr" << endl
+         << "  -d   --dump-json      Dump the complete json file" << endl
+         << "  -m   --include-main   Include a dummy main() for easy testing" << endl
          << endl;
 }
 
@@ -95,9 +130,16 @@ int main(int argc, char **argv)
     options.includeDirs.push_back("./");
 
     for (int i=1; i<argc; ++i) {
-        if (strstr(argv[i], "-h") != nullptr || strstr(argv[i], "--help")) {
+        std::string arg(argv[i]);
+        if (arg == "-h" || arg == "--help") {
             printHelp(argv[0]);
             return 0;
+        } else if (arg == "-v" || arg == "--verbose") {
+            options.verbose = true;
+        } else if (arg == "-d" || arg == "--dump-json") {
+            options.dumpJson = true;
+        } else if (arg == "-m" || arg == "--include-main") {
+            options.includeMain = true;
         } else {
             std::string file(argv[i]);
             options.inputFile = file;
@@ -114,16 +156,23 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    for (auto i : options.includeDirs)
-        cerr << "include dir: " << i << endl;
-
     value content;
     if (!loadFile(options.inputFile, &content))
         return 1;
 
     substituteImports(&content);
 
-    cout << content.serialize(true);
+    if (options.dumpJson)
+        cout << content.serialize(true);
+
+    ObjectModelBuilder builder;
+    builder.setVerbose(options.verbose);
+    builder.build(content);
+
+    CodeGenerator generator;
+    generator.setClasses(builder.classes());
+    generator.setIncludeMain(options.includeMain);
+    generator.generate();
 
     return 0;
 }

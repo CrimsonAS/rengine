@@ -1,9 +1,7 @@
 #pragma once
 
 #include "rengine.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <chrono>
 
 using namespace rengine;
 using namespace std;
@@ -19,6 +17,20 @@ inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, fl
     anim->keyFrames.times() << 0 << 1;
     anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
     manager->startAnimation(anim);
+}
+
+inline void rengine_countFps()
+{
+    static int frameCounter = 0;
+    static std::chrono::steady_clock::time_point then;
+    ++frameCounter;
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    if (now > then + std::chrono::milliseconds(int(1000))) {
+        double delta = std::chrono::duration<double>(now - then).count();
+        cout << "FPS: " << (frameCounter / delta) << endl;
+        frameCounter = 0;
+        then = now;
+    }
 }
 
 inline Texture *rengine_fractalTexture(Renderer *renderer, const vec2 &size)

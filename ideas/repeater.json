@@ -1,0 +1,58 @@
+{
+    "import": "rengine.json",
+
+    "classes": [
+    {
+        "name": "Billboard",
+
+        "properties": [
+            "rengine::vec4 color"
+        ],
+
+        "root": {
+            "class": "rengine::RectangleNode",
+            "id": "root",
+            "width": "10 + rand() % 10",
+            "height": "20",
+            "color": { "bind": "this->color()", "to": "this->color" }
+        }
+    },
+
+    {
+        "name": "Repeater",
+
+        "root": {
+            "class"    : "rengine::SimplifiedTransformNode",
+            "id"       : "root",
+            "dx"       : 100,
+            "dy"       : 100,
+            "children" : [ {
+                "class"    : "rengine::RectangleNode",
+                "id"       : "background",
+                "width"    : 600,
+                "height"   : 300,
+                "color"    : "rengine::vec4(0.2, 0.2, 0.2, 1.0)"
+            }, {
+                "class"         : "rengine::LayoutNode",
+                "id"            : "grid",
+                "columnCount"   : 0,
+                "rowCount"      : 0,
+                "margin"        : 10,
+                "spacing"       : 2,
+                "width"         : { "bind": "background->width()", "to": "background->width" },
+                "height"        : { "bind": "background->height()", "to": "background->height" },
+                "layoutTypeAsInt" : 2
+            } ]
+        },
+
+        "replicators" : {
+            "id"    : "myReplicator",
+            "class" : "Billboard",
+            "count" : 64,
+            "parent": "grid",
+            "initializor": "float c = index / (float) count; instance->setColor(rengine::vec4(c, 0.5, 1-c, 0.8));"
+        }
+
+    }
+    ]
+}

@@ -42,6 +42,7 @@
 #include <math.h>
 #include <cmath>
 #include <ostream>
+#include <assert.h>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -163,6 +164,28 @@ struct vec4 {
     float z;
     float w;
 };
+
+
+inline vec2 floor(const vec2 &v) { return vec2(std::floor(v.x), std::floor(v.y)); }
+inline vec3 floor(const vec3 &v) { return vec3(std::floor(v.x), std::floor(v.y), std::floor(v.z)); }
+inline vec4 floor(const vec4 &v) { return vec4(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)); }
+
+inline vec2 ceil(const vec2 &v) { return vec2(std::ceil(v.x), std::ceil(v.y)); }
+inline vec3 ceil(const vec3 &v) { return vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
+inline vec4 ceil(const vec4 &v) { return vec4(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w)); }
+
+inline vec2 round(const vec2 &v) { return vec2(std::round(v.x), std::round(v.y)); }
+inline vec3 round(const vec3 &v) { return vec3(std::round(v.x), std::round(v.y), std::round(v.z)); }
+inline vec4 round(const vec4 &v) { return vec4(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w)); }
+
+inline vec2 min(const vec2 &a, const vec2 &b) { return vec2(std::min(a.x, b.x), std::min(a.y, b.y)); }
+inline vec3 min(const vec3 &a, const vec3 &b) { return vec3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)); }
+inline vec4 min(const vec4 &a, const vec4 &b) { return vec4(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z), std::min(a.w, b.w)); }
+
+inline vec2 max(const vec2 &a, const vec2 &b) { return vec2(std::max(a.x, b.x), std::max(a.y, b.y)); }
+inline vec3 max(const vec3 &a, const vec3 &b) { return vec3(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)); }
+inline vec4 max(const vec4 &a, const vec4 &b) { return vec4(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z), std::max(a.w, b.w)); }
+
 
 struct mat4 {
     enum Type {
@@ -515,6 +538,7 @@ public:
 
     static rect2d fromPosSize(const vec2 &pos, const vec2 &size) { return rect2d(pos, pos + size); }
     static rect2d fromXywh(float x, float y, float w, float h) { return rect2d(x, y, x+w, y+h); }
+    static rect2d fromPosSizeCentered(const vec2 &pos, const vec2 &size) { return fromXywhCentered(pos.x, pos.y, size.x, size.y); }
     static rect2d fromXywhCentered(float cx, float cy, float w, float h) { return fromXywh(cx-w/2.0f, cy-h/2.0f, w, h); }
 
     float top() const { return tl.y; }
@@ -541,6 +565,8 @@ public:
     vec2 size() const { return vec2(width(), height()); }
     void setSize(const vec2 &size) { br = tl + size; }
 
+    rect2d normalized() const { return rect2d(min(tl, br), max(tl, br)); }
+
     rect2d operator|(const vec2 &p) const {
         return rect2d(p.x < tl.x ? p.x : tl.x,
                       p.y < tl.y ? p.y : tl.y,
@@ -566,7 +592,11 @@ public:
         return (*this) | r.tl | r.br;
     }
 
+    bool operator==(const rect2d &o) const { return tl == o.tl && br == o.br; }
+
     bool contains(const vec2 &p) const {
+        assert(tl.x < br.x);
+        assert(tl.y < br.y);
         return p.x >= tl.x && p.x <= br.x
             && p.y >= tl.y && p.y <= br.y;
     }
@@ -581,18 +611,6 @@ public:
     vec2 tl;
     vec2 br;
 };
-
-inline vec2 floor(const vec2 &v) { return vec2(std::floor(v.x), std::floor(v.y)); }
-inline vec3 floor(const vec3 &v) { return vec3(std::floor(v.x), std::floor(v.y), std::floor(v.z)); }
-inline vec4 floor(const vec4 &v) { return vec4(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)); }
-
-inline vec2 ceil(const vec2 &v) { return vec2(std::ceil(v.x), std::ceil(v.y)); }
-inline vec3 ceil(const vec3 &v) { return vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
-inline vec4 ceil(const vec4 &v) { return vec4(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w)); }
-
-inline vec2 round(const vec2 &v) { return vec2(std::round(v.x), std::round(v.y)); }
-inline vec3 round(const vec3 &v) { return vec3(std::round(v.x), std::round(v.y), std::round(v.z)); }
-inline vec4 round(const vec4 &v) { return vec4(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w)); }
 
 inline std::ostream &operator<<(std::ostream &o, const vec2 &v) {
     o << "vec2(" << v.x << ", " << v.y << ")";

@@ -41,12 +41,16 @@ public:
                 m_renderer->sceneRoot()->destroy();
             delete m_renderer;
         }
+        delete m_resourceManager;
     }
 
     virtual Node *update(Node *oldRoot) = 0;
 
     virtual void onBeforeRender() { }
     virtual void onAfterRender() { }
+
+    virtual ResourceManager *createResourceManager() { return new ResourceManager(); }
+    ResourceManager *resourceManager() const { return m_resourceManager; }
 
     void onRender() override {
         surface()->makeCurrent();
@@ -55,6 +59,8 @@ public:
         if (!m_renderer) {
             m_renderer = Backend::get()->createRenderer(surface());
             m_animationManager.start();
+            m_resourceManager = createResourceManager();
+            m_resourceManager->setRenderer(m_renderer);
         }
 
         // Create the scene graph; update if it already exists..
@@ -105,6 +111,7 @@ protected:
 
     Renderer *m_renderer = nullptr;
     AnimationManager m_animationManager;
+    ResourceManager *m_resourceManager = nullptr;
 
     Node *m_pointerEventReceiver = nullptr;
 };

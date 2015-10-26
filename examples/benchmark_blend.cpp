@@ -30,10 +30,6 @@
 static int nodeCount = 4;
 static bool useTextures = false;
 
-using namespace std::chrono;
-
-static steady_clock::time_point then;
-
 class BlendBenchWindow : public StandardSurfaceInterface
 {
 public:
@@ -44,17 +40,7 @@ public:
 
         surface()->requestRender();
 
-        static int frameCounter = 0;
-        ++frameCounter;
-
-        steady_clock::time_point now = steady_clock::now();
-
-        if (now > then + std::chrono::milliseconds(int(1000))) {
-            double delta = duration<double>(now - then).count();
-            cout << "FPS: " << (frameCounter / delta) << endl;
-            frameCounter = 0;
-            then = now;
-        }
+        rengine_countFps();
 
         if (old)
             return old;
@@ -118,8 +104,6 @@ int main(int argc, char **argv) {
     std::unique_ptr<Backend> backend(Backend::get());
 
     BlendBenchWindow iface;
-
-    then = steady_clock::now();
 
     Surface *surface = backend->createSurface(&iface);
     surface->show();
