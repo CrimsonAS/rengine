@@ -61,7 +61,7 @@ public:
 
         vec2 s = surface()->size();
         vec2 s2 = s / 2.0f;
-        float dim = std::max(s.x, s.y);
+        float dim = std::max(s.x, s.y) * 0.9;
         float dim2 = dim / 2.0f;
         rect2d geometry(-dim2, -dim2, dim, dim);
 
@@ -84,8 +84,6 @@ public:
             } else {
                 *rotation << RectangleNode::create(geometry, vec4(rnd(), rnd(), rnd(), 0.5));
             }
-
-
             animation_rotateZ(animationManager(), rotation, 4 + i);
         }
 

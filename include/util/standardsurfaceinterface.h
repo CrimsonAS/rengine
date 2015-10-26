@@ -49,7 +49,8 @@ public:
     virtual void onAfterRender() { }
 
     void onRender() override {
-        surface()->makeCurrent();
+        if (!surface()->makeCurrent())
+            return;
 
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {

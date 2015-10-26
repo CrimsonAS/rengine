@@ -27,6 +27,8 @@
 #pragma once
 
 #include <cstring>
+#include <chrono>
+#include <sync/sync.h>
 
 RENGINE_BEGIN_NAMESPACE
 
@@ -118,6 +120,7 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const
 	, m_vsyncDelta(0)
 	, m_size(size)
 {
+    setBufferCount(2);
 	setSurfaceToInterface(iface);
 	initHwc();
 	initEgl();
@@ -239,148 +242,110 @@ void SfHwcSurface::initEgl()
 
 void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	logd << "buffer=" << (void *) buffer << std::endl;
+	// logw << "buffer=" << (void *) buffer << std::endl;
 
-	std::cout << "present is here: " << std::endl;
+    int status = 0; (void) status;
 
-	static SfHwcBuffer *staticBuffer = 0;
-	if (!staticBuffer) {
-		staticBuffer = new SfHwcBuffer(m_backend, 720, 1280);
-		staticBuffer->lock();
-		staticBuffer->fillWithCrap();
-		staticBuffer->unlock();
-	}
+    static SfHwcBuffer *staticBuffer = 0;
+    if (!staticBuffer) {
+        staticBuffer = new SfHwcBuffer(m_backend, 720, 1280);
+        // staticBuffer->lock();
+        // staticBuffer->fillWithCrap();
+        // staticBuffer->unlock();
+    }
 
-	static int counter = 10;
-	if (counter > 0) {
-		// Question: How come this buffer is only visible in the beginning (and then not the fb target).
-		// Is it related to that we touch it on the CPU?
-		staticBuffer->lock();
-		staticBuffer->fillWithCrap();
-		staticBuffer->unlock();
-		--counter;
-	}
+    static SfHwcBuffer *staticBuffer2 = 0;
+    if (!staticBuffer2) {
+        staticBuffer2 = new SfHwcBuffer(m_backend, 720, 1280);
+        // staticBuffer2->lock();
+        // staticBuffer2->fillWithCrap();
+        // staticBuffer2->unlock();
+    }
 
-	// int fd = getFenceBufferFd(buffer);
-	// if (fd != -1) {
-	// 	sync_wait(fd, -1);
-	// 	close(fd);
-	// }
+	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 
-// */	staticBuffer->lock();
-	// unsigned char *bits = (unsigned char *) staticBuffer->bits();
-	// m_backend->grallocModule->lock(m_backend->grallocModule,
-	// 							   staticBuffer->handle(),
-	// 							   GRALLOC_USAGE_SW_WRITE_RARELY,
-	// 							   0, 0, 720, 1280,
-	// 							   (void **) &bits);
-	// assert(bits);
-	// staticBuffer->fillWithCrap();
-	// // m_backend->grallocModule->unlock(m_backend->grallocModule, staticBuffer->handle());
-	// staticBuffer->unlock();
+    static auto lastFrame = std::chrono::steady_clock::now();
+    auto thisFrame = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
+    if (delta > 20)
+        logw << "MISSED A FRAME: " << delta << std::endl;
+    lastFrame = thisFrame;
 
-	int status; (void) status;
-    hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
+    int fd = getFenceBufferFd(buffer);
+    setFenceBufferFd(buffer, -1);
+#if 0
+    if (fd != -1) {
+        auto start = std::chrono::steady_clock::now();
+        sync_wait(fd, -1);
+        close(fd);
+        auto end = std::chrono::steady_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+        logw << " - sync waited on libhybris buffer: "  << delta << ", buffer=" << buffer << std::endl;
+        fd = -1;
+    }
+#endif
 
-    int dcSize = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
-	hwc_display_contents_1_t *dc = (hwc_display_contents_1_t *) malloc(dcSize);
-	memset(dc, 0, sizeof(dcSize));
-	dc->numHwLayers = 2;
-	dc->flags = HWC_GEOMETRY_CHANGED;
-	dc->retireFenceFd = -1;
-	dc->outbufAcquireFenceFd = -1;
+	hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
+	fb->handle = buffer->handle;
+	fb->acquireFenceFd = fd;
+	fb->releaseFenceFd = -1;
+    fb->blending = 1;
 
-    sfhwc_initialize_layer(&dc->hwLayers[0], HWC_FRAMEBUFFER, 0, 0, m_size.x, m_size.y);
-    sfhwc_initialize_layer(&dc->hwLayers[1], HWC_FRAMEBUFFER_TARGET, 0, 0, m_size.x, m_size.y);
+    static int counter = 0;
+    // counter = counter == 1 ? 0 : 1;
 
-    hwc_layer_1_t *fb = &dc->hwLayers[0];
-    fb->handle = staticBuffer->handle();
-    fb->blending = HWC_BLENDING_PREMULT;
-    fb->acquireFenceFd = -1;
-    fb->releaseFenceFd = -1;
+	hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
+	fbt->handle = counter == 0 ? staticBuffer->handle() : staticBuffer2->handle();
+	fbt->acquireFenceFd = -1;
+	fbt->releaseFenceFd = -1;
 
-    // Question: How come that despite us setting PREMULT (COVERAGE acts the same)
-    // on both of our buffers, we have no blending in the HWC.
-    hwc_layer_1_t *fbt = &dc->hwLayers[1];
-    fbt->handle = buffer->handle;
-    fbt->blending = HWC_BLENDING_PREMULT;
-    fbt->acquireFenceFd = getFenceBufferFd(buffer);
-    fbt->releaseFenceFd = -1;
+    // sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_hwc_device(hwc);
 
-    sfhwc_dump_display_contents(dc);
-	status = hwc->prepare(hwc, 1, &dc);
+	status = hwc->prepare(hwc, 1, &m_hwcList);
 	assert(status == 0);
+    // sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_hwc_device(hwc);
 
-	sfhwc_dump_display_contents(dc);
-	status = hwc->set(hwc, 1, &dc);
+    // auto start = std::chrono::steady_clock::now();
+
+	status = hwc->set(hwc, 1, &m_hwcList);
 	assert(status == 0);
+    // sfhwc_dump_hwc_device(hwc);
 
-	sfhwc_dump_display_contents(dc);
+    // auto end = std::chrono::steady_clock::now();
+    // auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
 
-	setFenceBufferFd(buffer, fbt->releaseFenceFd);
-	if (fb->releaseFenceFd != -1) {
-		close(fb->releaseFenceFd);
+    // logw << " - set completed in " << delta << std::endl;
+
+    if (fb->releaseFenceFd != -1) {
+#if 1
+        setFenceBufferFd(buffer, fb->releaseFenceFd);
+        fb->releaseFenceFd = -1;
+#else
+        auto start = std::chrono::steady_clock::now();
+        sync_wait(fb->releaseFenceFd, -1);
+        close(fb->releaseFenceFd);
+        fb->releaseFenceFd = -1;
+        auto end = std::chrono::steady_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+        logw << " - waited for fb release fd, " << delta << std::endl;
+#endif
+    }
+
+    if (fbt->releaseFenceFd != -1) {
+        close(fbt->releaseFenceFd);
+        fbt->releaseFenceFd = -1;
+        // logw << " - closed fbt release fd" << std::endl;
+    }
+
+	if (m_hwcList->retireFenceFd != -1) {
+		close(m_hwcList->retireFenceFd);
+		m_hwcList->retireFenceFd = -1;
+        // logw << " - closed retire fence fd.." << std::endl;
 	}
 
-	if (dc->retireFenceFd != -1) {
-		close(dc->retireFenceFd);
-	}
-
-	// hwc_display_contents_1_t *dummy = (hwc_display_contents_1_t *) malloc(dcSize);
-	// memset(dummy, 0, sizeof(hwc_display_contents_1_t));
-	// dummy->retireFenceFd = -1;
-	// dummy->flags = HWC_GEOMETRY_CHANGED;
-	// sfhwc_initialize_layer(&dummy->hwLayers[0], HWC_FRAMEBUFFER_TARGET, 0, 0, m_size.x, m_size.y);
-	// dummy->numHwLayers = 1;
-	// sfhwc_dump_display_contents(dummy);
-
-	// std::cout << "prepaing again..." << std::endl;
-	// hwc->prepare(hwc, 1, &dummy);
-	// std::cout << "prepared again..." << std::endl;
-
-	// Question: How come if we comment out this, (forcing dc to be a unique pointer every turn)
-	// the HWC locks up????
-	free(dc);
-
-
-	// hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
-
-	// m_hwcList->flags = HWC_GEOMETRY_CHANGED;
-
-	// hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
-	// fb->compositionType = HWC_FRAMEBUFFER;
-	// fb->blending = HWC_BLENDING_NONE;
-	// fb->handle = staticBuffer->handle();
-	// fb->acquireFenceFd = -1;
-	// fb->releaseFenceFd = -1;
-
-	// hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
-	// fbt->compositionType = HWC_FRAMEBUFFER_TARGET;
-	// fbt->blending = HWC_BLENDING_PREMULT;
-	// fbt->handle = buffer->handle;
-	// fbt->acquireFenceFd = getFenceBufferFd(buffer);
-	// fbt->releaseFenceFd = -1;
-
- //    sfhwc_dump_display_contents(m_hwcList);
- //    // sfhwc_dump_hwc_device(hwc);
-
-	// status = hwc->prepare(hwc, 1, &m_hwcList);
-	// assert(status == 0);
- //    sfhwc_dump_display_contents(m_hwcList);
- //    // sfhwc_dump_hwc_device(hwc);
-
-	// status = hwc->set(hwc, 1, &m_hwcList);
-	// assert(status == 0);
- //    // sfhwc_dump_hwc_device(hwc);
-
-
-	// setFenceBufferFd(buffer, fbt->releaseFenceFd);
-	// fbt->releaseFenceFd = -1;
-
-	// if (m_hwcList->retireFenceFd != -1) {
-	// 	close(m_hwcList->retireFenceFd);
-	// 	m_hwcList->retireFenceFd = -1;
-	// }
+    logd << " -> frame on screen" << std::endl;
 }
 
 RENGINE_END_NAMESPACE
