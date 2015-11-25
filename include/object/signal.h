@@ -63,10 +63,9 @@ private:
 class SignalEmitter
 {
 public:
-    virtual ~SignalEmitter()
-    {
-        delete m_buckets;
-    }
+    static Signal<> onDestruction;
+
+    virtual ~SignalEmitter();
 
 private:
     template <typename ...Arguments>
@@ -85,7 +84,6 @@ class Signal : SignalBase
 {
     struct Bucket : public SignalEmitter::BucketBase
     {
-        // Using void * rather than SignalHandler<Arguments ...> because gcc gets confused..
         std::vector<SignalHandler<Arguments ...> *> handlers;
     };
 
@@ -134,6 +132,13 @@ private:
     }
 };
 
+SignalEmitter::~SignalEmitter()
+{
+    onDestruction.emit(this);
+    delete m_buckets;
+}
 
+#define RENGINE_SIGNALEMITTER_DEFINE_SIGNALS                                        \
+    rengine::Signal<> rengine::SignalEmitter::onDestruction;                        \
 
 RENGINE_END_NAMESPACE

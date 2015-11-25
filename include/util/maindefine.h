@@ -18,6 +18,7 @@ RENGINE_END_NAMESPACE
 
 #define RENGINE_DEFINE_GLOBALS                                                                         \
     RENGINE_BACKEND_DEFINE                                                                             \
+    RENGINE_SIGNALEMITTER_DEFINE_SIGNALS                                                               \
     RENGINE_NODE_DEFINE_ALLOCATION_POOLS                                                               \
     RENGINE_NODE_DEFINE_SIGNALS                                                                        \
     RENGINE_LAYOUTNODE_DEFINE_SIGNALS                                                                  \

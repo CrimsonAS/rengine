@@ -26,9 +26,7 @@
 #include "rengine.h"
 #include "examples.h"
 
-RENGINE_NODE_DEFINE_ALLOCATION_POOLS;
-RENGINE_NODE_DEFINE_SIGNALS
-RENGINE_BACKEND_DEFINE
+RENGINE_DEFINE_GLOBALS
 
 static int nodeCount = 1000;
 

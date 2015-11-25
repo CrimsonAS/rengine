@@ -87,7 +87,29 @@ void tst_signal_basic()
     cout << __PRETTY_FUNCTION__ << ": ok" << endl;
 }
 
+class OnSignalIncrement : public SignalHandler<>
+{
+public:
+    void onSignal() { value++; }
+    int value = 0;
+};
+
+void tst_signal_onDestruction()
+{
+    Node *node = Node::create();
+
+    OnSignalIncrement increment;
+    SignalEmitter::onDestruction.connect(node, &increment);
+
+    check_equal(increment.value, 0);
+    node->destroy();
+    check_equal(increment.value, 1);
+
+    cout << __PRETTY_FUNCTION__ << ": ok" << endl;
+}
+
 int main(int argc, char **argv)
 {
     tst_signal_basic();
+    tst_signal_onDestruction();
 }
