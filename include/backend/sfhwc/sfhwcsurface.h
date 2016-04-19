@@ -120,7 +120,7 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const
 	, m_vsyncDelta(0)
 	, m_size(size)
 {
-    setBufferCount(2);
+    setBufferCount(3);
 	setSurfaceToInterface(iface);
 	initHwc();
 	initEgl();
@@ -185,8 +185,11 @@ void SfHwcSurface::initHwc()
     m_hwcList->numHwLayers = 2;
 
     sfhwc_initialize_layer(&m_hwcList->hwLayers[0], HWC_FRAMEBUFFER, 0, 0, m_size.x, m_size.y);
+    m_hwcList->hwLayers[0].planeAlpha = 1;
+
     sfhwc_initialize_layer(&m_hwcList->hwLayers[1], HWC_FRAMEBUFFER_TARGET, 0, 0, m_size.x, m_size.y);
     sfhwc_dump_display_contents(m_hwcList);
+
 }
 
 void SfHwcSurface::initEgl()
@@ -242,24 +245,24 @@ void SfHwcSurface::initEgl()
 
 void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	// logw << "buffer=" << (void *) buffer << std::endl;
+	logw << "buffer=" << (void *) buffer << std::endl;
 
     int status = 0; (void) status;
 
     static SfHwcBuffer *staticBuffer = 0;
     if (!staticBuffer) {
         staticBuffer = new SfHwcBuffer(m_backend, 720, 1280);
-        // staticBuffer->lock();
-        // staticBuffer->fillWithCrap();
-        // staticBuffer->unlock();
+        staticBuffer->lock();
+        staticBuffer->fillWithCrap();
+        staticBuffer->unlock();
     }
 
     static SfHwcBuffer *staticBuffer2 = 0;
     if (!staticBuffer2) {
         staticBuffer2 = new SfHwcBuffer(m_backend, 720, 1280);
-        // staticBuffer2->lock();
-        // staticBuffer2->fillWithCrap();
-        // staticBuffer2->unlock();
+        staticBuffer2->lock();
+        staticBuffer2->fillWithCrap();
+        staticBuffer2->unlock();
     }
 
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
@@ -286,25 +289,25 @@ void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 #endif
 
 	hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
-	fb->handle = buffer->handle;
-	fb->acquireFenceFd = fd;
+	fb->handle = staticBuffer->handle();
+	fb->acquireFenceFd = -1;
 	fb->releaseFenceFd = -1;
     fb->blending = 1;
 
     static int counter = 0;
-    // counter = counter == 1 ? 0 : 1;
+    counter = counter == 1 ? 0 : 1;
 
 	hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
-	fbt->handle = counter == 0 ? staticBuffer->handle() : staticBuffer2->handle();
-	fbt->acquireFenceFd = -1;
+	fbt->handle = buffer->handle;
+	fbt->acquireFenceFd = fd;
 	fbt->releaseFenceFd = -1;
 
-    // sfhwc_dump_display_contents(m_hwcList);
+    sfhwc_dump_display_contents(m_hwcList);
     // sfhwc_dump_hwc_device(hwc);
 
 	status = hwc->prepare(hwc, 1, &m_hwcList);
 	assert(status == 0);
-    // sfhwc_dump_display_contents(m_hwcList);
+    sfhwc_dump_display_contents(m_hwcList);
     // sfhwc_dump_hwc_device(hwc);
 
     // auto start = std::chrono::steady_clock::now();
