@@ -155,6 +155,10 @@ SfHwcBackend::SfHwcBackend()
     vsync = sfhwc_hooks_vsync;
     hotplug = sfhwc_hooks_hotplug;
     hwcDevice->registerProcs(hwcDevice, this);
+
+    pointerState.down = false;
+    touchDevice = new SfHwcTouchDevice();
+    touchDevice->initialize("/dev/touchscreen");
 }
 
 void SfHwcBackend::run()
@@ -164,8 +168,43 @@ void SfHwcBackend::run()
          << "; surface=" << surface
          << "; iface=" << (surface ? surface->m_iface : nullptr)
          << std::endl;
-    while (m_running && surface && surface->m_iface)
+    while (m_running && surface && surface->m_iface) {
         surface->m_iface->onRender();
+        updateTouch();
+    }
+}
+
+void SfHwcBackend::updateTouch()
+{
+    touchDevice->lock();
+    Event::Type type = Event::Invalid;
+    const SfHwcTouchDevice::State &s = touchDevice->state();
+    if (s.count) {
+        for (int i=0; i<RENGINE_MAX_TOUCH_POINTS; ++i) {
+            if (s.contacts[i].id >= 0) {
+                const SfHwcTouchDevice::Contact &c = s.contacts[i];
+                vec2 pos = vec2(c.x, c.y);
+                if (!pointerState.down) {
+                    type = Event::PointerDown;
+                    pointerState.down = true;
+                }
+                else if (pos != pointerState.pos)
+                    type = Event::PointerMove;
+                pointerState.pos = pos;
+                break;
+            }
+        }
+    } else if (pointerState.down) {
+        type = Event::PointerUp;
+        pointerState.down = false;
+    }
+    touchDevice->unlock();
+
+    if (type != Event::Invalid) {
+        PointerEvent pe(type);
+        pe.initialize(pointerState.pos);
+        surface->m_iface->onEvent(&pe);
+    }
 }
 
 

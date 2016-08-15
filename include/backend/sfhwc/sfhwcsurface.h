@@ -245,7 +245,7 @@ void SfHwcSurface::initEgl()
 
 void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	logw << "buffer=" << (void *) buffer << std::endl;
+	// logw << "buffer=" << (void *) buffer << std::endl;
 
     int status = 0; (void) status;
 
@@ -302,12 +302,12 @@ void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 	fbt->acquireFenceFd = fd;
 	fbt->releaseFenceFd = -1;
 
-    sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_display_contents(m_hwcList);
     // sfhwc_dump_hwc_device(hwc);
 
 	status = hwc->prepare(hwc, 1, &m_hwcList);
 	assert(status == 0);
-    sfhwc_dump_display_contents(m_hwcList);
+    // sfhwc_dump_display_contents(m_hwcList);
     // sfhwc_dump_hwc_device(hwc);
 
     // auto start = std::chrono::steady_clock::now();
@@ -348,7 +348,7 @@ void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
         // logw << " - closed retire fence fd.." << std::endl;
 	}
 
-    logd << " -> frame on screen" << std::endl;
+    // logd << " -> frame on screen" << std::endl;
 }
 
 RENGINE_END_NAMESPACE

@@ -31,6 +31,7 @@ class Event
 {
 public:
 	enum Type {
+        Invalid,
         PointerDown,
 		PointerUp,
         PointerMove

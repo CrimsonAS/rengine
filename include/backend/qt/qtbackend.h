@@ -107,6 +107,10 @@ public:
         setSurfaceToInterface(iface);
         logi << "QtBackend::Surface created with interface=" << iface << std::endl;
         QSurfaceFormat format;
+        format.setRedBufferSize(8);
+        format.setBlueBufferSize(8);
+        format.setGreenBufferSize(8);
+        format.setAlphaBufferSize(8);
         // format.setSamples(4); // ### TODO: make this settable a bit more conveniently...
 
         window.setFormat(format);

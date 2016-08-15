@@ -31,11 +31,18 @@
 
 #include "hwcomposer_window.h"
 
+#include <thread>
+#include <mutex>
+
+struct input_event;
+struct mtdev;
+
 RENGINE_BEGIN_NAMESPACE
 
 class SfHwcSurface;
 class SfHwcBackend;
 class SfHwcBuffer;
+class SfHwcTouchDevice;
 
 class SfHwcSurface : public Surface, public HWComposerNativeWindow
 {
@@ -76,6 +83,8 @@ public:
     void quit() override;
     void run() override;
 
+    void updateTouch();
+
     Surface *createSurface(SurfaceInterface *) override;
 
     Renderer *createRenderer(Surface *surface) override {
@@ -93,6 +102,12 @@ public:
     alloc_device_t *allocDevice = 0;
 	hw_module_t *hwcModule = 0;
 	hwc_composer_device_1_t *hwcDevice = 0;
+
+    SfHwcTouchDevice *touchDevice;
+    struct PointerState {
+        vec2 pos;
+        bool down;
+    } pointerState;
 
     bool m_running = true;
 };
@@ -134,6 +149,74 @@ private:
     int m_height;
 };
 
+#ifndef RENGINE_MAX_TOUCH_POINTS
+#define RENGINE_MAX_TOUCH_POINTS 10
+#endif
+
+class SfHwcTouchDevice
+{
+public:
+    SfHwcTouchDevice();
+    ~SfHwcTouchDevice() { close(); }
+
+    bool initialize(const char *device);
+    void close();
+
+    int minX() const { return m_minX; }
+    int maxX() const { return m_maxX; }
+    int minY() const { return m_minY; }
+    int maxY() const { return m_maxY; }
+    int minPressure() const { return m_minPressure; }
+    int maxPressure() const { return m_maxPressure; }
+
+    const std::string &name() const { return m_name; }
+
+    int fd() const { return m_fd; }
+
+    void run();
+
+    struct Contact
+    {
+        int x;
+        int y;
+        int id;
+    };
+
+    struct State
+    {
+        Contact contacts[RENGINE_MAX_TOUCH_POINTS];
+        int count;
+    };
+
+    void lock();
+    void unlock();
+
+    const State &state() const { return m_state; }
+
+private:
+    void readEvent(const input_event &e);
+
+    mtdev *m_dev = 0;
+    int m_fd = -1;
+
+    int m_minX = -1;
+    int m_maxX = -1;
+    int m_minY = -1;
+    int m_maxY = -1;
+    int m_minPressure = -1;
+    int m_maxPressure = -1;
+
+    int m_slot = 0;
+    State m_pending;
+    State m_state;
+
+    std::thread m_thread;
+    std::mutex m_mutex;
+
+    std::string m_name;
+};
+
+
 #define RENGINE_BACKEND_DEFINE                               \
     Backend *Backend::get() {                          		 \
         static SfHwcBackend *singleton = new SfHwcBackend(); \
@@ -146,4 +229,5 @@ RENGINE_END_NAMESPACE
 #include "sfhwcsurface.h"
 #include "sfhwcbackend.h"
 #include "sfhwcbuffer.h"
+#include "sfhwctouchdevice.h"
 

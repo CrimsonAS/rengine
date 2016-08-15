@@ -67,7 +67,7 @@ if (RENGINE_USE_SDL)
     add_definitions(-DRENGINE_BACKEND_SDL)
 
 elseif(RENGINE_USE_SFHWC)
-    message("-- SFHWC backedn")
+    message("-- SFHWC backend")
     add_definitions(-DRENGINE_BACKEND_SFHWC)
     include_directories(# android headers
                         /usr/lib/droid-devel/droid-headers
@@ -80,7 +80,9 @@ elseif(RENGINE_USE_SFHWC)
         -lhybris-eglplatformcommon
         -lhybris-hwcomposerwindow
         -lsync
-        -lEGL)
+        -lEGL
+        -lpthread
+        -lmtdev)
 
 else()
     message("-- Qt backend")
