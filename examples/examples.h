@@ -95,7 +95,11 @@ inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
         data = stbi_load(location, &w, &h, &n, 4);
     }
     if (!data) {
-        cout << "Failed to find the image 'walker.png' under 'examples/images' or '../examples/images'. "
+        sprintf(location, "%s", file);
+        data = stbi_load(location, &w, &h, &n, 4);
+    }
+    if (!data) {
+        cout << "Failed to find the image '" << file << "' under '.' << 'examples/images' or '../examples/images'."
              << "We're a bit dumb, you see, and can't find images unless you've built directly in the "
              << "source directory or in a direct subdirectory, like 'build' or 'debug'..." << endl;
         exit(1);
