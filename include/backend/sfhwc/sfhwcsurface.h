@@ -113,6 +113,7 @@ inline void sfhwc_initialize_layer(hwc_layer_1_t *l, unsigned compositionType, i
     l->planeAlpha = 0xff;
 }
 
+
 SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const vec2 &size)
 	: HWComposerNativeWindow(size.x, size.y, HAL_PIXEL_FORMAT_RGBA_8888)
 	, m_iface(iface)
@@ -130,8 +131,9 @@ void SfHwcSurface::hide()
 {
 	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
-	hwc->setPowerMode(hwc, 0, HWC_POWER_MODE_OFF);
-	// hwc->blank(hwc, 0, 0);
+    hwc->eventControl(hwc, 0, HWC_EVENT_VSYNC, 0);
+    hwc->setPowerMode(hwc, 0, HWC_POWER_MODE_OFF);
+	// hwc->blank(hwc, 0, 1);
 }
 
 void SfHwcSurface::show()
@@ -139,6 +141,7 @@ void SfHwcSurface::show()
 	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 	hwc->setPowerMode(hwc, 0, HWC_POWER_MODE_NORMAL);
+    hwc->eventControl(hwc, 0, HWC_EVENT_VSYNC, 1);
 	// hwc->blank(hwc, 0, 0);
 }
 
@@ -312,7 +315,12 @@ void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 
     // auto start = std::chrono::steady_clock::now();
 
+    // logi << " --> calling set" << std::endl;
+
 	status = hwc->set(hwc, 1, &m_hwcList);
+
+    // logi << " <-- set completed" << std::endl;
+
 	assert(status == 0);
     // sfhwc_dump_hwc_device(hwc);
 

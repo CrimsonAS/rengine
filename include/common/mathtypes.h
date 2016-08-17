@@ -75,6 +75,7 @@ struct vec2 {
         return o.x == x && o.y == y;
     }
     bool operator!=(const vec2 &o) const { return !(*this == o); }
+    vec2 operator*(float f) const { return vec2(x*f, y*f); }
 
     float x;
     float y;

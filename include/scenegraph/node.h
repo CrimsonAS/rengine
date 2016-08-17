@@ -528,6 +528,7 @@ public:
         onYChanged.emit(this);
     }
 
+    vec2 position() const { return m_geometry.position(); }
     void setPosition(const vec2 &position) {
         setX(position.x);
         setY(position.y);

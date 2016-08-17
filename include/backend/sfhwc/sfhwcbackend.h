@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <sys/time.h>
+
 RENGINE_BEGIN_NAMESPACE
 
 void SfHwcBackend::quit()
@@ -93,7 +95,7 @@ inline void sfhwc_hooks_invalidate(const hwc_procs_t *procs) {
 }
 
 inline void sfhwc_hooks_vsync(const hwc_procs_t *procs, int display, int64_t timestamp) {
-    static_cast<const SfHwcBackend *>(procs)->cb_vsync(display, timestamp);
+    const_cast<SfHwcBackend *>(static_cast<const SfHwcBackend *>(procs))->cb_vsync(display, timestamp);
 }
 
 inline void sfhwc_hooks_hotplug(const hwc_procs_t *procs, int display, int connected) {
@@ -168,10 +170,54 @@ void SfHwcBackend::run()
          << "; surface=" << surface
          << "; iface=" << (surface ? surface->m_iface : nullptr)
          << std::endl;
+
+    timeval halfAFrame;
+    halfAFrame.tv_sec = 0;
+    halfAFrame.tv_usec = 8 * 1000;
+
     while (m_running && surface && surface->m_iface) {
         surface->m_iface->onRender();
+
         updateTouch();
+
+        // Upon reaching end of a frame, enter dormancy for a while..
+        select(0, 0, 0, 0, &halfAFrame);
     }
+}
+
+void SfHwcBackend::cb_vsync(int display, int64_t)
+{
+    // logi << "hit vsync.." << std::endl;
+    timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    m_vsyncMutex.lock();
+    m_vsyncTime = t.tv_sec + t.tv_nsec / 1000000000.0;
+    m_vsyncMutex.unlock();
+}
+
+inline vec2 sfhwcbackend_predictTouchPoint(const SfHwcTouchDevice::Contact &c, double lastVsync)
+{
+    vec2 curContact(c.x, c.y);
+    vec2 lastContact(c.lx, c.ly);
+
+    double nowTime = lastVsync + 0.5/60.0;
+    double curTime = c.t.tv_sec + c.t.tv_usec / 1000000.0;
+    double lastTime = c.lt.tv_sec + c.lt.tv_usec / 1000000.0;
+    // double nowTime += 0.01666 - fmod(nowTime, 0.01666);
+
+    vec2 velocity = (curContact - lastContact) / (curTime - lastTime);
+
+    vec2 predPoint = velocity * (nowTime - curTime) + curContact;
+
+    vec2 d = predPoint - curContact;
+    printf("touch times: now=%f, c.t=%f, c.lt=%f, velocity=%f,%f -- dt=%f, delta=(%6.2f,%6.2f)\n",
+           nowTime, curTime, lastTime, velocity.x, velocity.y,
+           nowTime - curTime,
+           d.x, d.y);
+
+    // printf(" - compensation: %f, dy=%f, dt=%f\n", sqrt(d.x * d.x + d.y * d.y), d.y, nowTime - curTime);
+
+    return predPoint;
 }
 
 void SfHwcBackend::updateTouch()
@@ -187,10 +233,20 @@ void SfHwcBackend::updateTouch()
                 if (!pointerState.down) {
                     type = Event::PointerDown;
                     pointerState.down = true;
+                    pointerState.contactPos = pointerState.pos = pos;
                 }
-                else if (pos != pointerState.pos)
+                else if (pos != pointerState.contactPos) {
                     type = Event::PointerMove;
-                pointerState.pos = pos;
+                    pointerState.contactPos = pos;
+                    m_vsyncMutex.lock();
+                    if (m_vsyncTime == m_lastVsyncTime) {
+                        logi << "compensating for out-of-sync event...";
+                        m_vsyncTime += 1.0 / 60;
+                    }
+                    m_lastVsyncTime = m_vsyncTime;
+                    pointerState.pos = sfhwcbackend_predictTouchPoint(c, m_vsyncTime);
+                    m_vsyncMutex.unlock();
+                }
                 break;
             }
         }

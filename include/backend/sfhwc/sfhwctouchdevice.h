@@ -109,12 +109,27 @@ inline SfHwcTouchDevice::SfHwcTouchDevice()
 
 inline void SfHwcTouchDevice::readEvent(const input_event &e)
 {
+    // double t = e.time.tv_sec * 1000 + e.time.tv_usec / 1000.0;
+    // static double lastTime;
+    // printf("event: %10.2f, delta=%.2f, (%x, %x)\n", t, lastTime - t, e.type, e.code);
+    // lastTime = t;
+
     if (e.type == EV_SYN) {
         // printf("        -- got EV_SYN\n");
         if (e.code == SYN_REPORT) {
+            // After we've created a new 'committed' state.
+            for (int i=0; i<RENGINE_MAX_TOUCH_POINTS; ++i) {
+                Contact &c = m_pending.contacts[i];
+                if (c.lid != c.id) {
+                    c.lid = c.id;
+                    c.lx = c.x;
+                    c.ly = c.y;
+                }
+            }
+            // Commit the pending state into current state.
             memcpy(&m_state, &m_pending, sizeof(State));
-            // m_state.contacts[m_slot] = m_pending.contacts[m_slot];
-            // m_state.count = m_pending.count;
+
+
         }
     } else if (e.type == EV_ABS) {
         // printf("        -- got EV_ABS\n");
@@ -122,20 +137,32 @@ inline void SfHwcTouchDevice::readEvent(const input_event &e)
             m_slot = e.value;
             // printf("        --- slot is: %d\n", m_slot);
         } else if (m_slot >= 0 && m_slot < RENGINE_MAX_TOUCH_POINTS) {
+            Contact &c = m_pending.contacts[m_slot];
             if (e.code == ABS_MT_POSITION_X) {
                 // printf("        --- x is: %d\n", e.value);
-                m_pending.contacts[m_slot].x = e.value;
+                c.lx = c.x;
+                c.x = e.value;
             } else if (e.code == ABS_MT_POSITION_Y) {
                 // printf("        --- y is: %d\n", e.value);
-                m_pending.contacts[m_slot].y = e.value;
+                c.ly = c.y;
+                c.y = e.value;
             } else if (e.code == ABS_MT_TRACKING_ID) {
                 // printf("        --- id is: %d\n", e.value);
-                m_pending.contacts[m_slot].id = e.value;
-
+                c.lid = c.id;
+                c.id = e.value;
                 if (e.value >= 0)
                     ++m_pending.count;
                 else
                     --m_pending.count;
+            }
+
+            // Update the timestamp
+            if (e.time.tv_sec != c.t.tv_sec || e.time.tv_usec != c.t.tv_usec) {
+                c.lt = c.t;
+                c.t = e.time;
+                // printf(" --> updated event times: c.t=%d.%06d, c.lt=%d.%06d\n",
+                //        (int) c.t.tv_sec, (int) c.t.tv_usec,
+                //        (int) c.lt.tv_sec, (int) c.lt.tv_usec);
             }
         }
     }

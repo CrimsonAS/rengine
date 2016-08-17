@@ -94,7 +94,7 @@ public:
     }
 
     void cb_invalidate() const { logw << std::endl; }
-    void cb_vsync(int display, int64_t timestamp) const { logw << "display=" << display << ", timestamp=" << timestamp << std::endl; }
+    void cb_vsync(int display, int64_t timestamp);
     void cb_hotplug(int display, int connected) const { logw << "display=" << display << ", connected=" << connected << std::endl; }
 
     SfHwcSurface *surface = nullptr;
@@ -105,9 +105,14 @@ public:
 
     SfHwcTouchDevice *touchDevice;
     struct PointerState {
+        vec2 contactPos;
         vec2 pos;
         bool down;
     } pointerState;
+
+    std::mutex m_vsyncMutex;
+    double m_vsyncTime = 0.0;
+    double m_lastVsyncTime = 0.0;
 
     bool m_running = true;
 };
@@ -177,9 +182,16 @@ public:
 
     struct Contact
     {
+        int id;
         int x;
         int y;
-        int id;
+        timeval t;
+
+    // Previous
+        int lid;
+        int lx;
+        int ly;
+        timeval lt;
     };
 
     struct State

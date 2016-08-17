@@ -445,6 +445,8 @@ public:
         time_point now = m_nextTick;
         m_nextTick += std::chrono::milliseconds(16);
 
+        // std::cout << "tick: time=" << std::chrono::duration_cast<std::chrono::milliseconds>(now - m_startTime).count() << std::endl;
+
         // Start pending animations if we've passed beyond its starting point.
         // ### TODO: these should probably be sorted so animations start in the right order
         auto si = m_scheduledAnimations.begin();
@@ -488,9 +490,19 @@ public:
         scheduleAnimation(0, animation);
     }
 
+    void stopAnimation(Animation *animation) {
+        for (auto it = m_runningAnimations.begin(); it != m_runningAnimations.end(); ++it) {
+            if (it->animation == animation) {
+                assert(animation->isRunning());
+                m_runningAnimations.erase(it);
+                break;
+            }
+        }
+    }
+
     void scheduleAnimation(double delay, Animation *animation) {
         TimedAnimation ta;
-        ta.when = clock::now() + std::chrono::milliseconds(int(delay * 1000));
+        ta.when = m_nextTick + std::chrono::milliseconds(int(delay * 1000));
         ta.animation = animation;
         m_scheduledAnimations.push_back(ta);
     }
