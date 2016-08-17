@@ -99,10 +99,18 @@ public:
             assert(n);
             assert(n == m_left || n == m_right || n == m_center);
             activate(static_cast<RectangleNode *>(n));
+            m_pointerPos = event->position();
             return true;
         } else if (m_currentReceiver && event->type() == Event::PointerUp) {
             deactivate();
             return true;
+        } else if (event->type() == Event::PointerMove) {
+            if (m_currentReceiver == m_left || m_currentReceiver == m_right) {
+                vec2 delta = event->position() - m_pointerPos;
+                m_pointerPos = event->position();
+                RectangleNode *rn = static_cast<RectangleNode *>(m_currentReceiver);
+                rn->setPosition(rn->position() + delta);
+            }
         }
         return false;
     }
@@ -112,6 +120,8 @@ private:
     RectangleNode *m_right = nullptr;
     RectangleNode *m_center = nullptr;
     RectangleNode *m_currentReceiver = nullptr;
+
+    vec2 m_pointerPos;
 };
 
 RENGINE_MAIN(TouchWindow);
