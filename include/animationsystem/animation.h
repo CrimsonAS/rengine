@@ -498,6 +498,12 @@ public:
                 break;
             }
         }
+        for (auto it = m_scheduledAnimations.begin(); it != m_scheduledAnimations.end(); ++it) {
+            if (it->animation == animation) {
+                m_scheduledAnimations.erase(it);
+                break;
+            }
+        }
     }
 
     void scheduleAnimation(double delay, Animation *animation) {
