@@ -121,7 +121,12 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const
 	, m_vsyncDelta(0)
 	, m_size(size)
 {
-    setBufferCount(3);
+    int bufferCount = 3;
+    char *overrideBufferCount = getenv("RENGINE_SURFACE_BUFFER_COUNT");
+    if (overrideBufferCount) {
+        bufferCount = std::max(1, std::min(atoi(overrideBufferCount), 10));
+    }
+    setBufferCount(bufferCount);
 	setSurfaceToInterface(iface);
 	initHwc();
 	initEgl();

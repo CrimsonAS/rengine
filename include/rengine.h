@@ -79,6 +79,7 @@ RENGINE_END_NAMESPACE
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
 #include "common/colormatrix.h"
+#include "common/kalmanfilter.h"
 
 #include "object/property.h"
 #include "object/signal.h"

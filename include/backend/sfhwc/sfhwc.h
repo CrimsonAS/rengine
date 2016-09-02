@@ -88,9 +88,9 @@ public:
     Surface *createSurface(SurfaceInterface *) override;
 
     Renderer *createRenderer(Surface *surface) override {
-    	OpenGLRenderer *renderer = new OpenGLRenderer();
-    	renderer->setTargetSurface(surface);
-    	return renderer;
+        OpenGLRenderer *renderer = new OpenGLRenderer();
+        renderer->setTargetSurface(surface);
+        return renderer;
     }
 
     void cb_invalidate() const { logw << std::endl; }
@@ -100,21 +100,29 @@ public:
     SfHwcSurface *surface = nullptr;
     gralloc_module_t *grallocModule = 0;
     alloc_device_t *allocDevice = 0;
-	hw_module_t *hwcModule = 0;
-	hwc_composer_device_1_t *hwcDevice = 0;
+    hw_module_t *hwcModule = 0;
+    hwc_composer_device_1_t *hwcDevice = 0;
 
     SfHwcTouchDevice *touchDevice;
     struct PointerState {
-        vec2 contactPos;
+        KalmanFilter1D x;
+        KalmanFilter1D y;
+        KalmanFilter1D vx;
+        KalmanFilter1D vy;
+        double timestamp;
         vec2 pos;
         bool down;
     } pointerState;
+
+    float m_touchPrediction = 0.0f;
 
     std::mutex m_vsyncMutex;
     double m_vsyncTime = 0.0;
     double m_lastVsyncTime = 0.0;
 
     bool m_running = true;
+
+    vec2 predictPointerState(vec2 pos, PointerState *pointerState);
 };
 
 class SfHwcBuffer
