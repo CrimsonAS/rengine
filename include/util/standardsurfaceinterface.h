@@ -160,7 +160,7 @@ inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, Poi
     if (node->isPointerTarget()) {
         RectangleNodeBase *rectNode = RectangleNodeBase::from(node);
         if (rectNode) {
-            const rect2d &area = rectNode->geometry();
+            rect2d area = rectNode->geometry();
             bool inv = false;
             mat4 nodeInvMatrix = TransformNode::matrixFor(node, m_renderer->sceneRoot()).inverted(&inv);
 

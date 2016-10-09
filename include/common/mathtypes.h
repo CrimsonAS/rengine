@@ -51,17 +51,17 @@ struct vec2 {
     vec2(float x, float y) : x(x), y(y) { }
     vec2(float v = 0.0f) : x(v), y(v) { }
 
-    vec2 operator*(const vec2 &v) const { return vec2(x*v.x, y*v.y); }
-    vec2 operator/(const vec2 &v) const { return vec2(x/v.x, y/v.y); }
-    vec2 operator+(const vec2 &o) const { return vec2(x+o.x, y+o.y); }
-    vec2 operator-(const vec2 &o) const { return vec2(x-o.x, y-o.y); }
+    vec2 operator*(vec2 v) const { return vec2(x*v.x, y*v.y); }
+    vec2 operator/(vec2 v) const { return vec2(x/v.x, y/v.y); }
+    vec2 operator+(vec2 o) const { return vec2(x+o.x, y+o.y); }
+    vec2 operator-(vec2 o) const { return vec2(x-o.x, y-o.y); }
     vec2 operator-() const { return vec2(-x, -y); }
-    vec2 &operator+=(const vec2 &o) {
+    vec2 &operator+=(vec2 o) {
         x += o.x;
         y += o.y;
         return *this;
     }
-    vec2 &operator-=(const vec2 &o) {
+    vec2 &operator-=(vec2 o) {
         x -= o.x;
         y -= o.y;
         return *this;
@@ -71,10 +71,10 @@ struct vec2 {
         y = v;
         return *this;
     }
-    bool operator==(const vec2 &o) const {
+    bool operator==(vec2 o) const {
         return o.x == x && o.y == y;
     }
-    bool operator!=(const vec2 &o) const { return !(*this == o); }
+    bool operator!=(vec2 o) const { return !(*this == o); }
     vec2 operator*(float f) const { return vec2(x*f, y*f); }
 
     float x;
@@ -85,25 +85,25 @@ struct vec3 {
 
     vec3(float x, float y, float z = 0) : x(x), y(y), z(z) { }
     vec3(float v = 0.0f) : x(v), y(v), z(v) { }
-    vec3(const vec2 &v, float z = 0) : x(v.x), y(v.y), z(z) { }
+    vec3(vec2 v, float z = 0) : x(v.x), y(v.y), z(z) { }
 
     vec2 project2D(float farPlane) const {
         float zScale = (farPlane - z) / farPlane;
         return vec2(x / zScale, y / zScale);
     }
 
-    vec3 operator*(const vec3 &v) const { return vec3(x*v.x, y*v.y, z*v.z); }
-    vec3 operator/(const vec3 &v) const { return vec3(x/v.x, y/v.y, z/v.z); }
-    vec3 operator+(const vec3 &o) const { return vec3(x+o.x, y+o.y, z+o.z); }
-    vec3 operator-(const vec3 &o) const { return vec3(x-o.x, y-o.y, z+o.z); }
+    vec3 operator*(vec3 v) const { return vec3(x*v.x, y*v.y, z*v.z); }
+    vec3 operator/(vec3 v) const { return vec3(x/v.x, y/v.y, z/v.z); }
+    vec3 operator+(vec3 o) const { return vec3(x+o.x, y+o.y, z+o.z); }
+    vec3 operator-(vec3 o) const { return vec3(x-o.x, y-o.y, z+o.z); }
     vec3 operator-() const { return vec3(-x, -y, -z); }
-    vec3 &operator+=(const vec3 &o) {
+    vec3 &operator+=(vec3 o) {
         x += o.x;
         y += o.y;
         z += o.z;
         return *this;
     }
-    vec3 &operator-=(const vec3 &o) {
+    vec3 &operator-=(vec3 o) {
         x -= o.x;
         y -= o.y;
         z -= o.z;
@@ -115,7 +115,7 @@ struct vec3 {
         z = v;
         return *this;
     }
-    bool operator==(const vec3 &o) const {
+    bool operator==(vec3 o) const {
         return o.x == x && o.y == y && o.z == z;
     }
 
@@ -128,22 +128,22 @@ struct vec4 {
 
     vec4(float x, float y, float z=0, float w=0) : x(x), y(y), z(z), w(w) { }
     vec4(float v = 0.0f) : x(v), y(v), z(v), w(v) { }
-    vec4(const vec2 &v, float z = 0, float w = 0) : x(v.x), y(v.y), z(z), w(w) { }
-    vec4(const vec3 &v, float w = 0) : x(v.x), y(v.y), z(v.z), w(w) { }
+    vec4(vec2 v, float z = 0, float w = 0) : x(v.x), y(v.y), z(z), w(w) { }
+    vec4(vec3 v, float w = 0) : x(v.x), y(v.y), z(v.z), w(w) { }
 
-    vec4 operator*(const vec4 &v) const { return vec4(x*v.x, y*v.y, z*v.z, w*v.w); }
-    vec4 operator/(const vec4 &v) const { return vec4(x/v.x, y/v.y, z/v.z, w/v.w); }
-    vec4 operator+(const vec4 &o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
-    vec4 operator-(const vec4 &o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
+    vec4 operator*(vec4 v) const { return vec4(x*v.x, y*v.y, z*v.z, w*v.w); }
+    vec4 operator/(vec4 v) const { return vec4(x/v.x, y/v.y, z/v.z, w/v.w); }
+    vec4 operator+(vec4 o) const { return vec4(x+o.x, y+o.y, z+o.z, w+o.w); }
+    vec4 operator-(vec4 o) const { return vec4(x-o.x, y-o.y, z-o.z, w-o.w); }
     vec4 operator-() const { return vec4(-x, -y, -z, -w); }
-    vec4 &operator+=(const vec4 &o) {
+    vec4 &operator+=(vec4 o) {
         x += o.x;
         y += o.y;
         z += o.z;
         w += o.w;
         return *this;
     }
-    vec4 &operator-=(const vec4 &o) {
+    vec4 &operator-=(vec4 o) {
         x -= o.x;
         y -= o.y;
         z -= o.z;
@@ -157,7 +157,7 @@ struct vec4 {
         w = v;
         return *this;
     }
-    bool operator==(const vec4 &o) const {
+    bool operator==(vec4 o) const {
         return o.x == x && o.y == y && o.z == z && o.w == w;
     }
 
@@ -168,25 +168,25 @@ struct vec4 {
 };
 
 
-inline vec2 floor(const vec2 &v) { return vec2(std::floor(v.x), std::floor(v.y)); }
-inline vec3 floor(const vec3 &v) { return vec3(std::floor(v.x), std::floor(v.y), std::floor(v.z)); }
-inline vec4 floor(const vec4 &v) { return vec4(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)); }
+inline vec2 floor(vec2 v) { return vec2(std::floor(v.x), std::floor(v.y)); }
+inline vec3 floor(vec3 v) { return vec3(std::floor(v.x), std::floor(v.y), std::floor(v.z)); }
+inline vec4 floor(vec4 v) { return vec4(std::floor(v.x), std::floor(v.y), std::floor(v.z), std::floor(v.w)); }
 
-inline vec2 ceil(const vec2 &v) { return vec2(std::ceil(v.x), std::ceil(v.y)); }
-inline vec3 ceil(const vec3 &v) { return vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
-inline vec4 ceil(const vec4 &v) { return vec4(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w)); }
+inline vec2 ceil(vec2 v) { return vec2(std::ceil(v.x), std::ceil(v.y)); }
+inline vec3 ceil(vec3 v) { return vec3(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z)); }
+inline vec4 ceil(vec4 v) { return vec4(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z), std::ceil(v.w)); }
 
-inline vec2 round(const vec2 &v) { return vec2(std::round(v.x), std::round(v.y)); }
-inline vec3 round(const vec3 &v) { return vec3(std::round(v.x), std::round(v.y), std::round(v.z)); }
-inline vec4 round(const vec4 &v) { return vec4(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w)); }
+inline vec2 round(vec2 v) { return vec2(std::round(v.x), std::round(v.y)); }
+inline vec3 round(vec3 v) { return vec3(std::round(v.x), std::round(v.y), std::round(v.z)); }
+inline vec4 round(vec4 v) { return vec4(std::round(v.x), std::round(v.y), std::round(v.z), std::round(v.w)); }
 
-inline vec2 min(const vec2 &a, const vec2 &b) { return vec2(std::min(a.x, b.x), std::min(a.y, b.y)); }
-inline vec3 min(const vec3 &a, const vec3 &b) { return vec3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)); }
-inline vec4 min(const vec4 &a, const vec4 &b) { return vec4(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z), std::min(a.w, b.w)); }
+inline vec2 min(vec2 a, vec2 b) { return vec2(std::min(a.x, b.x), std::min(a.y, b.y)); }
+inline vec3 min(vec3 a, vec3 b) { return vec3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)); }
+inline vec4 min(vec4 a, vec4 b) { return vec4(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z), std::min(a.w, b.w)); }
 
-inline vec2 max(const vec2 &a, const vec2 &b) { return vec2(std::max(a.x, b.x), std::max(a.y, b.y)); }
-inline vec3 max(const vec3 &a, const vec3 &b) { return vec3(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)); }
-inline vec4 max(const vec4 &a, const vec4 &b) { return vec4(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z), std::max(a.w, b.w)); }
+inline vec2 max(vec2 a, vec2 b) { return vec2(std::max(a.x, b.x), std::max(a.y, b.y)); }
+inline vec3 max(vec3 a, vec3 b) { return vec3(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)); }
+inline vec4 max(vec4 a, vec4 b) { return vec4(std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z), std::max(a.w, b.w)); }
 
 
 struct mat4 {
@@ -221,7 +221,7 @@ struct mat4 {
     {
     }
 
-    bool operator==(const mat4 &o) const {
+    bool operator==(mat4 o) const {
         return    m[ 0] == o.m[ 0]
                && m[ 1] == o.m[ 1]
                && m[ 2] == o.m[ 2]
@@ -240,7 +240,7 @@ struct mat4 {
                && m[15] == o.m[15];
     }
 
-    mat4 operator*(const mat4 &o) const {
+    mat4 operator*(mat4 o) const {
 
         if (type == Translation2D && o.type == Translation2D) {
             return mat4(1, 0, 0, m[3]+o.m[3],
@@ -314,18 +314,18 @@ struct mat4 {
                     Type(type | o.type)) ;
     }
 
-    vec2 operator*(const vec2 &v) const {
+    vec2 operator*(vec2 v) const {
         return vec2(m[0] * v.x + m[1] * v.y + m[3],
                     m[4] * v.x + m[5] * v.y + m[7]);
     }
 
-    vec3 operator*(const vec3 &v) const {
+    vec3 operator*(vec3 v) const {
         return vec3(m[0] * v.x + m[1] * v.y + m[ 2] * v.z + m[ 3],
                     m[4] * v.x + m[5] * v.y + m[ 6] * v.z + m[ 7],
                     m[8] * v.x + m[9] * v.y + m[10] * v.z + m[11]);
     }
 
-    vec4 operator*(const vec4 &v) const {
+    vec4 operator*(vec4 v) const {
         return vec4(m[ 0] * v.x + m[ 1] * v.y + m[ 2] * v.z + m[ 3] * v.w,
                     m[ 4] * v.x + m[ 5] * v.y + m[ 6] * v.z + m[ 7] * v.w,
                     m[ 8] * v.x + m[ 9] * v.y + m[10] * v.z + m[11] * v.w,
@@ -463,7 +463,7 @@ struct mat4 {
                     0, 0, 0, 1, Translation2D);
     }
 
-    static mat4 translate2D(const vec2 &d) {
+    static mat4 translate2D(vec2 d) {
         return translate2D(d.x, d.y);
     }
 
@@ -475,7 +475,7 @@ struct mat4 {
                      0,  0,  0, 1, Scale2D);
     }
 
-    static mat4 scale2D(const vec2 &s) {
+    static mat4 scale2D(vec2 s) {
         return scale2D(s.x, s.y);
     }
 
@@ -535,12 +535,12 @@ struct mat4 {
 struct rect2d {
 public:
     rect2d() { }
-    rect2d(const vec2 &tl, const vec2 &br) : tl(tl), br(br) { }
+    rect2d(vec2 tl, vec2 br) : tl(tl), br(br) { }
     rect2d(float x1, float y1, float x2, float y2) : tl(x1, y1), br(x2, y2) { }
 
-    static rect2d fromPosSize(const vec2 &pos, const vec2 &size) { return rect2d(pos, pos + size); }
+    static rect2d fromPosSize(vec2 pos, vec2 size) { return rect2d(pos, pos + size); }
     static rect2d fromXywh(float x, float y, float w, float h) { return rect2d(x, y, x+w, y+h); }
-    static rect2d fromPosSizeCentered(const vec2 &pos, const vec2 &size) { return fromXywhCentered(pos.x, pos.y, size.x, size.y); }
+    static rect2d fromPosSizeCentered(vec2 pos, vec2 size) { return fromXywhCentered(pos.x, pos.y, size.x, size.y); }
     static rect2d fromXywhCentered(float cx, float cy, float w, float h) { return fromXywh(cx-w/2.0f, cy-h/2.0f, w, h); }
 
     float top() const { return tl.y; }
@@ -559,24 +559,24 @@ public:
     void setHeight(float h) { br.y = tl.y + h; }
 
     vec2 position() const { return tl; }
-    void setPosition(const vec2 &position) {
+    void setPosition(vec2 position) {
         br = position + vec2(width(), height());
         tl = position;
     }
 
     vec2 size() const { return vec2(width(), height()); }
-    void setSize(const vec2 &size) { br = tl + size; }
+    void setSize(vec2 size) { br = tl + size; }
 
     rect2d normalized() const { return rect2d(min(tl, br), max(tl, br)); }
 
-    rect2d operator|(const vec2 &p) const {
+    rect2d operator|(vec2 p) const {
         return rect2d(p.x < tl.x ? p.x : tl.x,
                       p.y < tl.y ? p.y : tl.y,
                       p.x > br.x ? p.x : br.x,
                       p.y > br.y ? p.y : br.y);
     }
 
-    rect2d &operator|=(const vec2 &p) {
+    rect2d &operator|=(vec2 p) {
         if (p.x < tl.x) tl.x = p.x;
         if (p.y < tl.y) tl.y = p.y;
         if (p.x > br.x) br.x = p.x;
@@ -584,19 +584,19 @@ public:
         return *this;
     }
 
-    rect2d &operator|=(const rect2d &r) {
+    rect2d &operator|=(rect2d r) {
         (*this) |= r.tl;
         (*this) |= r.br;
         return *this;
     }
 
-    rect2d operator|(const rect2d &r) {
+    rect2d operator|(rect2d r) {
         return (*this) | r.tl | r.br;
     }
 
-    bool operator==(const rect2d &o) const { return tl == o.tl && br == o.br; }
+    bool operator==(rect2d o) const { return tl == o.tl && br == o.br; }
 
-    bool contains(const vec2 &p) const {
+    bool contains(vec2 p) const {
         assert(tl.x < br.x);
         assert(tl.y < br.y);
         return p.x >= tl.x && p.x <= br.x
@@ -614,22 +614,22 @@ public:
     vec2 br;
 };
 
-inline std::ostream &operator<<(std::ostream &o, const vec2 &v) {
+inline std::ostream &operator<<(std::ostream &o, vec2 v) {
     o << "vec2(" << v.x << ", " << v.y << ")";
     return o;
 }
 
-inline std::ostream &operator<<(std::ostream &o, const vec3 &v) {
+inline std::ostream &operator<<(std::ostream &o, vec3 v) {
     o << "vec3(" << v.x << ", " << v.y << ", " << v.z << ")";
     return o;
 }
 
-inline std::ostream &operator<<(std::ostream &o, const vec4 &v) {
+inline std::ostream &operator<<(std::ostream &o, vec4 v) {
     o << "vec4(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
     return o;
 }
 
-inline std::ostream &operator<<(std::ostream &o, const mat4 &m) {
+inline std::ostream &operator<<(std::ostream &o, mat4 m) {
     o << "mat4(" << m.m[0];
     for (int i=1; i<16; ++i)
         o << ", " << m.m[i];
@@ -637,7 +637,7 @@ inline std::ostream &operator<<(std::ostream &o, const mat4 &m) {
     return o;
 }
 
-inline std::ostream &operator<<(std::ostream &o, const rect2d &r) {
+inline std::ostream &operator<<(std::ostream &o, rect2d r) {
     o << "rect2d(" << r.tl << ", " << r.br << ")";
     return o;
 }

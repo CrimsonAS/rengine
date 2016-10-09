@@ -43,24 +43,24 @@ RENGINE_BEGIN_NAMESPACE
 
 inline bool fuzzy_equals(float a, float b, float threshold = 0.0001f) { return abs(a - b) < threshold; }
 
-inline bool fuzzy_equals(const vec2 &a, const vec2 &b, float threshold = 0.0001f) {
+inline bool fuzzy_equals(vec2 a, vec2 b, float threshold = 0.0001f) {
     return fuzzy_equals(a.x, b.x, threshold)
            && fuzzy_equals(a.y, b.y, threshold);
 }
 
-inline bool fuzzy_equals(const vec3 &a, const vec3 &b, float threshold = 0.0001f) {
+inline bool fuzzy_equals(vec3 a, vec3 b, float threshold = 0.0001f) {
     return fuzzy_equals(a.x, b.x, threshold)
            && fuzzy_equals(a.y, b.y, threshold)
            && fuzzy_equals(a.z, b.z, threshold);
 }
-inline bool fuzzy_equals(const vec4 &a, const vec4 &b, float threshold = 0.0001f) {
+inline bool fuzzy_equals(vec4 a,  vec4 b, float threshold = 0.0001f) {
     return fuzzy_equals(a.x, b.x, threshold)
            && fuzzy_equals(a.y, b.y, threshold)
            && fuzzy_equals(a.z, b.z, threshold)
            && fuzzy_equals(a.w, b.w, threshold);
 }
 
-inline bool fuzzy_equals(const mat4 &a, const mat4 &b, float threshold = 0.01f) {
+inline bool fuzzy_equals(mat4 a, mat4 b, float threshold = 0.01f) {
     for (int i=0; i<16; ++i)
         if (!fuzzy_equals(a.m[i], b.m[i], threshold))
             return false;

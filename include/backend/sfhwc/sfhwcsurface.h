@@ -114,7 +114,7 @@ inline void sfhwc_initialize_layer(hwc_layer_1_t *l, unsigned compositionType, i
 }
 
 
-SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const vec2 &size)
+SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 size)
 	: HWComposerNativeWindow(size.x, size.y, HAL_PIXEL_FORMAT_RGBA_8888)
 	, m_iface(iface)
 	, m_backend(backend)

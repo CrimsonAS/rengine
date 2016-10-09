@@ -43,7 +43,7 @@ public:
         Creates a texture from image data which is compatible with this
         renderer. The image data is 32-bit RGBA or RGBx, tightly packed.
      */
-    virtual Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data) = 0;
+    virtual Texture *createTextureFromImageData(vec2 size, Texture::Format format, void *data) = 0;
 
     Node *sceneRoot() const { return m_sceneRoot; }
     void setSceneRoot(Node *root) { m_sceneRoot = root; }
@@ -80,14 +80,14 @@ public:
      */
     virtual void frameSwapped() { }
 
-    void setFillColor(const vec4 &c) { m_fillColor = c; }
-    const vec4 &fillColor() const { return m_fillColor; }
+    void setFillColor(vec4 c) { m_fillColor = c; }
+    vec4 fillColor() const { return m_fillColor; }
 
 #if 0
-    Texture *createTextureFromSubtree(Node *node, const rect2d &sourceRect);
+    Texture *createTextureFromSubtree(Node *node, rect2d sourceRect);
     Texture *createTextureWithBlurFromTexture(Texture *texture, int kernelRadius);
-    Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, const vec2 &offset, const vec4 &color);
-    Texture *createTextureWithColorFilterFromTexture(Texture *texture, const mat4 &colorMatrix);
+    Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, vec2 offset,  color);
+    Texture *createTextureWithColorFilterFromTexture(Texture *texture, mat4 colorMatrix);
 protected:
 
     /*!
@@ -101,7 +101,7 @@ protected:
 
         This function shall never be called during rendering.
      */
-    virtual void openRenderTarget(const vec2 &size) = 0;
+    virtual void openRenderTarget(vec2 size) = 0;
 
     /*!
         Closes the current render target and returns a texture representing it.
@@ -118,7 +118,7 @@ private:
 };
 
 #if 0
-inline Texture *Renderer::createTextureFromSubtree(Node *node, const rect2d &sourceRect)
+inline Texture *Renderer::createTextureFromSubtree(Node *node, rect2d sourceRect)
 {
     assert(node);
     assert(!node->parent());
@@ -151,14 +151,14 @@ inline Texture *createTextureWithBlurFromTexture(Texture *texture, int kernelRad
 
     TextureNode textureNode;
     textureNode.setTexture(texture);
-    textureNode.setGeometry(rect2d::fromPosSize(vec2(kernelRadius, kernelRadius), texture->size()))
+    textureNode.setGeometry(rect2d::fromPosSize(vec2 (kernelRadius, kernelRadius), texture->size()))
 
     blurNode.append(&textureNode);
 
     return createTextureFromSubtree(&blurNode, rect2d(vec2(0, 0), texture->size() + kernelRadius * 2));
 }
 
-inline Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, const vec2 &offset, const vec4 &color)
+inline Texture *createTextureWithShadowFromTexture(Texture *texture, int kernelRadius, vec2 offset,  color)
 {
     assert(kernelRadius > 0);
     assert(texture);

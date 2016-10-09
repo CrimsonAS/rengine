@@ -91,7 +91,7 @@ public:
         Reimplement this function to get notified when the surface's
         size has changed.
      */
-    virtual void onSizeChange(const vec2 &size) { }
+    virtual void onSizeChange(vec2 size) { }
 
     Surface *surface() { return m_surface; }
     const Surface *surface() const { return m_surface; }

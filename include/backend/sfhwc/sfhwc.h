@@ -47,7 +47,7 @@ class SfHwcTouchDevice;
 class SfHwcSurface : public Surface, public HWComposerNativeWindow
 {
 public:
-	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, const vec2 &size);
+	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 size);
 
     void initHwc();
 	void initEgl();

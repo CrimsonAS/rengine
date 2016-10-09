@@ -361,15 +361,15 @@ protected:
 class TransformNode : public Node
 {
 public:
-    const mat4 &matrix() const { return m_matrix; }
-    void setMatrix(const mat4 &m) { m_matrix = m; }
+    mat4 matrix() const { return m_matrix; }
+    void setMatrix(mat4 m) { m_matrix = m; }
 
     float projectionDepth() const { return m_projectionDepth; }
     void setProjectionDepth(float d) { m_projectionDepth = d; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(TransformNode, rengine_TransformNode);
 
-    static TransformNode *create(const mat4 &matrix, float projectionDepth = 0) {
+    static TransformNode *create(mat4 matrix, float projectionDepth = 0) {
         auto node = create();
         node->setMatrix(matrix);
         node->setProjectionDepth(projectionDepth);
@@ -529,7 +529,7 @@ public:
     }
 
     vec2 position() const { return m_geometry.position(); }
-    void setPosition(const vec2 &position) {
+    void setPosition(vec2 position) {
         setX(position.x);
         setY(position.y);
     }
@@ -554,8 +554,8 @@ public:
         onHeightChanged.emit(this);
     }
 
-    const rect2d &geometry() const { return m_geometry; }
-    void setGeometry(const rect2d &rect) {
+    rect2d geometry() const { return m_geometry; }
+    void setGeometry(rect2d rect) {
         bool updateX = rect.x() != m_geometry.x();
         bool updateY = rect.y() != m_geometry.y();
         bool updateW = rect.width() != m_geometry.width();
@@ -597,8 +597,8 @@ public:
 
     static Signal<> onColorChanged;
 
-    const vec4 &color() const { return m_color; }
-    void setColor(const vec4 &color) {
+    vec4 color() const { return m_color; }
+    void setColor(vec4 color) {
         vec4 c = color;
         c.x = std::max(std::min(c.x, 1.0f), 0.0f);
         c.y = std::max(std::min(c.y, 1.0f), 0.0f);
@@ -612,7 +612,7 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(RectangleNode, rengine_RectangleNode);
 
-    static RectangleNode *create(const rect2d &geometry, const vec4 &color = vec4()) {
+    static RectangleNode *create(rect2d geometry, vec4 color = vec4()) {
         auto node = create();
         node->setGeometry(geometry);
         node->setColor(color);
@@ -635,7 +635,7 @@ public:
 
     RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode, rengine_TextureNode);
 
-    static TextureNode *create(const rect2d &geometry, const Texture *layer) {
+    static TextureNode *create(rect2d geometry, const Texture *layer) {
         auto node = create();
         node->setGeometry(geometry);
         node->setTexture(layer);
@@ -656,12 +656,12 @@ protected:
 
 class ColorFilterNode : public Node {
 public:
-    void setColorMatrix(const mat4 &matrix) { m_colorMatrix = matrix; }
-    const mat4 &colorMatrix() const { return m_colorMatrix; }
+    void setColorMatrix(mat4 matrix) { m_colorMatrix = matrix; }
+    mat4 colorMatrix() const { return m_colorMatrix; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(ColorFilterNode, rengine_ColorFilterNode);
 
-    ColorFilterNode *create(const mat4 &matrix) {
+    ColorFilterNode *create(mat4 matrix) {
         auto node = create();
         node->setColorMatrix(matrix);
         return node;
@@ -708,15 +708,15 @@ public:
     void setRadius(unsigned radius) { m_radius = radius; }
     unsigned radius() const { return m_radius; }
 
-    void setOffset(const vec2 &offset) { m_offset = offset; }
-    const vec2 &offset() const { return m_offset; }
+    void setOffset(vec2 offset) { m_offset = offset; }
+    vec2 offset() const { return m_offset; }
 
-    void setColor(const vec4 &color) { m_color = color; }
-    const vec4 &color() const { return m_color; }
+    void setColor(vec4 color) { m_color = color; }
+    vec4 color() const { return m_color; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(ShadowNode, rengine_ShadowNode);
 
-    static ShadowNode *create(unsigned radius, const vec2 &offset, const vec4 &color) {
+    static ShadowNode *create(unsigned radius, vec2 offset, vec4 color) {
         auto node = create();
         node->setRadius(radius);
         node->setOffset(offset);

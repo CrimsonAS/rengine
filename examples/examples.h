@@ -33,7 +33,7 @@ inline void rengine_countFps()
     }
 }
 
-inline Texture *rengine_fractalTexture(Renderer *renderer, const vec2 &size)
+inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
 {
     unsigned r = rand() % 256;
     unsigned g = rand() % 256;

@@ -99,7 +99,7 @@ public:
     OpenGLRenderer();
     ~OpenGLRenderer();
 
-    Texture *createTextureFromImageData(const vec2 &size, Texture::Format format, void *data) override;
+    Texture *createTextureFromImageData(vec2 size, Texture::Format format, void *data) override;
     void initialize() override;
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
@@ -107,13 +107,13 @@ public:
 
     void prepass(Node *n);
     void build(Node *n);
-    void drawColorQuad(unsigned bufferOffset, const vec4 &color);
+    void drawColorQuad(unsigned bufferOffset, vec4 color);
     void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0);
-    void drawColorFilterQuad(unsigned bufferOffset, GLuint texId, const mat4 &cm);
-    void drawBlurQuad(unsigned bufferOffset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step);
-    void drawShadowQuad(unsigned bufferOffset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step, const vec4 &color);
+    void drawColorFilterQuad(unsigned bufferOffset, GLuint texId, mat4 cm);
+    void drawBlurQuad(unsigned bufferOffset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step);
+    void drawShadowQuad(unsigned bufferOffset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step, vec4 color);
     void activateShader(const Program *shader);
-    void projectQuad(const vec2 &a, const vec2 &b, vec2 *v);
+    void projectQuad(vec2 a, vec2 b, vec2 *v);
     void render(Element *first, Element *last);
     void renderToLayer(Element *e);
     void setDefaultOpenGLState();
@@ -176,7 +176,7 @@ public:
 
 };
 
-inline void OpenGLRenderer::projectQuad(const vec2 &a, const vec2 &b, vec2 *v)
+inline void OpenGLRenderer::projectQuad(vec2 a, vec2 b, vec2 *v)
 {
     // The steps involved in each line is as follows.:
     // pt_3d = matrix3D * pt                 // apply the 3D transform
@@ -238,7 +238,7 @@ inline bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned *byt
     return true;
 }
 
-inline Texture *OpenGLRenderer::createTextureFromImageData(const vec2 &size, Texture::Format format, void *data)
+inline Texture *OpenGLRenderer::createTextureFromImageData(vec2 size, Texture::Format format, void *data)
 {
     OpenGLTexture *layer = new OpenGLTexture();
     layer->setFormat(format);
@@ -335,7 +335,7 @@ inline void OpenGLRenderer::initialize()
     composed of four interleaved x/y points. \a c is the color.
 
  */
-inline void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
+inline void OpenGLRenderer::drawColorQuad(unsigned offset, vec4 c)
 {
     activateShader(&prog_solid);
     ensureMatrixUpdated(UpdateSolidProgram, &prog_solid);
@@ -344,7 +344,7 @@ inline void OpenGLRenderer::drawColorQuad(unsigned offset, const vec4 &c)
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-inline void OpenGLRenderer::drawColorFilterQuad(unsigned offset, GLuint texId, const mat4 &matrix)
+inline void OpenGLRenderer::drawColorFilterQuad(unsigned offset, GLuint texId, mat4 matrix)
 {
     activateShader(&prog_colorFilter);
     ensureMatrixUpdated(UpdateColorFilterProgram, &prog_colorFilter);
@@ -371,7 +371,7 @@ inline void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-inline void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step)
+inline void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step)
 {
     activateShader(&prog_blur);
     ensureMatrixUpdated(UpdateBlurProgram, &prog_blur);
@@ -387,7 +387,7 @@ inline void OpenGLRenderer::drawBlurQuad(unsigned offset, GLuint texId, int radi
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-inline void OpenGLRenderer::drawShadowQuad(unsigned offset, GLuint texId, int radius, const vec2 &renderSize, const vec2 &textureSize, const vec2 &step, const vec4 &color)
+inline void OpenGLRenderer::drawShadowQuad(unsigned offset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step, vec4 color)
 {
     activateShader(&prog_shadow);
     ensureMatrixUpdated(UpdateShadowProgram, &prog_shadow);
@@ -492,12 +492,12 @@ inline void OpenGLRenderer::build(Node *n)
     switch (n->type()) {
     case Node::TextureNodeType:
     case Node::RectangleNodeType: {
-        const rect2d &geometry = static_cast<RectangleNodeBase *>(n)->geometry();
+        rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
-        const vec2 &p1 = geometry.tl;
-        const vec2 &p2 = geometry.br;
+        vec2 p1 = geometry.tl;
+        vec2 p2 = geometry.br;
         vec2 *v = m_vertices + m_vertexIndex;
 
         // std::cout << " -- building rect from " << p1 << " " << p2 << " into " << m_vertices << " " << e << std::endl;
@@ -643,9 +643,9 @@ inline void OpenGLRenderer::build(Node *n)
     case Node::RenderNodeType: {
         Element *e = m_elements + m_elementIndex++;
         e->node = n;
-        const rect2d &geometry = static_cast<RectangleNodeBase *>(n)->geometry();
-        const vec2 &p1 = geometry.tl;
-        const vec2 &p2 = geometry.br;
+        rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
+        vec2 p1 = geometry.tl;
+        vec2 p2 = geometry.br;
         // This will "kinda" work. As long as our 3d support is based on back-
         // to-front ordering of the center of primitives, we might as well
         // order render nodes back-to-front as well. The usercase is a bit

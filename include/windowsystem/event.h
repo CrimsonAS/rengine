@@ -60,7 +60,7 @@ public:
         Called by the backend to initialize this object.
 
      */
-    void initialize(const vec2 &pos) {
+    void initialize(vec2 pos) {
         setPosition(pos);
         setPositionInSurface(pos);
     }
@@ -72,7 +72,7 @@ public:
         in a scene an object is located.
 
      */
-    void setPositionInSurface(const vec2 &pos) { m_posInSurface = pos; }
+    void setPositionInSurface(vec2 pos) { m_posInSurface = pos; }
     vec2 positionInSurface() const { return m_posInSurface; }
 
 
@@ -82,7 +82,7 @@ public:
         object/scene or whatever thing it is being delivered to.
 
      */
-    void setPosition(const vec2 &position) { m_pos = position; }
+    void setPosition(vec2 position) { m_pos = position; }
 	vec2 position() const { return m_pos; }
 
 
