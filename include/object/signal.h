@@ -65,7 +65,7 @@ class SignalEmitter
 public:
     static Signal<> onDestruction;
 
-    virtual ~SignalEmitter();
+    inline virtual ~SignalEmitter();
 
 private:
     template <typename ...Arguments>

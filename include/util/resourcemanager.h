@@ -40,7 +40,7 @@ RENGINE_BEGIN_NAMESPACE
 class ResourceManager
 {
 public:
-    virtual ~ResourceManager() {
+    inline virtual ~ResourceManager() {
         for (auto i : m_textures) {
             if (i.second.refCount != 0) {
                 logw << "texture resource, key=" << i.first << ", has refCount="
@@ -53,8 +53,8 @@ public:
     template <typename T> T *acquire(const std::string &key) { assert(0); return 0; }
     template <typename T> void release(T *t) { assert(0); }
 
-    void setRenderer(Renderer *renderer) { m_renderer = renderer; }
-    Renderer *renderer() const { return m_renderer; }
+    inline void setRenderer(Renderer *renderer) { m_renderer = renderer; }
+    inline Renderer *renderer() const { return m_renderer; }
 
     virtual Texture *onLoadTexture(const std::string &key);
 
@@ -69,7 +69,7 @@ protected:
     std::map<std::string, TrackedTexture> m_textures;
 };
 
-Texture *ResourceManager::onLoadTexture(const std::string &key)
+inline Texture *ResourceManager::onLoadTexture(const std::string &key)
 {
     int w, h, n;
     logd << "loading image: " << key << std::endl;
@@ -103,7 +103,7 @@ Texture *ResourceManager::onLoadTexture(const std::string &key)
     return texture;
 }
 
-template <> Texture *ResourceManager::acquire<Texture>(const std::string &key)
+template <> inline Texture *ResourceManager::acquire<Texture>(const std::string &key)
 {
     logd << "key=" << key << std::endl;
 
