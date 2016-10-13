@@ -55,7 +55,7 @@ public:
     {
     }
 
-    void updateLayout(Node *parentNode);
+    inline void updateLayout(Node *parentNode);
 
     float margin;
     float spacing;
