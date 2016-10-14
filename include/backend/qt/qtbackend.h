@@ -79,6 +79,9 @@ public:
     bool event(QEvent *e);
     void exposeEvent(QExposeEvent *e);
     void resizeEvent(QResizeEvent *e);
+    void mousePressEvent(QMouseEvent *e);
+    void mouseReleaseEvent(QMouseEvent *e);
+    void mouseMoveEvent(QMouseEvent *e);
 
     QtSurface *s;
 
@@ -95,6 +98,8 @@ public:
         QWindow::requestUpdate();
     }
 #endif
+
+    void sendPointerEvent(QMouseEvent *e, Event::Type type);
 };
 
 class QtSurface : public Surface
@@ -190,6 +195,13 @@ inline Renderer *QtBackend::createRenderer(Surface *surface)
     return r;
 }
 
+inline void QtWindow::sendPointerEvent(QMouseEvent *e, Event::Type type)
+{
+    PointerEvent pe(type);
+    pe.initialize(vec2(e->x(), e->y()) * s->window.devicePixelRatio());
+    s->iface->onEvent(&pe);
+}
+
 inline bool QtWindow::event(QEvent *e)
 {
 #ifdef QWINDOW_HAS_REQUEST_UPDATE
@@ -223,6 +235,21 @@ inline void QtWindow::resizeEvent(QResizeEvent *e)
 {
     logd << e->size().width() << "x" << e->size().height() << std::endl;
     s->iface->onSizeChange(vec2(width(), height()));
+}
+
+void QtWindow::mousePressEvent(QMouseEvent *e)
+{
+    sendPointerEvent(e, Event::PointerDown);
+}
+
+void QtWindow::mouseReleaseEvent(QMouseEvent *e)
+{
+    sendPointerEvent(e, Event::PointerUp);
+}
+
+void QtWindow::mouseMoveEvent(QMouseEvent *e)
+{
+    sendPointerEvent(e, Event::PointerMove);
 }
 
 RENGINE_END_NAMESPACE
