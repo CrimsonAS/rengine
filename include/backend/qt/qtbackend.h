@@ -55,10 +55,10 @@ public:
     }
 
     void quit() override { exited = true; app.quit(); }
-    void run();
+    void run() override;
     void processEvents();
-    Surface *createSurface(SurfaceInterface *iface);
-    Renderer *createRenderer(Surface *surface);
+    Surface *createSurface(SurfaceInterface *iface) override;
+    Renderer *createRenderer(Surface *surface) override;
 
     QGuiApplication app;
 
