@@ -8,7 +8,7 @@ template <typename InterfaceName>
 int rengine_main(int argc, char **argv) {
     std::unique_ptr<rengine::Backend> backend(rengine::Backend::get());
     InterfaceName iface;
-    rengine::Surface *surface = backend->createSurface(&iface);
+    std::unique_ptr<rengine::Surface> surface(backend->createSurface(&iface));
     surface->show();
     backend->run();
     return 0;

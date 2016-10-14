@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <memory>
+
 RENGINE_BEGIN_NAMESPACE
 
 class StandardSurfaceInterface : public SurfaceInterface
@@ -39,7 +41,6 @@ public:
         if (m_renderer) {
             if (m_renderer->sceneRoot())
                 m_renderer->sceneRoot()->destroy();
-            delete m_renderer;
         }
     }
 
@@ -54,7 +55,7 @@ public:
 
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {
-            m_renderer = Backend::get()->createRenderer(surface());
+            m_renderer.reset(Backend::get()->createRenderer(surface()));
             m_animationManager.start();
         }
 
@@ -91,7 +92,7 @@ public:
 
     virtual void onEvent(Event *e) override;
 
-    Renderer *renderer() const { return m_renderer; }
+    Renderer *renderer() const { return m_renderer.get(); }
     AnimationManager *animationManager() { return &m_animationManager; }
 
     /*!
@@ -104,7 +105,7 @@ public:
 protected:
     bool deliverPointerEventInScene(Node *n, PointerEvent *e);
 
-    Renderer *m_renderer = nullptr;
+    std::unique_ptr<Renderer> m_renderer;
     AnimationManager m_animationManager;
 
     Node *m_pointerEventReceiver = nullptr;

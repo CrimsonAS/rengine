@@ -27,7 +27,6 @@
 
 #include <map>
 
-
 // ### I would prefer that instead of pulling this in here, we would pull this
 // into the application in a subclass of ResourceManager instead, but then
 // ResourceManager becomes really hard to use outside, so I don't have a better
@@ -61,6 +60,7 @@ public:
 protected:
     Renderer *m_renderer = nullptr;
 
+    // ### wny not use shared_ptr?
     struct TrackedTexture {
         int refCount;
         Texture *texture;
