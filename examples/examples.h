@@ -3,6 +3,14 @@
 #include "rengine.h"
 #include <chrono>
 
+// ### Please note that the inclusion of STB_IMAGE_IMPLEMENTATION here forces
+// these symbols to be present in all translation units that include the
+// example.h header. This will lead to linker errors, so this limits
+// the examples to a single .cpp file.
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 using namespace rengine;
 using namespace std;
 
