@@ -30,14 +30,33 @@ RENGINE_BEGIN_NAMESPACE
 class Backend
 {
 public:
+    Backend() : m_running(true) { }
     virtual ~Backend() { }
 
     static Backend *get();
 
     virtual void quit() = 0;
-    virtual void run() = 0;
+    void run();
+    virtual void processEvents() = 0;
     virtual Surface *createSurface(SurfaceInterface *) = 0;
     virtual Renderer *createRenderer(Surface *surface) = 0;
+
+    bool m_running;
 };
+
+inline void Backend::run()
+{
+    if (!m_running) {
+        logd << "quit() already called, not starting eventloop.." << std::endl;
+    } else  {
+        logd << "starting eventloop..." << std::endl;
+    }
+
+    while (m_running) {
+        processEvents();
+    }
+
+    logd << "exited event loop" << std::endl;
+}
 
 RENGINE_END_NAMESPACE

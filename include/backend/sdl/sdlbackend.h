@@ -51,11 +51,10 @@ public:
 #endif
     }
 
-    void quit() { SDL_Quit(); }
-    void run();
-    void processEvents();
-    Surface *createSurface(SurfaceInterface *iface);
-    Renderer *createRenderer(Surface *surface);
+    void quit() override { SDL_Quit(); }
+    void processEvents() override;
+    Surface *createSurface(SurfaceInterface *iface) override;
+    Renderer *createRenderer(Surface *surface) override;
 
     void sendPointerEvent(SDL_Event *e, Event::Type type);
 
@@ -186,29 +185,14 @@ inline SdlSurface *SdlBackend::findSurface(unsigned id)
 
 inline void SdlBackend::processEvents()
 {
-    std::cerr << "stub: processEvents" << std::endl;
-}
-
-inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
-{
-    PointerEvent pe(type);
-    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
-    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
-    assert(surface);
-    surface->iface->onEvent(&pe);
-}
-
-
-inline void SdlBackend::run()
-{
-#ifdef RENGINE_LOG_INFO
-    std::cout << "SdlBackend: starting eventloop..." << std::endl;
-#endif
-
-    bool done = false;
     SDL_Event event;
+    int evt = SDL_PollEvent(nullptr);
 
-    while (!done && SDL_WaitEvent(&event)) {
+    // This odd-looking construct ensures we do not process events that are
+    // pushed onto the queue after we start processing, so as to not starve the
+    // main loop.
+    while (evt-- > 0) {
+        SDL_PollEvent(&event);
 
         switch (event.type) {
             case SDL_USEREVENT: {
@@ -230,7 +214,7 @@ inline void SdlBackend::run()
                 break;
             }
             case SDL_QUIT: {
-                done = true;
+                m_running = false;
                 break;
             }
             default: {
@@ -238,11 +222,17 @@ inline void SdlBackend::run()
             }
         }
     }
-
-#ifdef RENGINE_LOG_INFO
-    std::cout << "SdlBackend: exited eventloop..." << std::endl;
-#endif
 }
+
+inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
+{
+    PointerEvent pe(type);
+    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
+    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
+    assert(surface);
+    surface->iface->onEvent(&pe);
+}
+
 
 inline Surface *SdlBackend::createSurface(SurfaceInterface *iface)
 {

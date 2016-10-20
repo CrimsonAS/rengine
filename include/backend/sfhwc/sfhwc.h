@@ -81,7 +81,7 @@ public:
 	SfHwcBackend();
 
     void quit() override;
-    void run() override;
+    void processEvents() override;
 
     void updateTouch();
 

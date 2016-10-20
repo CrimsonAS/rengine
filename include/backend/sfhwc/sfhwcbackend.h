@@ -170,19 +170,13 @@ inline SfHwcBackend::SfHwcBackend()
     logi << " - # frames predicted .: " << m_touchPrediction << std::endl;
 }
 
-inline void SfHwcBackend::run()
+inline void SfHwcBackend::processEvents()
 {
-    logi << __PRETTY_FUNCTION__
-         << "; running=" << m_running
-         << "; surface=" << surface
-         << "; iface=" << (surface ? surface->m_iface : nullptr)
-         << std::endl;
-
     timeval halfAFrame;
     halfAFrame.tv_sec = 0;
     halfAFrame.tv_usec = 8 * 1000;
 
-    while (m_running && surface && surface->m_iface) {
+    if (surface && surface->m_iface) {
         surface->m_iface->onRender();
 
         updateTouch();
