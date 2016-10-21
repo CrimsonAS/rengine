@@ -46,9 +46,7 @@ public:
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
             sdlbackend_die("Unable to initialize SDL");
-#ifdef RENGINE_LOG_INFO
-        std::cout << "SdlBackend: created..." << std::endl;
-#endif
+        logi << "SdlBackend: created..." << std::endl;
     }
 
     ~SdlBackend()
@@ -110,9 +108,7 @@ public:
     , iface(iface)
     {
         setSurfaceToInterface(iface);
-#ifdef RENGINE_LOG_INFO
-        std::cout << "SdlBackend::Surface created with interface=" << iface << std::endl;
-#endif
+        logi << "SdlBackend::Surface created with interface=" << iface << std::endl;
         requestRender();
     }
 
@@ -120,7 +116,7 @@ public:
         static bool warned = false;
         if (!warned) {
             warned = true;
-            std::cerr << "makeCurrent: stub" << std::endl;
+            logw << "makeCurrent: stub" << std::endl;
         }
         return true;
     }
@@ -222,7 +218,7 @@ inline void SdlBackend::processEvents()
                 break;
             }
             default: {
-                // std::cerr << "unknown event.type " << event.type << std::endl;
+                // logw << "unknown event.type " << event.type << std::endl;
             }
         }
     }
