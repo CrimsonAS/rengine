@@ -80,7 +80,6 @@ class SfHwcBackend : public Backend, public hwc_procs_t
 public:
 	SfHwcBackend();
 
-    void quit() override;
     void processEvents() override;
 
     void updateTouch();

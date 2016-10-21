@@ -54,7 +54,6 @@ public:
         logd << std::endl;
     }
 
-    void quit() override { m_running = false; }
     void processEvents() override;
     Surface *createSurface(SurfaceInterface *iface) override;
     Renderer *createRenderer(Surface *surface) override;

@@ -51,7 +51,11 @@ public:
 #endif
     }
 
-    void quit() override { SDL_Quit(); }
+    ~SdlBackend()
+    {
+        SDL_Quit();
+    }
+
     void processEvents() override;
     Surface *createSurface(SurfaceInterface *iface) override;
     Renderer *createRenderer(Surface *surface) override;

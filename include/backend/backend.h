@@ -35,7 +35,7 @@ public:
 
     static Backend *get();
 
-    virtual void quit() = 0;
+    void quit();
     void run();
     virtual void processEvents() = 0;
     virtual Surface *createSurface(SurfaceInterface *) = 0;
@@ -43,6 +43,11 @@ public:
 
     bool m_running;
 };
+
+inline void Backend::quit()
+{
+    m_running = false;
+}
 
 inline void Backend::run()
 {

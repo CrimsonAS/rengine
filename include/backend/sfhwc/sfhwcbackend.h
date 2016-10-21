@@ -30,12 +30,6 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-void SfHwcBackend::quit()
-{
-    logi << __PRETTY_FUNCTION__ << std::endl;
-    m_running = false;
-}
-
 Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
 {
     // We only allow one surface, the output window..
