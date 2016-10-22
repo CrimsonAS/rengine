@@ -41,7 +41,7 @@ struct mat4;
 
 // 'windowsystem' subdir
 class Surface;
-class SurfaceInterface;
+class SurfaceBackendImpl;
 class Event;
 class PointerEvent;
 
@@ -75,6 +75,7 @@ RENGINE_END_NAMESPACE
 #include "backend/qt/qtpreinclude.h"
 #endif
 
+
 #include "common/logging.h"
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
@@ -84,6 +85,8 @@ RENGINE_END_NAMESPACE
 #include "object/property.h"
 #include "object/signal.h"
 #include "object/replicator.h"
+
+#include "backend/backend_decl.h"
 
 #include "windowsystem/event.h"
 #include "windowsystem/surface.h"
@@ -102,7 +105,7 @@ RENGINE_END_NAMESPACE
 
 #include "backend/backend.h"
 
-#include "util/standardsurfaceinterface.h"
+#include "util/standardsurface.h"
 #include "util/maindefine.h"
 
 #if defined RENGINE_BACKEND_QT

@@ -29,7 +29,7 @@ const vec4 COLOR_IDLE(0.5, 0.6, 0.8, 1.0);
 const vec4 COLOR_ACTIVE(0.8, 0.6, 0.5, 1.0);
 const vec4 COLOR_CENTER(0.6, 0.8, 0.5, 1.0);
 
-class TouchWindow : public StandardSurfaceInterface
+class TouchWindow : public StandardSurface
 {
 public:
 
@@ -39,7 +39,7 @@ public:
 
         root = Node::create();
 
-        vec2 surfaceSize = surface()->size();
+        vec2 surfaceSize = size();
 
         float size = std::min(surfaceSize.x, surfaceSize.y);
 
@@ -81,7 +81,7 @@ public:
         assert(!pointerEventReceiver());
         m_currentReceiver = r;
         m_currentReceiver->setColor(COLOR_ACTIVE);
-        surface()->requestRender();
+        requestRender();
         setPointerEventReceiver(m_currentReceiver);
     }
 
@@ -91,7 +91,7 @@ public:
         m_currentReceiver->setColor(COLOR_IDLE);
         m_currentReceiver = 0;
         setPointerEventReceiver(0);
-        surface()->requestRender();
+        requestRender();
     }
 
     bool onPointerEvent(Node *n, PointerEvent *event) override {

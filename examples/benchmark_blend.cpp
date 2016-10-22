@@ -30,7 +30,7 @@
 static int nodeCount = 4;
 static bool useTextures = false;
 
-class BlendBenchWindow : public StandardSurfaceInterface
+class BlendBenchWindow : public StandardSurface
 {
 public:
 
@@ -38,14 +38,14 @@ public:
 
     Node *update(Node *old) {
 
-        surface()->requestRender();
+        requestRender();
 
         rengine_countFps();
 
         if (old)
             return old;
 
-        vec2 s = surface()->size();
+        vec2 s = size();
         vec2 s2 = s / 2.0f;
         float dim = std::max(s.x, s.y) * 0.9;
         float dim2 = dim / 2.0f;
@@ -99,10 +99,8 @@ int main(int argc, char **argv) {
 
     std::unique_ptr<Backend> backend(Backend::get());
 
-    BlendBenchWindow iface;
-
-    Surface *surface = backend->createSurface(&iface);
-    surface->show();
+    BlendBenchWindow surface;
+    surface.show();
 
     backend->run();
 

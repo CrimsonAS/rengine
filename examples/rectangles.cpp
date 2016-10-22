@@ -26,7 +26,7 @@
 #include "rengine.h"
 #include "examples.h"
 
-class MyWindow : public StandardSurfaceInterface
+class MyWindow : public StandardSurface
 {
 public:
     MyWindow()
@@ -43,7 +43,7 @@ public:
         if (old)
             return old;
 
-        vec2 s = surface()->size();
+        vec2 s = size();
 
         m_layer = rengine_loadImage(renderer(), "walker.png");
 

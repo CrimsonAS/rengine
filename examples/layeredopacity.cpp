@@ -3,14 +3,14 @@
 using namespace rengine;
 using namespace std;
 
-class MyWindow : public StandardSurfaceInterface
+class MyWindow : public StandardSurface
 {
 public:
     Node *update(Node *old) {
         if (old)
             return old;
 
-        vec2 s = surface()->size();
+        vec2 s = size();
         vec2 s3 = s / 3;
 
         // Root has origin in screen center

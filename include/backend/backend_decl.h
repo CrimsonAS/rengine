@@ -27,24 +27,24 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-inline void Backend::quit()
+class Backend
 {
-    m_running = false;
-}
+public:
+    Backend() : m_running(true) { }
 
-inline void Backend::run()
-{
-    if (!m_running) {
-        logd << "quit() already called, not starting eventloop.." << std::endl;
-    } else  {
-        logd << "starting eventloop..." << std::endl;
-    }
+    virtual ~Backend() { }
 
-    while (m_running) {
-        processEvents();
-    }
+    static Backend *get();
 
-    logd << "exited event loop" << std::endl;
-}
+    void quit();
+    void run();
+
+    virtual void processEvents() = 0;
+
+    virtual SurfaceBackendImpl *createSurface(Surface *) = 0;
+    virtual void destroySurface(Surface *, SurfaceBackendImpl *) = 0;
+
+    bool m_running;
+};
 
 RENGINE_END_NAMESPACE

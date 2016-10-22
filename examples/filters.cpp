@@ -29,7 +29,7 @@
 using namespace rengine;
 using namespace std;
 
-class MyWindow : public StandardSurfaceInterface
+class MyWindow : public StandardSurface
 {
 public:
 

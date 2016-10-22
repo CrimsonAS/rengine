@@ -93,27 +93,27 @@ class TexturesOnViewportEdge : public StaticRenderTest
 {
 public:
     Node *build() override {
-        vec2 size = surface()->size();
+        vec2 s = surface()->size();
         Node *root = Node::create();
         *root
             // Top-left, 50% red
             << &(*OpacityNode::create(0.5) << RectangleNode::create(rect2d::fromXywh(-1, -1, 2, 2), vec4(1, 0, 0, 1)))
             // Top-right, 25% green
-            << &(*OpacityNode::create(0.25) << RectangleNode::create(rect2d::fromXywh(size.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
+            << &(*OpacityNode::create(0.25) << RectangleNode::create(rect2d::fromXywh(s.x-1, -1, 2, 2), vec4(0, 1, 0, 1)))
             // Bottom-left, 75% blue
-            << &(*OpacityNode::create(0.75) << RectangleNode::create(rect2d::fromXywh(-1, size.y-1, 2, 2), vec4(0, 0, 1, 1)))
+            << &(*OpacityNode::create(0.75) << RectangleNode::create(rect2d::fromXywh(-1, s.y-1, 2, 2), vec4(0, 0, 1, 1)))
             // Bottom-right,
-            << &(*OpacityNode::create(0.5) << RectangleNode::create(rect2d::fromXywh(size.x-1, size.y-1, 2, 2), vec4(1, 1, 1, 1)))
+            << &(*OpacityNode::create(0.5) << RectangleNode::create(rect2d::fromXywh(s.x-1, s.y-1, 2, 2), vec4(1, 1, 1, 1)))
             ;
 
         return root;
     }
 
     void check() override {
-        vec2 size = surface()->size();
+        vec2 s = surface()->size();
 
-        int r = size.x - 1;
-        int b = size.y - 1;
+        int r = s.x - 1;
+        int b = s.y - 1;
 
         // Top/left 50% red
         check_pixel(0, 0, vec4(0.5, 0, 0, 1));
@@ -211,15 +211,14 @@ public:
 
 int main(int argc, char *argv[])
 {
+    std::unique_ptr<Backend> backend(Backend::get());
+
     TestBase testBase;
 // testBase.leaveRunning = true;
     testBase.addTest(new ColorsAndPositions());
     testBase.addTest(new TexturesOnViewportEdge());
     testBase.addTest(new OpacityTextures());
-
-    std::unique_ptr<Backend> backend(Backend::get());
-    std::unique_ptr<Surface>  surface(backend->createSurface(&testBase));
-    surface->show();
+    testBase.show();
 
     backend->run();
 
