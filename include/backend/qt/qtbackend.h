@@ -49,20 +49,16 @@ class QtBackend : public Backend
 public:
 
     QtBackend()
-        : app(hack_argc(), hack_argv()), exited(false)
+        : app(hack_argc(), hack_argv())
     {
         logd << std::endl;
     }
 
-    void quit() override { exited = true; app.quit(); }
-    void run() override;
-    void processEvents();
+    void processEvents() override;
     Surface *createSurface(SurfaceInterface *iface) override;
     Renderer *createRenderer(Surface *surface) override;
 
     QGuiApplication app;
-
-    bool exited;
 };
 
 class QtWindow : public QWindow
@@ -105,9 +101,10 @@ public:
 class QtSurface : public Surface
 {
 public:
-    QtSurface(SurfaceInterface *iface)
+    QtSurface(SurfaceInterface *iface, QtBackend *backend)
     : window(this)
     , iface(iface)
+    , backend(backend)
     {
         setSurfaceToInterface(iface);
         logi << "QtBackend::Surface created with interface=" << iface << std::endl;
@@ -159,6 +156,7 @@ public:
     QOpenGLContext context;
     QtWindow window;
     SurfaceInterface *iface;
+    QtBackend *backend;
 };
 
 inline void QtBackend::processEvents()
@@ -167,21 +165,11 @@ inline void QtBackend::processEvents()
     QCoreApplication::sendPostedEvents(0, QEvent::DeferredDelete);
 }
 
-inline void QtBackend::run()
-{
-    logd << "starting eventloop..." << std::endl;
-    if (exited)
-        logd << "quit() already called, not starting eventloop.." << std::endl;
-    if (!exited)
-        app.exec();
-    logd << "exited event loop" << std::endl;
-}
-
 inline Surface *QtBackend::createSurface(SurfaceInterface *iface)
 {
     logd << __PRETTY_FUNCTION__ << iface << std::endl;
     assert(iface);
-    QtSurface *s = new QtSurface(iface);
+    QtSurface *s = new QtSurface(iface, this);
     return s;
 }
 
@@ -221,6 +209,9 @@ inline bool QtWindow::event(QEvent *e)
         logd << "onRender completed" << std::endl;
     }
 #endif
+    if (e->type() == QEvent::Close) {
+        s->backend->m_running = false;
+    }
     return QWindow::event(e);
 }
 

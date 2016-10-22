@@ -46,16 +46,17 @@ public:
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
             sdlbackend_die("Unable to initialize SDL");
-#ifdef RENGINE_LOG_INFO
-        std::cout << "SdlBackend: created..." << std::endl;
-#endif
+        logi << "SdlBackend: created..." << std::endl;
     }
 
-    void quit() { SDL_Quit(); }
-    void run();
-    void processEvents();
-    Surface *createSurface(SurfaceInterface *iface);
-    Renderer *createRenderer(Surface *surface);
+    ~SdlBackend()
+    {
+        SDL_Quit();
+    }
+
+    void processEvents() override;
+    Surface *createSurface(SurfaceInterface *iface) override;
+    Renderer *createRenderer(Surface *surface) override;
 
     void sendPointerEvent(SDL_Event *e, Event::Type type);
 
@@ -107,9 +108,7 @@ public:
     , iface(iface)
     {
         setSurfaceToInterface(iface);
-#ifdef RENGINE_LOG_INFO
-        std::cout << "SdlBackend::Surface created with interface=" << iface << std::endl;
-#endif
+        logi << "SdlBackend::Surface created with interface=" << iface << std::endl;
         requestRender();
     }
 
@@ -117,7 +116,7 @@ public:
         static bool warned = false;
         if (!warned) {
             warned = true;
-            std::cerr << "makeCurrent: stub" << std::endl;
+            logw << "makeCurrent: stub" << std::endl;
         }
         return true;
     }
@@ -186,29 +185,14 @@ inline SdlSurface *SdlBackend::findSurface(unsigned id)
 
 inline void SdlBackend::processEvents()
 {
-    std::cerr << "stub: processEvents" << std::endl;
-}
-
-inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
-{
-    PointerEvent pe(type);
-    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
-    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
-    assert(surface);
-    surface->iface->onEvent(&pe);
-}
-
-
-inline void SdlBackend::run()
-{
-#ifdef RENGINE_LOG_INFO
-    std::cout << "SdlBackend: starting eventloop..." << std::endl;
-#endif
-
-    bool done = false;
     SDL_Event event;
+    int evt = SDL_PollEvent(nullptr);
 
-    while (!done && SDL_WaitEvent(&event)) {
+    // This odd-looking construct ensures we do not process events that are
+    // pushed onto the queue after we start processing, so as to not starve the
+    // main loop.
+    while (evt-- > 0) {
+        SDL_PollEvent(&event);
 
         switch (event.type) {
             case SDL_USEREVENT: {
@@ -230,19 +214,25 @@ inline void SdlBackend::run()
                 break;
             }
             case SDL_QUIT: {
-                done = true;
+                m_running = false;
                 break;
             }
             default: {
-                // std::cerr << "unknown event.type " << event.type << std::endl;
+                // logw << "unknown event.type " << event.type << std::endl;
             }
         }
     }
-
-#ifdef RENGINE_LOG_INFO
-    std::cout << "SdlBackend: exited eventloop..." << std::endl;
-#endif
 }
+
+inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
+{
+    PointerEvent pe(type);
+    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
+    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
+    assert(surface);
+    surface->iface->onEvent(&pe);
+}
+
 
 inline Surface *SdlBackend::createSurface(SurfaceInterface *iface)
 {
