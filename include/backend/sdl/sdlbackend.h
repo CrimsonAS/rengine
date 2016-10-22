@@ -225,7 +225,7 @@ inline Renderer *SDLBackend::createRenderer()
     return r;
 }
 
-void SDLBackend::requestRender() {
+inline void SDLBackend::requestRender() {
     if (m_renderRequested)
         return;
     m_renderRequested = true;
@@ -246,21 +246,21 @@ void SDLBackend::requestRender() {
     SDL_PushEvent(&event);
 }
 
-void SDLBackend::show()
+inline void SDLBackend::show()
 {
     assert(m_window);
     assert(m_surface);
     SDL_ShowWindow(m_window);
 }
 
-void SDLBackend::hide()
+inline void SDLBackend::hide()
 {
     assert(m_window);
     assert(m_surface);
     SDL_HideWindow(m_window);
 }
 
-void SDLBackend::requestSize(vec2 size)
+inline void SDLBackend::requestSize(vec2 size)
 {
     assert(m_window);
     assert(m_surface);
