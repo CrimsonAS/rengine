@@ -25,18 +25,16 @@
 
 #pragma once
 
-#include <memory>
-
 RENGINE_BEGIN_NAMESPACE
 
-class StandardSurfaceInterface : public SurfaceInterface
+class StandardSurface : public Surface
 {
 public:
-    StandardSurfaceInterface()
+    StandardSurface()
     {
     }
 
-    ~StandardSurfaceInterface()
+    ~StandardSurface()
     {
         if (m_renderer) {
             if (m_renderer->sceneRoot())
@@ -50,12 +48,12 @@ public:
     virtual void onAfterRender() { }
 
     void onRender() override {
-        if (!surface()->makeCurrent())
+        if (!beginRender())
             return;
 
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {
-            m_renderer.reset(Backend::get()->createRenderer(surface()));
+            m_renderer.reset(createRenderer());
             m_animationManager.start();
         }
 
@@ -73,7 +71,7 @@ public:
         m_renderer->render();
         onAfterRender();
 
-        surface()->swapBuffers();
+        commitRender();
         m_renderer->frameSwapped();
 
         // Schedule a repaint again if there are animations running...
@@ -82,7 +80,7 @@ public:
         // just keep on rendering, we should figure out how long we need to
         // wait and schedule an update at that time.
         if (m_animationManager.animationsRunning() || m_animationManager.animationsScheduled()) {
-            surface()->requestRender();
+            requestRender();
         }
     }
 
@@ -111,7 +109,7 @@ protected:
     Node *m_pointerEventReceiver = nullptr;
 };
 
-inline void StandardSurfaceInterface::onEvent(Event *e)
+inline void StandardSurface::onEvent(Event *e)
 {
     switch (e->type()) {
     case Event::PointerDown:
@@ -138,7 +136,7 @@ inline void StandardSurfaceInterface::onEvent(Event *e)
     }
 }
 
-inline bool StandardSurfaceInterface::deliverPointerEventInScene(Node *node, PointerEvent *e)
+inline bool StandardSurface::deliverPointerEventInScene(Node *node, PointerEvent *e)
 {
     assert(node);
     assert(e);

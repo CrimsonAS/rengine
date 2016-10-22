@@ -159,15 +159,14 @@ protected:
     Surface *m_surface;
 };
 
-class TestBase : public StandardSurfaceInterface
+class TestBase : public StandardSurface
 {
 public:
     TestBase() : leaveRunning(false), m_currentTest(0) { }
 
     void addTest(StaticRenderTest *test) {
         tests.push_back(test);
-        if (surface())
-            surface()->requestRender();
+        requestRender();
     }
 
     Node *update(Node *root) override {
@@ -180,7 +179,7 @@ public:
         m_currentTest = tests.front();
         tests.pop_front();
 
-        m_currentTest->setSurface(surface());
+        m_currentTest->setSurface(this);
 
         return m_currentTest->build();
     }
@@ -189,7 +188,7 @@ public:
         if (!m_currentTest)
             return;
 
-        vec2 size = surface()->size();
+        vec2 size = Surface::size();
         unsigned *pixels = (unsigned *) malloc(size.x * size.y * sizeof(unsigned));
 
         bool ok = renderer()->readPixels(0, 0, size.x, size.y, (unsigned *) pixels);
@@ -209,7 +208,7 @@ public:
             if (!leaveRunning)
                 Backend::get()->quit();
         } else {
-            surface()->requestRender();
+            requestRender();
         }
 
         free(pixels);

@@ -30,7 +30,7 @@ RENGINE_DEFINE_GLOBALS
 
 static int nodeCount = 1000;
 
-class Rectangles : public StandardSurfaceInterface
+class Rectangles : public StandardSurface
 {
 public:
     Node *update(Node *root) {
@@ -41,12 +41,12 @@ public:
 
         root = Node::create();
 
-        vec2 size = surface()->size();
+        vec2 s = size();
 
         int rw = 100;
         int rh = 20;
-        int w = size.x - rw;
-        int h = size.y - rh;
+        int w = s.x - rw;
+        int h = s.y - rh;
 
         int count = nodeCount;
 
@@ -63,7 +63,7 @@ public:
             *root << rect;
         }
 
-        surface()->requestRender();
+        requestRender();
 
         return root;
     }

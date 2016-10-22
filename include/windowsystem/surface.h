@@ -27,74 +27,96 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class Surface
+/*!
+
+    This class is implemented in the backend to support the implementation of
+    a surface on that backend.
+ */
+class SurfaceBackendImpl
 {
 public:
-    virtual ~Surface() {}
+    virtual ~SurfaceBackendImpl() { }
 
     /*!
-        Call to hide this surface..
-
-        TODO: Is this really needed?
+        Implement in the backend to hide the surface.
      */
     virtual void hide() = 0;
 
     /*!
-        Call to show this surface..
+        Implement in the backend to show the surface.
      */
     virtual void show() = 0;
 
     /*!
-        Called by the application to start a new frame. Makes the rendering
-        context current.
-
-        Returns true if all is well; false if it failed for whatever reason..
+        Implement in the backend to begin rendering. The backend can assume that
+        this is called once for each render cycle.
      */
-    virtual bool makeCurrent() = 0;
+    virtual bool beginRender() = 0;
 
     /*!
-        Called by the application it is done rendering to push the current
-        content to screen.
-
-        Returns true if all went wll; false if it failed for whatever reason..
-
+        Implement in the backend to finish rendering and present it to screen. This
+        is the equivalent of swabBuffers in the OpenGL.
      */
-    virtual bool swapBuffers() = 0;
+    virtual bool commitRender() = 0;
 
     /*!
-        Returns the size of this surface. When the surface size changes,
-        the client is notified via SurfaceInterface::onSizeChange()
-
-        TODO: should really be an ivec2, but I don't have that yet :p
+        Implement in the backend to report the size of a surface to the application
      */
     virtual vec2 size() const = 0;
 
+    /*!
+        Implement in the backend to respond to requests by the application to change
+        the surface's size
+     */
+    virtual void requestSize(vec2 size) = 0;
+
+    /*!
+        Implement in the backend to respond to requests for Surface::onRender() to
+        be called.
+     */
     virtual void requestRender() = 0;
 
-protected:
-    void setSurfaceToInterface(SurfaceInterface *iface);
+    /*!
+        Implement in the backend to create a renderer compatible with this surface
+     */
+    virtual Renderer *createRenderer() = 0;
+
 };
 
-class SurfaceInterface
+class Surface
 {
 public:
-    SurfaceInterface() : m_surface(0) { }
-    virtual ~SurfaceInterface() { }
+    Surface()
+    {
+        m_impl = Backend::get()->createSurface(this);
+    }
+
+    virtual ~Surface()
+    {
+        Backend::get()->destroySurface(this, m_impl);
+    }
+
+    void hide() { m_impl->hide(); }
+
+    void show() { m_impl->show(); }
+
+    bool beginRender() { return m_impl->beginRender(); }
+
+    bool commitRender() { return m_impl->commitRender(); }
+
+    vec2 size() const { return m_impl->size(); }
+
+    void requestSize(vec2 size) { m_impl->requestSize(size); }
+
+    void requestRender() { m_impl->requestRender(); }
+
+    Renderer *createRenderer() { return m_impl->createRenderer(); }
 
     /*!
         Reimplement this function get notified when it is time to
         render the surface
      */
     virtual void onRender() { };
-
-    /*!
-        Reimplement this function to get notified when the surface's
-        size has changed.
-     */
-    virtual void onSizeChange(vec2 size) { }
-
-    Surface *surface() { return m_surface; }
-    const Surface *surface() const { return m_surface; }
 
     /*!
 
@@ -106,13 +128,8 @@ public:
     virtual void onEvent(Event *) { }
 
 private:
-    friend class Surface;
-
-    Surface *m_surface;
+    SurfaceBackendImpl *m_impl;
 };
 
-inline void Surface::setSurfaceToInterface(SurfaceInterface *iface) {
-    iface->m_surface = this;
-}
 
 RENGINE_END_NAMESPACE

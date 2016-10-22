@@ -4,12 +4,11 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-template <typename InterfaceName>
+template <typename SurfaceName>
 int rengine_main(int argc, char **argv) {
     std::unique_ptr<rengine::Backend> backend(rengine::Backend::get());
-    InterfaceName iface;
-    std::unique_ptr<rengine::Surface> surface(backend->createSurface(&iface));
-    surface->show();
+    SurfaceName surface;
+    surface.show();
     backend->run();
     return 0;
 }

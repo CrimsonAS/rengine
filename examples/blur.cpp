@@ -2,7 +2,7 @@
 
 
 
-class BlurExample : public StandardSurfaceInterface
+class BlurExample : public StandardSurface
 {
 public:
 
@@ -12,9 +12,9 @@ public:
 
         Texture *layer = rengine_loadImage(renderer(), "walker.png");
 
-        vec2 size = surface()->size();
-        float w2 = size.x / 2.0f;
-        float h2 = size.y / 2.0f;
+        vec2 s = size();
+        float w2 = s.x / 2.0f;
+        float h2 = s.y / 2.0f;
         float s2 = std::min(w2, h2);
 
         BlurNode *blurNode = BlurNode::create(37);

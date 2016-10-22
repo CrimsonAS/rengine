@@ -28,162 +28,82 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class SdlBackend;
+class SDLBackend;
 class SdlSurface;
 class SdlWindow;
 
-inline void sdlbackend_die(const char *msg)
+inline void SDLBackend_die(const char *msg)
 {
     printf("%s: %s\n", msg, SDL_GetError());
     SDL_Quit();
     exit(1);
 }
 
-class SdlBackend : public Backend
+class SDLBackend : public Backend, SurfaceBackendImpl
 {
 public:
-    SdlBackend()
+    SDLBackend()
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
-            sdlbackend_die("Unable to initialize SDL");
-        logi << "SdlBackend: created..." << std::endl;
+            SDLBackend_die("Unable to initialize SDL");
+        logi << "SDLBackend: created..." << std::endl;
     }
 
-    ~SdlBackend()
+    ~SDLBackend()
     {
         SDL_Quit();
     }
 
     void processEvents() override;
-    Surface *createSurface(SurfaceInterface *iface) override;
-    Renderer *createRenderer(Surface *surface) override;
+
+    SurfaceBackendImpl *createSurface(Surface *iface) override;
+    void destroySurface(Surface *surface, SurfaceBackendImpl *impl) override;
+
+    Renderer *createRenderer() override;
 
     void sendPointerEvent(SDL_Event *e, Event::Type type);
 
-    SdlSurface *findSurface(unsigned id);
+    unsigned devicePixelRatio() const;
+
+    bool beginRender() override;
+    bool commitRender() override;
+
+    void show() override;
+    void hide() override;
+    vec2 size() const override;
+
+    void requestSize(vec2 size) override;
+
+    void requestRender() override;
+
 
 private:
-    std::vector<SdlSurface *> m_surfaces;
-};
-
-class SdlWindow
-{
-public:
-    SdlWindow(SdlSurface *s)
-        : s(s)
-    {
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
-        mainwindow = SDL_CreateWindow("rengine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                      800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI );
-
-        context = SDL_GL_CreateContext(mainwindow);
-        SDL_GL_SetSwapInterval(1);
-    }
-
-    unsigned id() const { return SDL_GetWindowID(mainwindow); }
-
-    unsigned devicePixelRatio() const {
-        int dw, dh, ww, wh;
-        SDL_GetWindowSize(mainwindow, &ww, &wh);
-        SDL_GL_GetDrawableSize(mainwindow, &dw, &dh);
-        return dw / ww;
-    }
-
-    SdlSurface *s;
-    SDL_Window *mainwindow;
-    SDL_GLContext context;
-};
-
-class SdlSurface : public Surface
-{
-public:
-    SdlSurface(SurfaceInterface *iface)
-    : window(this)
-    , iface(iface)
-    {
-        setSurfaceToInterface(iface);
-        logi << "SdlBackend::Surface created with interface=" << iface << std::endl;
-        requestRender();
-    }
-
-    bool makeCurrent() {
-        static bool warned = false;
-        if (!warned) {
-            warned = true;
-            logw << "makeCurrent: stub" << std::endl;
-        }
-        return true;
-    }
-
-    bool swapBuffers() {
-        SDL_GL_SwapWindow(window.mainwindow);
-        return true;
-    }
-
-    void show() {
-        SDL_ShowWindow(window.mainwindow);
-    }
-
-    void hide() {
-        SDL_HideWindow(window.mainwindow);
-    }
-
-    vec2 size() const {
-        int w;
-        int h;
-        SDL_GL_GetDrawableSize(window.mainwindow, &w, &h);
-        return vec2(w, h);
-    }
-
-    void render() {
-        // reset this before onRender so we don't prevent onRender from
-        // scheduling another one..
-        m_renderRequested = false;
-        iface->onRender();
-    }
-
-    void requestRender() {
-        if (m_renderRequested)
-            return;
-        m_renderRequested = true;
-        // we can't trigger the render synchronously. we need to give a chance
-        // to process input, animations, whatever -- so push an event onto the
-        // queue and we'll get back to this later.
-        SDL_Event event;
-
-        SDL_UserEvent renderev;
-        renderev.type = SDL_USEREVENT;
-        renderev.code = 0;
-        renderev.data1 = this;
-        renderev.data2 = NULL;
-
-        event.type = SDL_USEREVENT;
-        event.user = renderev;
-
-        SDL_PushEvent(&event);
-    }
+    Surface *m_surface = nullptr;
+    SDL_Window *m_window = nullptr;
+    SDL_GLContext m_gl = nullptr;
 
     bool m_renderRequested = false;
-
-    SdlWindow window;
-    SurfaceInterface *iface;
 };
 
-inline SdlSurface *SdlBackend::findSurface(unsigned id)
+
+inline unsigned SDLBackend::devicePixelRatio() const
 {
-    for (auto surface : m_surfaces)
-        if (surface->window.id() == id)
-            return surface;
-    return 0;
+    int dw, dh, ww, wh;
+    SDL_GetWindowSize(m_window, &ww, &wh);
+    SDL_GL_GetDrawableSize(m_window, &dw, &dh);
+    return dw / ww;
 }
 
-inline void SdlBackend::processEvents()
+inline vec2 SDLBackend::size() const
+{
+    int w;
+    int h;
+    SDL_GL_GetDrawableSize(m_window, &w, &h);
+    return vec2(w, h);
+}
+
+
+inline void SDLBackend::processEvents()
 {
     SDL_Event event;
     int evt = SDL_PollEvent(nullptr);
@@ -196,9 +116,10 @@ inline void SdlBackend::processEvents()
 
         switch (event.type) {
             case SDL_USEREVENT: {
-                SdlSurface *surface = static_cast<SdlSurface *>(event.user.data1);
-                // process the asynchronous render request
-                surface->render();
+                // reset this before onRender so we don't prevent onRender from
+                // scheduling another one..
+                m_renderRequested = false;
+                m_surface->onRender();
                 break;
             }
             case SDL_MOUSEBUTTONDOWN: {
@@ -224,35 +145,133 @@ inline void SdlBackend::processEvents()
     }
 }
 
-inline void SdlBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
+inline void SDLBackend::sendPointerEvent(SDL_Event *sdlEvent, Event::Type type)
 {
+    assert(m_window);
+    assert(SDL_GetWindowID(m_window) == sdlEvent->button.windowID);
+    assert(m_surface);
+
     PointerEvent pe(type);
-    SdlSurface *surface = findSurface(sdlEvent->button.windowID);
-    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * surface->window.devicePixelRatio());
-    assert(surface);
-    surface->iface->onEvent(&pe);
+    pe.initialize(vec2(sdlEvent->button.x, sdlEvent->button.y) * devicePixelRatio());
+    m_surface->onEvent(&pe);
+}
+
+inline SurfaceBackendImpl *SDLBackend::createSurface(Surface *surface)
+{
+    assert(surface); // Called with valid input
+
+    assert(!m_surface); // there can be only one!
+    assert(!m_window);
+    assert(!m_gl);
+
+    m_surface = surface;
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
+    m_window = SDL_CreateWindow("rengine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                800, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI );
+
+    m_gl = SDL_GL_CreateContext(m_window);
+    SDL_GL_SetSwapInterval(1);
+
+    requestRender();
+
+    return this;
+}
+
+inline void SDLBackend::destroySurface(Surface *surface, SurfaceBackendImpl *impl)
+{
+    SDL_GL_DeleteContext(m_gl);
+    SDL_DestroyWindow(m_window);
+    m_gl = nullptr;
+    m_window = nullptr;
+    m_surface = nullptr;
 }
 
 
-inline Surface *SdlBackend::createSurface(SurfaceInterface *iface)
+inline bool SDLBackend::beginRender()
 {
-    assert(iface);
-    SdlSurface *s = new SdlSurface(iface);
-    m_surfaces.push_back(s);
-    return s;
+    assert(m_window);
+    assert(m_surface);
+    assert(m_gl);
+    int error = SDL_GL_MakeCurrent(m_window, m_gl);
+    if (error != 0) {
+        logw << "SDL_GL_MakeCurrent failed: " << SDL_GetError();
+        return false;
+    }
+    return true;
 }
 
-inline Renderer *SdlBackend::createRenderer(Surface *surface)
+inline bool SDLBackend::commitRender()
 {
-    assert(surface);
+    assert(m_window);
+    assert(m_surface);
+    assert(m_gl);
+    SDL_GL_SwapWindow(m_window);
+    return true;
+}
+
+inline Renderer *SDLBackend::createRenderer()
+{
+    assert(m_surface);
+    assert(m_gl);
     OpenGLRenderer *r = new OpenGLRenderer();
-    r->setTargetSurface(surface);
+    r->setTargetSurface(m_surface);
     return r;
 }
 
+void SDLBackend::requestRender() {
+    if (m_renderRequested)
+        return;
+    m_renderRequested = true;
+    // we can't trigger the render synchronously. we need to give a chance
+    // to process input, animations, whatever -- so push an event onto the
+    // queue and we'll get back to this later.
+    SDL_Event event;
+
+    SDL_UserEvent renderev;
+    renderev.type = SDL_USEREVENT;
+    renderev.code = 0;
+    renderev.data1 = this;
+    renderev.data2 = NULL;
+
+    event.type = SDL_USEREVENT;
+    event.user = renderev;
+
+    SDL_PushEvent(&event);
+}
+
+void SDLBackend::show()
+{
+    assert(m_window);
+    assert(m_surface);
+    SDL_ShowWindow(m_window);
+}
+
+void SDLBackend::hide()
+{
+    assert(m_window);
+    assert(m_surface);
+    SDL_HideWindow(m_window);
+}
+
+void SDLBackend::requestSize(vec2 size)
+{
+    assert(m_window);
+    assert(m_surface);
+    SDL_SetWindowSize(m_window, size.x, size.y);
+}
+
+
+
 #define RENGINE_BACKEND_DEFINE                                             \
     rengine::Backend *rengine::Backend::get() {                            \
-        static rengine::SdlBackend *singleton = new rengine::SdlBackend(); \
+        static rengine::SDLBackend *singleton = new rengine::SDLBackend(); \
         return singleton;                                                  \
     }
 

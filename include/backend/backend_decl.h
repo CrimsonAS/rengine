@@ -27,11 +27,24 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class OpenGLContext
+class Backend
 {
 public:
-    virtual bool makeCurrent(Surface *surface) = 0;
-    virtual bool swapBuffers(Surface *surface) = 0;
+    Backend() : m_running(true) { }
+
+    virtual ~Backend() { }
+
+    static Backend *get();
+
+    void quit();
+    void run();
+
+    virtual void processEvents() = 0;
+
+    virtual SurfaceBackendImpl *createSurface(Surface *) = 0;
+    virtual void destroySurface(Surface *, SurfaceBackendImpl *) = 0;
+
+    bool m_running;
 };
 
 RENGINE_END_NAMESPACE

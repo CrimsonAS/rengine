@@ -41,7 +41,7 @@ struct mat4;
 
 // 'windowsystem' subdir
 class Surface;
-class SurfaceInterface;
+class SurfaceBackendImpl;
 class Event;
 class PointerEvent;
 
@@ -69,12 +69,6 @@ class Backend;
 
 RENGINE_END_NAMESPACE
 
-// Because Qt has some very special header include rules, we need to include
-// these things first...
-#if defined RENGINE_BACKEND_QT
-#include "backend/qt/qtpreinclude.h"
-#endif
-
 #include "common/logging.h"
 #include "common/mathtypes.h"
 #include "common/allocationpool.h"
@@ -84,6 +78,8 @@ RENGINE_END_NAMESPACE
 #include "object/property.h"
 #include "object/signal.h"
 #include "object/replicator.h"
+
+#include "backend/backend_decl.h"
 
 #include "windowsystem/event.h"
 #include "windowsystem/surface.h"
@@ -102,12 +98,10 @@ RENGINE_END_NAMESPACE
 
 #include "backend/backend.h"
 
-#include "util/standardsurfaceinterface.h"
+#include "util/standardsurface.h"
 #include "util/maindefine.h"
 
-#if defined RENGINE_BACKEND_QT
-#include "backend/qt/qtbackend.h"
-#elif defined RENGINE_BACKEND_SDL
+#if defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
 #elif defined RENGINE_BACKEND_SFHWC
 #include "backend/sfhwc/sfhwc.h"

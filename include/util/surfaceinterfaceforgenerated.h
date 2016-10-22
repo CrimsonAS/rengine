@@ -28,7 +28,7 @@
 RENGINE_BEGIN_NAMESPACE
 
 template <typename Code>
-class SurfaceInterfaceForGenerated : public StandardSurfaceInterface
+class SurfaceInterfaceForGenerated : public StandardSurface
 {
 public:
     Code code;

@@ -27,23 +27,6 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-class Backend
-{
-public:
-    Backend() : m_running(true) { }
-    virtual ~Backend() { }
-
-    static Backend *get();
-
-    void quit();
-    void run();
-    virtual void processEvents() = 0;
-    virtual Surface *createSurface(SurfaceInterface *) = 0;
-    virtual Renderer *createRenderer(Surface *surface) = 0;
-
-    bool m_running;
-};
-
 inline void Backend::quit()
 {
     m_running = false;
