@@ -100,6 +100,7 @@ RENGINE_END_NAMESPACE
 
 #include "util/standardsurface.h"
 #include "util/maindefine.h"
+#include "util/workqueue.h"
 
 #if defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
