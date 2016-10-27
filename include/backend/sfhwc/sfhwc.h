@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    Copyright (c) 2016, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -44,24 +44,33 @@ class SfHwcBackend;
 class SfHwcBuffer;
 class SfHwcTouchDevice;
 
-class SfHwcSurface : public Surface, public HWComposerNativeWindow
+class SfHwcSurface : public SurfaceBackendImpl, public HWComposerNativeWindow
 {
 public:
-	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 size);
+	SfHwcSurface(Surface *iface, SfHwcBackend *backend, vec2 size);
 
     void initHwc();
 	void initEgl();
 
     void hide() override;
     void show() override;
-    bool makeCurrent() override;
-    bool swapBuffers() override;
+    bool beginRender() override;
+    bool commitRender() override;
 	vec2 size() const override;
+    void requestSize(vec2 size) override { logd << "resizing is not supported on this backend" << std::endl; }
+
+
     void requestRender() override;
+
+    Renderer *createRenderer() override {
+        OpenGLRenderer *renderer = new OpenGLRenderer();
+        renderer->setTargetSurface(m_surface);
+        return renderer;
+    }
 
    	void present(HWComposerNativeWindowBuffer *buffer) override;
 
-    SurfaceInterface *m_iface;
+    Surface *m_surface;
     SfHwcBackend *m_backend;
 
     double m_vsyncDelta;
@@ -84,19 +93,14 @@ public:
 
     void updateTouch();
 
-    Surface *createSurface(SurfaceInterface *) override;
-
-    Renderer *createRenderer(Surface *surface) override {
-        OpenGLRenderer *renderer = new OpenGLRenderer();
-        renderer->setTargetSurface(surface);
-        return renderer;
-    }
+    SurfaceBackendImpl *createSurface(Surface *surface) override;
+    void destroySurface(Surface *surface, SurfaceBackendImpl *impl) override;
 
     void cb_invalidate() const { logw << std::endl; }
     void cb_vsync(int display, int64_t timestamp);
     void cb_hotplug(int display, int connected) const { logw << "display=" << display << ", connected=" << connected << std::endl; }
 
-    SfHwcSurface *surface = nullptr;
+    SfHwcSurface *hwcSurface = nullptr;
     gralloc_module_t *grallocModule = 0;
     alloc_device_t *allocDevice = 0;
     hw_module_t *hwcModule = 0;

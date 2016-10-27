@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    Copyright (c) 2016, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,10 +30,10 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
+SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
 {
     // We only allow one surface, the output window..
-    assert(!surface);
+    assert(!hwcSurface);
 
     const uint32_t DISPLAY_ATTRIBUTES[] = {
         HWC_DISPLAY_VSYNC_PERIOD,
@@ -62,9 +62,9 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
                 logi << "     - dpi ...: " << dpi.x << ", " << dpi.y << std::endl;
 
                 if (config == 0) {
-                    surface = new SfHwcSurface(iface, this, size);
-                    surface->m_vsyncDelta = values[0] / 1000000.0;
-                    surface->m_dpi = dpi;
+                    hwcSurface = new SfHwcSurface(surface, this, size);
+                    hwcSurface->m_vsyncDelta = values[0] / 1000000.0;
+                    hwcSurface->m_dpi = dpi;
                 }
             }
         }
@@ -80,8 +80,13 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
          << ((value & HWC_DISPLAY_VIRTUAL_BIT) ? " virtual" : "")
          << std::endl;
 
-    assert(surface);
-    return surface;
+    assert(hwcSurface);
+    return hwcSurface;
+}
+
+inline void SfHwcBackend::destroySurface(Surface *surface, SurfaceBackendImpl *impl)
+{
+    delete impl;
 }
 
 inline void sfhwc_hooks_invalidate(const hwc_procs_t *procs) {
@@ -170,8 +175,8 @@ inline void SfHwcBackend::processEvents()
     halfAFrame.tv_sec = 0;
     halfAFrame.tv_usec = 8 * 1000;
 
-    if (surface && surface->m_iface) {
-        surface->m_iface->onRender();
+    if (hwcSurface && hwcSurface->m_surface) {
+        hwcSurface->m_surface->onRender();
 
         updateTouch();
 
@@ -290,7 +295,7 @@ inline void SfHwcBackend::updateTouch()
     if (type != Event::Invalid) {
         PointerEvent pe(type);
         pe.initialize(pointerState.pos);
-        surface->m_iface->onEvent(&pe);
+        hwcSurface->m_surface->onEvent(&pe);
     }
 }
 
