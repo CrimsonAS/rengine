@@ -104,7 +104,7 @@ inline void SfHwcTouchDevice::unlock()
 inline SfHwcTouchDevice::SfHwcTouchDevice()
 {
     memset(&m_pending, 0, sizeof(State));
-    memset(&m_state, 0, sizeof(State));
+    memset(&m_state, 0, sizeof(State) * RENGINE_MAX_TOUCH_HISTORY);
 }
 
 inline void SfHwcTouchDevice::readEvent(const input_event &e)
@@ -117,19 +117,12 @@ inline void SfHwcTouchDevice::readEvent(const input_event &e)
     if (e.type == EV_SYN) {
         // printf("        -- got EV_SYN\n");
         if (e.code == SYN_REPORT) {
-            // After we've created a new 'committed' state.
-            for (int i=0; i<RENGINE_MAX_TOUCH_POINTS; ++i) {
-                Contact &c = m_pending.contacts[i];
-                if (c.lid != c.id) {
-                    c.lid = c.id;
-                    c.lx = c.x;
-                    c.ly = c.y;
-                }
-            }
-            // Commit the pending state into current state.
-            memcpy(&m_state, &m_pending, sizeof(State));
-
-
+            // Make the pending state "actual"
+            lock();
+            m_stateIndex = (m_stateIndex + 1) % RENGINE_MAX_TOUCH_HISTORY;
+            memcpy(&m_state[m_stateIndex], &m_pending, sizeof(State));
+            m_state[m_stateIndex].time = e.time;
+            unlock();
         }
     } else if (e.type == EV_ABS) {
         // printf("        -- got EV_ABS\n");
@@ -140,29 +133,17 @@ inline void SfHwcTouchDevice::readEvent(const input_event &e)
             Contact &c = m_pending.contacts[m_slot];
             if (e.code == ABS_MT_POSITION_X) {
                 // printf("        --- x is: %d\n", e.value);
-                c.lx = c.x;
                 c.x = e.value;
             } else if (e.code == ABS_MT_POSITION_Y) {
                 // printf("        --- y is: %d\n", e.value);
-                c.ly = c.y;
                 c.y = e.value;
             } else if (e.code == ABS_MT_TRACKING_ID) {
                 // printf("        --- id is: %d\n", e.value);
-                c.lid = c.id;
                 c.id = e.value;
                 if (e.value >= 0)
                     ++m_pending.count;
                 else
                     --m_pending.count;
-            }
-
-            // Update the timestamp
-            if (e.time.tv_sec != c.t.tv_sec || e.time.tv_usec != c.t.tv_usec) {
-                c.lt = c.t;
-                c.t = e.time;
-                // printf(" --> updated event times: c.t=%d.%06d, c.lt=%d.%06d\n",
-                //        (int) c.t.tv_sec, (int) c.t.tv_usec,
-                //        (int) c.lt.tv_sec, (int) c.lt.tv_usec);
             }
         }
     }
@@ -173,11 +154,9 @@ inline void SfHwcTouchDevice::run()
     while (m_fd >= 0) {
         input_event event;
         int read = mtdev_get(m_dev, m_fd, &event, 1);
-        lock();
         for (int i=0; i<read; ++i) {
             readEvent(event);
         }
-        unlock();
     }
 
 }

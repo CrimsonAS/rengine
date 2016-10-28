@@ -59,7 +59,6 @@ public:
 	vec2 size() const override;
     void requestSize(vec2 size) override { logd << "resizing is not supported on this backend" << std::endl; }
 
-
     void requestRender() override;
 
     Renderer *createRenderer() override {
@@ -108,20 +107,14 @@ public:
 
     SfHwcTouchDevice *touchDevice;
     struct PointerState {
-        KalmanFilter1D x;
-        KalmanFilter1D y;
-        KalmanFilter1D vx;
-        KalmanFilter1D vy;
-        double timestamp;
+        KalmanFilter2D x;
+        KalmanFilter2D y;
         vec2 pos;
-        bool down;
+        int id;
     } pointerState;
 
     float m_touchPrediction = 0.0f;
-
-    std::mutex m_vsyncMutex;
-    double m_vsyncTime = 0.0;
-    double m_lastVsyncTime = 0.0;
+    float m_touchRate = 0.0f;
 
     bool m_running = true;
 
@@ -169,6 +162,10 @@ private:
 #define RENGINE_MAX_TOUCH_POINTS 10
 #endif
 
+#ifndef RENGINE_MAX_TOUCH_HISTORY
+#define RENGINE_MAX_TOUCH_HISTORY 4
+#endif
+
 class SfHwcTouchDevice
 {
 public:
@@ -196,25 +193,31 @@ public:
         int id;
         int x;
         int y;
-        timeval t;
-
-    // Previous
-        int lid;
-        int lx;
-        int ly;
-        timeval lt;
     };
 
     struct State
     {
         Contact contacts[RENGINE_MAX_TOUCH_POINTS];
         int count;
+        timeval time;
+
+        bool isValid() const { return count > 0 && time.tv_sec > 0 && time.tv_usec > 0; }
     };
 
     void lock();
     void unlock();
 
-    const State &state() const { return m_state; }
+    const State &state(int historical = 0) const {
+        assert(historical >= 0);
+        assert(historical < RENGINE_MAX_TOUCH_HISTORY);
+        if (historical != 0) {
+            int index = m_stateIndex - historical;
+            if (index < 0)
+                index += RENGINE_MAX_TOUCH_HISTORY;
+            return m_state[index];
+        }
+        return m_state[m_stateIndex];
+    }
 
 private:
     void readEvent(const input_event &e);
@@ -231,7 +234,8 @@ private:
 
     int m_slot = 0;
     State m_pending;
-    State m_state;
+    State m_state[RENGINE_MAX_TOUCH_HISTORY];
+    int m_stateIndex = 0;
 
     std::thread m_thread;
     std::mutex m_mutex;
