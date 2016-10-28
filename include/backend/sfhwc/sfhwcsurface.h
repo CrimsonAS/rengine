@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    Copyright (c) 2016, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -114,9 +114,9 @@ inline void sfhwc_initialize_layer(hwc_layer_1_t *l, unsigned compositionType, i
 }
 
 
-SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 size)
+SfHwcSurface::SfHwcSurface(Surface *surface, SfHwcBackend *backend, vec2 size)
 	: HWComposerNativeWindow(size.x, size.y, HAL_PIXEL_FORMAT_RGBA_8888)
-	, m_iface(iface)
+	, m_surface(surface)
 	, m_backend(backend)
 	, m_vsyncDelta(0)
 	, m_size(size)
@@ -127,7 +127,6 @@ SfHwcSurface::SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 
         bufferCount = std::max(1, std::min(atoi(overrideBufferCount), 10));
     }
     setBufferCount(bufferCount);
-	setSurfaceToInterface(iface);
 	initHwc();
 	initEgl();
 }
@@ -150,7 +149,7 @@ void SfHwcSurface::show()
 	// hwc->blank(hwc, 0, 0);
 }
 
-bool SfHwcSurface::makeCurrent()
+bool SfHwcSurface::beginRender()
 {
 	logd << std::endl;
 	EGLBoolean ok = eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
@@ -161,7 +160,7 @@ bool SfHwcSurface::makeCurrent()
 	return true;
 }
 
-bool SfHwcSurface::swapBuffers()
+bool SfHwcSurface::commitRender()
 {
 	logd << std::endl;
     EGLBoolean ok = eglSwapBuffers(m_eglDisplay, m_eglSurface);

@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    Copyright (c) 2016, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -30,10 +30,10 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
+SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
 {
     // We only allow one surface, the output window..
-    assert(!surface);
+    assert(!hwcSurface);
 
     const uint32_t DISPLAY_ATTRIBUTES[] = {
         HWC_DISPLAY_VSYNC_PERIOD,
@@ -62,9 +62,9 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
                 logi << "     - dpi ...: " << dpi.x << ", " << dpi.y << std::endl;
 
                 if (config == 0) {
-                    surface = new SfHwcSurface(iface, this, size);
-                    surface->m_vsyncDelta = values[0] / 1000000.0;
-                    surface->m_dpi = dpi;
+                    hwcSurface = new SfHwcSurface(surface, this, size);
+                    hwcSurface->m_vsyncDelta = values[0] / 1000000.0;
+                    hwcSurface->m_dpi = dpi;
                 }
             }
         }
@@ -80,8 +80,13 @@ Surface *SfHwcBackend::createSurface(SurfaceInterface *iface)
          << ((value & HWC_DISPLAY_VIRTUAL_BIT) ? " virtual" : "")
          << std::endl;
 
-    assert(surface);
-    return surface;
+    assert(hwcSurface);
+    return hwcSurface;
+}
+
+inline void SfHwcBackend::destroySurface(Surface *surface, SurfaceBackendImpl *impl)
+{
+    delete impl;
 }
 
 inline void sfhwc_hooks_invalidate(const hwc_procs_t *procs) {
@@ -152,16 +157,16 @@ inline SfHwcBackend::SfHwcBackend()
     hotplug = sfhwc_hooks_hotplug;
     hwcDevice->registerProcs(hwcDevice, this);
 
-    pointerState.down = false;
+    pointerState.id = -1;
     touchDevice = new SfHwcTouchDevice();
     touchDevice->initialize("/dev/touchscreen");
 
     char *overridePrediction = std::getenv("RENGINE_TOUCH_PREDICTION");
     if (overridePrediction)
-        m_touchPrediction = std::max<float>(0.0f, std::min<float>(500.0f, atof(overridePrediction)));
+        m_touchPrediction = std::max<float>(0.0f, std::min<float>(500.0f, atof(overridePrediction))) / 1000.0f;
     logi << "Touch Device: " << std::endl;
-    logi << " - max points..........: " << RENGINE_MAX_TOUCH_POINTS << " (compile time)" << std::endl;
-    logi << " - # frames predicted .: " << m_touchPrediction << std::endl;
+    logi << " - max points.............: " << RENGINE_MAX_TOUCH_POINTS << " (compile time)" << std::endl;
+    logi << " - prediction in seconds .: " << m_touchPrediction << std::endl;
 }
 
 inline void SfHwcBackend::processEvents()
@@ -170,8 +175,8 @@ inline void SfHwcBackend::processEvents()
     halfAFrame.tv_sec = 0;
     halfAFrame.tv_usec = 8 * 1000;
 
-    if (surface && surface->m_iface) {
-        surface->m_iface->onRender();
+    if (hwcSurface && hwcSurface->m_surface) {
+        hwcSurface->m_surface->onRender();
 
         updateTouch();
 
@@ -182,115 +187,107 @@ inline void SfHwcBackend::processEvents()
 
 inline void SfHwcBackend::cb_vsync(int display, int64_t)
 {
-    // logi << "hit vsync.." << std::endl;
-    timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    m_vsyncMutex.lock();
-    m_vsyncTime = t.tv_sec + t.tv_nsec / 1000000000.0;
-    m_vsyncMutex.unlock();
+    // logi << "vsync.." << std::endl;
 }
 
-// inline vec2 sfhwcbackend_predictTouchPoint(const SfHwcTouchDevice::Contact &c, double lastVsync)
-// {
-//     vec2 curContact(c.x, c.y);
-//     vec2 lastContact(c.lx, c.ly);
-
-//     double nowTime = lastVsync + 0.5/60.0;
-//     double curTime = c.t.tv_sec + c.t.tv_usec / 1000000.0;
-//     double lastTime = c.lt.tv_sec + c.lt.tv_usec / 1000000.0;
-//     // double nowTime += 0.01666 - fmod(nowTime, 0.01666);
-
-//     vec2 velocity = (curContact - lastContact) / (curTime - lastTime);
-
-//     vec2 predPoint = velocity * (nowTime - curTime) + curContact;
-
-//     vec2 d = predPoint - curContact;
-//     printf("touch times: now=%f, c.t=%f, c.lt=%f, velocity=%f,%f -- dt=%f, delta=(%6.2f,%6.2f)\n",
-//            nowTime, curTime, lastTime, velocity.x, velocity.y,
-//            nowTime - curTime,
-//            d.x, d.y);
-
-//     // printf(" - compensation: %f, dy=%f, dt=%f\n", sqrt(d.x * d.x + d.y * d.y), d.y, nowTime - curTime);
-
-//     return predPoint;
-// }
-
-inline vec2 SfHwcBackend::predictPointerState(vec2 pos, PointerState *pointerState)
-{
-    vec2 last(pointerState->x.value(), pointerState->y.value());
-    vec2 current(pointerState->x.update(pos.x), pointerState->y.update(pos.y));
-
-    vec2 velocity(pointerState->vx.value(), pointerState->vy.value());
-    // logi << " -- prediction" << velocity * m_touchPrediction / 1000.0f << std::endl;
-
-    return current + velocity * m_touchPrediction / 1000.0f;
-}
-
-static vec2 sfhwc_backend_contact_velocity(const SfHwcTouchDevice::Contact &c)
-{
-    double t = c.t.tv_sec + c.t.tv_usec / 1000000.0;
-    double lt = c.lt.tv_sec + c.lt.tv_usec / 1000000.0;
-    // printf(" -- update velocity: t=%f->%f, pos=%d,%d, last=%d,%d\n",
-    //        lt, t,
-    //        c.x, c.y, c.lx, c.ly);
-    if (t == lt)
-        return vec2(0, 0);
-    double dt = t - lt;
-    return vec2((c.x - c.lx) / dt, (c.y - c.ly) / dt);
+inline double sfhwc_timeval_to_seconds(timeval t) {
+    return t.tv_sec + t.tv_usec / 1000000.0;
 }
 
 inline void SfHwcBackend::updateTouch()
 {
+    // m_vsyncMutex.lock();
+    // double vsyncTime = m_vsyncTime;
+    // m_vsyncMutex.unlock();
+    double vsyncDelta = hwcSurface->m_vsyncDelta / 1000.0;
+
     touchDevice->lock();
-    Event::Type type = Event::Invalid;
-    const SfHwcTouchDevice::State &s = touchDevice->state();
-    if (s.count) {
-        for (int i=0; i<RENGINE_MAX_TOUCH_POINTS; ++i) {
-            if (s.contacts[i].id >= 0) {
-                const SfHwcTouchDevice::Contact &c = s.contacts[i];
-                double timestamp = c.t.tv_sec + c.t.tv_usec / 1000000.0;
-                if (!pointerState.down) {
-                    type = Event::PointerDown;
-                    pointerState.down = true;
-                    pointerState.x.initialize(c.x);
-                    pointerState.y.initialize(c.y);
-                    pointerState.pos = vec2(c.x, c.y);
-                    vec2 v = sfhwc_backend_contact_velocity(c);
-                    pointerState.vx.initialize(v.x);
-                    pointerState.vy.initialize(v.y);
-                }
-                else {
-                    type = Event::PointerMove;
-                    pointerState.pos = predictPointerState(vec2(c.x, c.y), &pointerState);
-                    vec2 v = sfhwc_backend_contact_velocity(c);
-                    if (pointerState.timestamp == timestamp)
-                        v = vec2(0.0f);
-                    pointerState.vx.update(v.x);
-                    pointerState.vy.update(v.y);
-                }
-                pointerState.timestamp = timestamp;
-                break;
-            }
-        }
-    } else if (pointerState.down) {
-        type = Event::PointerUp;
-        pointerState.down = false;
-    }
+    SfHwcTouchDevice::State state = touchDevice->state();
+    SfHwcTouchDevice::State lastState = touchDevice->state(1);
     touchDevice->unlock();
 
-    // if (pointerState.down) {
-    //     printf("updateTouch: pos=%6.1f,%6.1f; velocity=%6.1f,%6.1f\n",
-    //            pointerState.x.value(),
-    //            pointerState.y.value(),
-    //            pointerState.vx.value(),
-    //            pointerState.vy.value()
-    //         );
-    // }
+    if (state.count) {
 
-    if (type != Event::Invalid) {
+        // Calculate an estimate of the time between touch samples. We use the
+        // current and last touch sample set to figure this out and use the
+        // value to calibrate our estimate over time. We do this rather than
+        // relying directly on the delta between current and last as there
+        // is quite a large margin of error when a system is under load.
+        double touchTime = sfhwc_timeval_to_seconds(state.time);
+        double lastTouchTime = sfhwc_timeval_to_seconds(lastState.time);
+        double touchTimeDelta = touchTime - lastTouchTime;
+        if (m_touchRate == 0) {
+            // Set initial value..
+            if (touchTimeDelta < vsyncDelta)
+                m_touchRate = touchTimeDelta;
+            else
+                m_touchRate = vsyncDelta / 2.0;
+        } else {
+            // update our estimate. We ignore the delta if it is larger than a
+            // vsync cycle which we interpret as either a lack of events for some
+            // period of time (aka, no movement), or that there was some severe
+            // fluctuation which should also be ignored..
+            if (touchTimeDelta < vsyncDelta) {
+                // The estimate update formula is meant to give weight to the
+                // current value (which is thus assumed to tangent the optimal
+                // estimate) while providing updates over time and giving only a
+                // small correction effect from errors which stray from the
+                // optimum.
+                m_touchRate = sqrt(m_touchRate * m_touchRate * 0.9 + touchTimeDelta * touchTimeDelta * 0.1);
+            }
+        }
+        // std::cout << "touch rate estimate is: " << m_touchRate << std::endl;
+
+        Event::Type type = Event::Invalid;
+        for (int i=0; i<RENGINE_MAX_TOUCH_POINTS; ++i) {
+            SfHwcTouchDevice::Contact c = state.contacts[i];
+            if (c.id > 0) {
+                vec2 velocity;
+                if (lastState.isValid()) {
+                    for (int j=0; j<RENGINE_MAX_TOUCH_POINTS; ++j) {
+                        SfHwcTouchDevice::Contact lc = lastState.contacts[i];
+                        if (lc.id == c.id) {
+                            velocity = vec2(c.x - lc.x, c.y - lc.y) / m_touchRate;
+                            break;
+                        }
+                    }
+                }
+
+                if (pointerState.id != c.id) {
+                    type = Event::PointerDown;
+                    pointerState.id = c.id;
+                    pointerState.x.initialize(c.x, velocity.x);
+                    pointerState.y.initialize(c.y, velocity.y);
+                } else {
+                    type = Event::PointerMove;
+                    pointerState.x.update(c.x, velocity.x, vsyncDelta);
+                    pointerState.y.update(c.y, velocity.y, vsyncDelta);
+                }
+            }
+        }
+
+        // if (pointerState.id > 0) {
+        //     printf("updateTouch: pos=%6.1f,%6.1f; velocity=%6.1f,%6.1f\n",
+        //            pointerState.x.position(),
+        //            pointerState.y.position(),
+        //            pointerState.x.velocity(),
+        //            pointerState.y.velocity());
+        // }
+
+        vec2 pos(pointerState.x.position(), pointerState.y.position());
+        vec2 vel(pointerState.x.velocity(), pointerState.y.velocity());
+        pointerState.pos = pos + vel * m_touchPrediction;
+
+        assert(type != Event::Invalid);
         PointerEvent pe(type);
         pe.initialize(pointerState.pos);
-        surface->m_iface->onEvent(&pe);
+        hwcSurface->m_surface->onEvent(&pe);
+
+    } else if (pointerState.id > 0) {
+        PointerEvent pe(Event::PointerUp);
+        pe.initialize(pointerState.pos);
+        hwcSurface->m_surface->onEvent(&pe);
+        pointerState.id = -1;
     }
 }
 

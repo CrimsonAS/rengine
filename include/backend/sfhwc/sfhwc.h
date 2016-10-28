@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
-    Copyright (c) 2015, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
+    Copyright (c) 2016, Jolla Ltd, author: <gunnar.sletta@jollamobile.com>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -44,24 +44,32 @@ class SfHwcBackend;
 class SfHwcBuffer;
 class SfHwcTouchDevice;
 
-class SfHwcSurface : public Surface, public HWComposerNativeWindow
+class SfHwcSurface : public SurfaceBackendImpl, public HWComposerNativeWindow
 {
 public:
-	SfHwcSurface(SurfaceInterface *iface, SfHwcBackend *backend, vec2 size);
+	SfHwcSurface(Surface *iface, SfHwcBackend *backend, vec2 size);
 
     void initHwc();
 	void initEgl();
 
     void hide() override;
     void show() override;
-    bool makeCurrent() override;
-    bool swapBuffers() override;
+    bool beginRender() override;
+    bool commitRender() override;
 	vec2 size() const override;
+    void requestSize(vec2 size) override { logd << "resizing is not supported on this backend" << std::endl; }
+
     void requestRender() override;
+
+    Renderer *createRenderer() override {
+        OpenGLRenderer *renderer = new OpenGLRenderer();
+        renderer->setTargetSurface(m_surface);
+        return renderer;
+    }
 
    	void present(HWComposerNativeWindowBuffer *buffer) override;
 
-    SurfaceInterface *m_iface;
+    Surface *m_surface;
     SfHwcBackend *m_backend;
 
     double m_vsyncDelta;
@@ -84,19 +92,14 @@ public:
 
     void updateTouch();
 
-    Surface *createSurface(SurfaceInterface *) override;
-
-    Renderer *createRenderer(Surface *surface) override {
-        OpenGLRenderer *renderer = new OpenGLRenderer();
-        renderer->setTargetSurface(surface);
-        return renderer;
-    }
+    SurfaceBackendImpl *createSurface(Surface *surface) override;
+    void destroySurface(Surface *surface, SurfaceBackendImpl *impl) override;
 
     void cb_invalidate() const { logw << std::endl; }
     void cb_vsync(int display, int64_t timestamp);
     void cb_hotplug(int display, int connected) const { logw << "display=" << display << ", connected=" << connected << std::endl; }
 
-    SfHwcSurface *surface = nullptr;
+    SfHwcSurface *hwcSurface = nullptr;
     gralloc_module_t *grallocModule = 0;
     alloc_device_t *allocDevice = 0;
     hw_module_t *hwcModule = 0;
@@ -104,20 +107,14 @@ public:
 
     SfHwcTouchDevice *touchDevice;
     struct PointerState {
-        KalmanFilter1D x;
-        KalmanFilter1D y;
-        KalmanFilter1D vx;
-        KalmanFilter1D vy;
-        double timestamp;
+        KalmanFilter2D x;
+        KalmanFilter2D y;
         vec2 pos;
-        bool down;
+        int id;
     } pointerState;
 
     float m_touchPrediction = 0.0f;
-
-    std::mutex m_vsyncMutex;
-    double m_vsyncTime = 0.0;
-    double m_lastVsyncTime = 0.0;
+    float m_touchRate = 0.0f;
 
     bool m_running = true;
 
@@ -165,6 +162,10 @@ private:
 #define RENGINE_MAX_TOUCH_POINTS 10
 #endif
 
+#ifndef RENGINE_MAX_TOUCH_HISTORY
+#define RENGINE_MAX_TOUCH_HISTORY 4
+#endif
+
 class SfHwcTouchDevice
 {
 public:
@@ -192,25 +193,31 @@ public:
         int id;
         int x;
         int y;
-        timeval t;
-
-    // Previous
-        int lid;
-        int lx;
-        int ly;
-        timeval lt;
     };
 
     struct State
     {
         Contact contacts[RENGINE_MAX_TOUCH_POINTS];
         int count;
+        timeval time;
+
+        bool isValid() const { return count > 0 && time.tv_sec > 0 && time.tv_usec > 0; }
     };
 
     void lock();
     void unlock();
 
-    const State &state() const { return m_state; }
+    const State &state(int historical = 0) const {
+        assert(historical >= 0);
+        assert(historical < RENGINE_MAX_TOUCH_HISTORY);
+        if (historical != 0) {
+            int index = m_stateIndex - historical;
+            if (index < 0)
+                index += RENGINE_MAX_TOUCH_HISTORY;
+            return m_state[index];
+        }
+        return m_state[m_stateIndex];
+    }
 
 private:
     void readEvent(const input_event &e);
@@ -227,7 +234,8 @@ private:
 
     int m_slot = 0;
     State m_pending;
-    State m_state;
+    State m_state[RENGINE_MAX_TOUCH_HISTORY];
+    int m_stateIndex = 0;
 
     std::thread m_thread;
     std::mutex m_mutex;

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <memory>
+
 #define RENGINE_NAMESPACE_PREFIX rengine::
 #define RENGINE_BEGIN_NAMESPACE namespace rengine {
 #define RENGINE_END_NAMESPACE }
