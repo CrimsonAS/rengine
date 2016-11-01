@@ -30,7 +30,7 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
+inline SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
 {
     // We only allow one surface, the output window..
     assert(!hwcSurface);
