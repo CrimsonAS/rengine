@@ -57,7 +57,7 @@ public:
     bool beginRender() override;
     bool commitRender() override;
 	vec2 size() const override;
-    void requestSize(vec2 size) override { logd << "resizing is not supported on this backend" << std::endl; }
+    void requestSize(vec2) override { logd << "resizing is not supported on this backend" << std::endl; }
 
     void requestRender() override;
 

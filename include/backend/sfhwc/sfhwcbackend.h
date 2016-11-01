@@ -84,7 +84,7 @@ SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
     return hwcSurface;
 }
 
-inline void SfHwcBackend::destroySurface(Surface *surface, SurfaceBackendImpl *impl)
+inline void SfHwcBackend::destroySurface(Surface *, SurfaceBackendImpl *impl)
 {
     delete impl;
 }
@@ -185,7 +185,7 @@ inline void SfHwcBackend::processEvents()
     }
 }
 
-inline void SfHwcBackend::cb_vsync(int display, int64_t)
+inline void SfHwcBackend::cb_vsync(int /*display*/, int64_t /*time*/)
 {
     // logi << "vsync.." << std::endl;
 }

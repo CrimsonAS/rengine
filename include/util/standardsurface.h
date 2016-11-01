@@ -84,7 +84,7 @@ public:
         }
     }
 
-    virtual bool onPointerEvent(Node *node, PointerEvent *event) {
+    virtual bool onPointerEvent(Node * /*node*/, PointerEvent * /*event*/) {
         return true;
     }
 
