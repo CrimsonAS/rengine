@@ -124,7 +124,6 @@ inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
         }
 
     Texture *layer = renderer->createTextureFromImageData(vec2(w,h), Texture::RGBA_32, data);
-    assert(layer);
     STBI_FREE(data);
     return layer;
 }

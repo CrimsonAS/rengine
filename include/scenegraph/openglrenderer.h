@@ -442,12 +442,16 @@ inline void OpenGLRenderer::prepass(Node *n)
 {
     n->preprocess();
     switch (n->type()) {
-    case Node::TextureNodeType:
-        ++m_numTextureNodes;
-        break;
-    case Node::RectangleNodeType:
-        ++m_numRectangleNodes;
-        break;
+    case Node::TextureNodeType: {
+        TextureNode *tn = static_cast<TextureNode *>(n);
+        if (tn->width() != 0.0f && tn->height() != 0.0f && tn->texture() != nullptr)
+            ++m_numTextureNodes;
+    }   break;
+    case Node::RectangleNodeType: {
+        RectangleNode *rn = static_cast<RectangleNode *>(n);
+        if (rn->width() != 0.0f && rn->height() != 0.0f)
+            ++m_numRectangleNodes;
+    }   break;
     case Node::TransformNodeType:
         ++m_numTransformNodes;
         if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
@@ -493,6 +497,11 @@ inline void OpenGLRenderer::build(Node *n)
     case Node::TextureNodeType:
     case Node::RectangleNodeType: {
         rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
+
+        // Skip if empty..
+        if (geometry.width() == 0 || geometry.height() == 0 || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0))
+            break;
+
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
@@ -828,7 +837,7 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
             drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
         } else if (e->node->type() == Node::TextureNodeType) {
             // std::cout << space << "---> texture quad, vbo=" << e->vboOffset << std::endl;
-            drawTextureQuad(e->vboOffset, static_cast<TextureNode *>(e->node)->layer()->textureId());
+            drawTextureQuad(e->vboOffset, static_cast<TextureNode *>(e->node)->texture()->textureId());
         } else if (e->node->type() == Node::OpacityNodeType && e->layered) {
             // std::cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             drawTextureQuad(e->vboOffset, e->texture, static_cast<OpacityNode *>(e->node)->opacity());
