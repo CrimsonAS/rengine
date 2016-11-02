@@ -17,7 +17,7 @@ inline const char *openglrenderer_fsh_solid() { return RENGINE_GLSL(
     }
 ); }
 
-inline const char *openglrenderer_vsh_layer() { return RENGINE_GLSL(
+inline const char *openglrenderer_vsh_texture() { return RENGINE_GLSL(
     attribute highp vec2 aV;
     attribute highp vec2 aT;
     uniform highp mat4 m;
@@ -28,7 +28,7 @@ inline const char *openglrenderer_vsh_layer() { return RENGINE_GLSL(
     }
 ); }
 
-inline const char *openglrenderer_fsh_layer() { return RENGINE_GLSL(
+inline const char *openglrenderer_fsh_texture() { return RENGINE_GLSL(
     uniform lowp sampler2D t;
     varying highp vec2 vT;
     void main() {
@@ -36,7 +36,15 @@ inline const char *openglrenderer_fsh_layer() { return RENGINE_GLSL(
     }
 ); }
 
-inline const char *openglrenderer_fsh_layer_alpha() { return RENGINE_GLSL(
+inline const char *openglrenderer_fsh_texture_bgra() { return RENGINE_GLSL(
+    uniform lowp sampler2D t;
+    varying highp vec2 vT;
+    void main() {
+        gl_FragColor = texture2D(t, vT).zyxw;
+    }
+); }
+
+inline const char *openglrenderer_fsh_texture_alpha() { return RENGINE_GLSL(
     uniform lowp sampler2D t;
     uniform lowp float alpha;
     varying highp vec2 vT;
@@ -45,7 +53,7 @@ inline const char *openglrenderer_fsh_layer_alpha() { return RENGINE_GLSL(
     }
 ); }
 
-inline const char *openglrenderer_fsh_layer_colorfilter() { return RENGINE_GLSL(
+inline const char *openglrenderer_fsh_texture_colorfilter() { return RENGINE_GLSL(
     uniform lowp sampler2D t;
     uniform lowp mat4 CM;
     varying highp vec2 vT;

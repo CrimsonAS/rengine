@@ -36,6 +36,8 @@ public:
         AlphaFormatMask = 0x1000,
         RGBA_32 = 1 | AlphaFormatMask,
         RGBx_32 = 2,
+        BGRA_32 = 3 | AlphaFormatMask,
+        BGRx_32 = 4,
     };
 
     /*!
