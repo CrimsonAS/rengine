@@ -30,7 +30,7 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
+inline SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
 {
     // We only allow one surface, the output window..
     assert(!hwcSurface);
@@ -84,7 +84,7 @@ SurfaceBackendImpl *SfHwcBackend::createSurface(Surface *surface)
     return hwcSurface;
 }
 
-inline void SfHwcBackend::destroySurface(Surface *surface, SurfaceBackendImpl *impl)
+inline void SfHwcBackend::destroySurface(Surface *, SurfaceBackendImpl *impl)
 {
     delete impl;
 }
@@ -185,7 +185,7 @@ inline void SfHwcBackend::processEvents()
     }
 }
 
-inline void SfHwcBackend::cb_vsync(int display, int64_t)
+inline void SfHwcBackend::cb_vsync(int /*display*/, int64_t /*time*/)
 {
     // logi << "vsync.." << std::endl;
 }

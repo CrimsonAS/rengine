@@ -194,7 +194,9 @@ public:
     // }
 
     /*!
-     * Returns the number of children in this node
+     * Returns the number of children in this node.
+     *
+     * This calculation is O(n).
      */
     int childCount() const {
         int c = 0;
@@ -630,15 +632,15 @@ protected:
 
 class TextureNode : public RectangleNodeBase {
 public:
-    const Texture *layer() const { return m_layer; }
-    void setTexture(const Texture *layer) { m_layer = layer; }
+    const Texture *texture() const { return m_texture; }
+    void setTexture(const Texture *texture) { m_texture = texture; }
 
     RENGINE_ALLOCATION_POOL_DECLARATION(TextureNode, rengine_TextureNode);
 
-    static TextureNode *create(rect2d geometry, const Texture *layer) {
+    static TextureNode *create(rect2d geometry, const Texture *texture) {
         auto node = create();
         node->setGeometry(geometry);
-        node->setTexture(layer);
+        node->setTexture(texture);
         return node;
     }
 
@@ -647,11 +649,10 @@ public:
 protected:
     TextureNode()
         : RectangleNodeBase(TextureNodeType)
-        , m_layer(0)
     {
     }
 
-    const Texture *m_layer;
+    const Texture *m_texture = nullptr;
 };
 
 class ColorFilterNode : public Node {

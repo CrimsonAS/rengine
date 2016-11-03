@@ -89,10 +89,11 @@ public:
     enum ProgramUpdate {
         UpdateSolidProgram          = 0x01,
         UpdateTextureProgram        = 0x02,
-        UpdateAlphaTextureProgram   = 0x04,
-        UpdateColorFilterProgram    = 0x08,
-        UpdateBlurProgram           = 0x10,
-        UpdateShadowProgram         = 0x20,
+        UpdateTextureBgrProgram     = 0x04,
+        UpdateAlphaTextureProgram   = 0x08,
+        UpdateColorFilterProgram    = 0x10,
+        UpdateBlurProgram           = 0x20,
+        UpdateShadowProgram         = 0x40,
         UpdateAllPrograms           = 0xffffffff
     };
 
@@ -100,6 +101,7 @@ public:
     ~OpenGLRenderer();
 
     Texture *createTextureFromImageData(vec2 size, Texture::Format format, void *data) override;
+
     void initialize() override;
     bool render() override;
     void frameSwapped() override { m_texturePool.compact(); }
@@ -108,7 +110,7 @@ public:
     void prepass(Node *n);
     void build(Node *n);
     void drawColorQuad(unsigned bufferOffset, vec4 color);
-    void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0);
+    void drawTextureQuad(unsigned bufferOffset, GLuint texId, float opacity = 1.0, Texture::Format format = Texture::RGBA_32);
     void drawColorFilterQuad(unsigned bufferOffset, GLuint texId, mat4 cm);
     void drawBlurQuad(unsigned bufferOffset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step);
     void drawShadowQuad(unsigned bufferOffset, GLuint texId, int radius, vec2 renderSize, vec2 textureSize, vec2 step, vec4 color);
@@ -121,16 +123,19 @@ public:
 
     void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
 
-    struct TextureProgram : public Program {
+    struct : public Program {
         int matrix;
-    } prog_layer;
-    struct AlphaTextureProgram : public Program {
+    } prog_texture;
+    struct : public Program {
+        int matrix;
+    } prog_texture_bgr;
+    struct : public Program {
         int alpha;
     } prog_alphaTexture;
-    struct SolidProgram : public Program {
+    struct : public Program {
         int color;
     } prog_solid;
-    struct ColorFilterProgram : public Program {
+    struct : public Program {
         int colorMatrix;
     } prog_colorFilter;
     struct BlurProgram : public Program {
@@ -139,7 +144,7 @@ public:
         int sigma;
         int step;
     } prog_blur;
-    struct ShadowProgram : public BlurProgram {
+    struct : public BlurProgram {
         int color;
     } prog_shadow;
 
@@ -216,8 +221,6 @@ inline OpenGLRenderer::OpenGLRenderer()
     , m_render3d(false)
     , m_layered(false)
 {
-    std::memset(&prog_layer, 0, sizeof(prog_layer));
-    std::memset(&prog_solid, 0, sizeof(prog_solid));
     initialize();
 }
 
@@ -234,16 +237,16 @@ inline bool OpenGLRenderer::readPixels(int x, int y, int w, int h, unsigned *byt
     // Read line-by-line and flip it so we get what we want out..
     // Slow as hell, but this is used for autotesting, so who cares..
     for (int i=0; i<h; ++i)
-        glReadPixels(x, h - i - 1, w, 1, GL_RGBA, GL_UNSIGNED_BYTE, bytes + i * w);
+        glReadPixels(x, y + h - i - 1, w, 1, GL_RGBA, GL_UNSIGNED_BYTE, bytes + i * w);
     return true;
 }
 
 inline Texture *OpenGLRenderer::createTextureFromImageData(vec2 size, Texture::Format format, void *data)
 {
-    OpenGLTexture *layer = new OpenGLTexture();
-    layer->setFormat(format);
-    layer->upload(size.x, size.y, data);
-    return layer;
+    OpenGLTexture *texture = new OpenGLTexture();
+    texture->setFormat(format);
+    texture->upload(size.x, size.y, data);
+    return texture;
 }
 
 inline void OpenGLRenderer::initialize()
@@ -266,12 +269,16 @@ inline void OpenGLRenderer::initialize()
     std::vector<const char *> attrsV;
     attrsV.push_back("aV");
 
-    // Default layer shader
-    prog_layer.initialize(openglrenderer_vsh_layer(), openglrenderer_fsh_layer(), attrsVT);
-    prog_layer.matrix = prog_layer.resolve("m");
+    // Default texture shader
+    prog_texture.initialize(openglrenderer_vsh_texture(), openglrenderer_fsh_texture(), attrsVT);
+    prog_texture.matrix = prog_texture.resolve("m");
 
-    // Alpha layer shader
-    prog_alphaTexture.initialize(openglrenderer_vsh_layer(), openglrenderer_fsh_layer_alpha(), attrsVT);
+    // BGRA texture shader
+    prog_texture_bgr.initialize(openglrenderer_vsh_texture(), openglrenderer_fsh_texture_bgra(), attrsVT);
+    prog_texture_bgr.matrix = prog_texture.resolve("m");
+
+    // Alpha texture shader
+    prog_alphaTexture.initialize(openglrenderer_vsh_texture(), openglrenderer_fsh_texture_alpha(), attrsVT);
     prog_alphaTexture.matrix = prog_alphaTexture.resolve("m");
     prog_alphaTexture.alpha = prog_alphaTexture.resolve("alpha");
 
@@ -281,7 +288,7 @@ inline void OpenGLRenderer::initialize()
     prog_solid.color = prog_solid.resolve("color");
 
     // Color filter shader..
-    prog_colorFilter.initialize(openglrenderer_vsh_layer(), openglrenderer_fsh_layer_colorfilter(), attrsVT);
+    prog_colorFilter.initialize(openglrenderer_vsh_texture(), openglrenderer_fsh_texture_colorfilter(), attrsVT);
     prog_colorFilter.matrix = prog_solid.resolve("m");
     prog_colorFilter.colorMatrix = prog_colorFilter.resolve("CM");
 
@@ -355,11 +362,16 @@ inline void OpenGLRenderer::drawColorFilterQuad(unsigned offset, GLuint texId, m
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-inline void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacity)
+inline void OpenGLRenderer::drawTextureQuad(unsigned offset, GLuint texId, float opacity, Texture::Format format)
 {
     if (opacity == 1) {
-        activateShader(&prog_layer);
-        ensureMatrixUpdated(UpdateTextureProgram, &prog_layer);
+        if (format == Texture::BGRA_32 || format == Texture::BGRx_32) {
+            activateShader(&prog_texture_bgr);
+            ensureMatrixUpdated(UpdateTextureBgrProgram, &prog_texture_bgr);
+        } else {
+            activateShader(&prog_texture);
+            ensureMatrixUpdated(UpdateTextureProgram, &prog_texture);
+        }
     } else {
         activateShader(&prog_alphaTexture);
         ensureMatrixUpdated(UpdateAlphaTextureProgram, &prog_alphaTexture);
@@ -442,12 +454,16 @@ inline void OpenGLRenderer::prepass(Node *n)
 {
     n->preprocess();
     switch (n->type()) {
-    case Node::TextureNodeType:
-        ++m_numTextureNodes;
-        break;
-    case Node::RectangleNodeType:
-        ++m_numRectangleNodes;
-        break;
+    case Node::TextureNodeType: {
+        TextureNode *tn = static_cast<TextureNode *>(n);
+        if (tn->width() != 0.0f && tn->height() != 0.0f && tn->texture() != nullptr)
+            ++m_numTextureNodes;
+    }   break;
+    case Node::RectangleNodeType: {
+        RectangleNode *rn = static_cast<RectangleNode *>(n);
+        if (rn->width() != 0.0f && rn->height() != 0.0f)
+            ++m_numRectangleNodes;
+    }   break;
     case Node::TransformNodeType:
         ++m_numTransformNodes;
         if (static_cast<TransformNode *>(n)->projectionDepth() > 0)
@@ -493,6 +509,11 @@ inline void OpenGLRenderer::build(Node *n)
     case Node::TextureNodeType:
     case Node::RectangleNodeType: {
         rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
+
+        // Skip if empty..
+        if (geometry.width() == 0 || geometry.height() == 0 || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0))
+            break;
+
         Element *e = m_elements + m_elementIndex;
         e->node = n;
         e->vboOffset = m_vertexIndex;
@@ -828,7 +849,8 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
             drawColorQuad(e->vboOffset, static_cast<RectangleNode *>(e->node)->color());
         } else if (e->node->type() == Node::TextureNodeType) {
             // std::cout << space << "---> texture quad, vbo=" << e->vboOffset << std::endl;
-            drawTextureQuad(e->vboOffset, static_cast<TextureNode *>(e->node)->layer()->textureId());
+            const Texture *texture = static_cast<TextureNode *>(e->node)->texture();
+            drawTextureQuad(e->vboOffset, texture->textureId(), 1.0f, texture->format());
         } else if (e->node->type() == Node::OpacityNodeType && e->layered) {
             // std::cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             drawTextureQuad(e->vboOffset, e->texture, static_cast<OpacityNode *>(e->node)->opacity());

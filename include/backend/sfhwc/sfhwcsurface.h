@@ -114,7 +114,7 @@ inline void sfhwc_initialize_layer(hwc_layer_1_t *l, unsigned compositionType, i
 }
 
 
-SfHwcSurface::SfHwcSurface(Surface *surface, SfHwcBackend *backend, vec2 size)
+inline SfHwcSurface::SfHwcSurface(Surface *surface, SfHwcBackend *backend, vec2 size)
 	: HWComposerNativeWindow(size.x, size.y, HAL_PIXEL_FORMAT_RGBA_8888)
 	, m_surface(surface)
 	, m_backend(backend)
@@ -131,7 +131,7 @@ SfHwcSurface::SfHwcSurface(Surface *surface, SfHwcBackend *backend, vec2 size)
 	initEgl();
 }
 
-void SfHwcSurface::hide()
+inline void SfHwcSurface::hide()
 {
 	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
@@ -140,7 +140,7 @@ void SfHwcSurface::hide()
 	// hwc->blank(hwc, 0, 1);
 }
 
-void SfHwcSurface::show()
+inline void SfHwcSurface::show()
 {
 	logd << std::endl;
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
@@ -149,7 +149,7 @@ void SfHwcSurface::show()
 	// hwc->blank(hwc, 0, 0);
 }
 
-bool SfHwcSurface::beginRender()
+inline bool SfHwcSurface::beginRender()
 {
 	logd << std::endl;
 	EGLBoolean ok = eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext);
@@ -160,7 +160,7 @@ bool SfHwcSurface::beginRender()
 	return true;
 }
 
-bool SfHwcSurface::commitRender()
+inline bool SfHwcSurface::commitRender()
 {
 	logd << std::endl;
     EGLBoolean ok = eglSwapBuffers(m_eglDisplay, m_eglSurface);
@@ -171,17 +171,17 @@ bool SfHwcSurface::commitRender()
     return true;
 }
 
-vec2 SfHwcSurface::size() const
+inline vec2 SfHwcSurface::size() const
 {
 	return m_size;
 }
 
-void SfHwcSurface::requestRender()
+inline void SfHwcSurface::requestRender()
 {
 	logd << std::endl;
 }
 
-void SfHwcSurface::initHwc()
+inline void SfHwcSurface::initHwc()
 {
     size_t size = sizeof(hwc_display_contents_1_t) + 2 * sizeof(hwc_layer_1_t);
     m_hwcList = (hwc_display_contents_1_t *) malloc(size);
@@ -199,7 +199,7 @@ void SfHwcSurface::initHwc()
 
 }
 
-void SfHwcSurface::initEgl()
+inline void SfHwcSurface::initEgl()
 {
 	EGLint const eglConfigAttributes[] = {
 	    EGL_RED_SIZE, 8,
@@ -250,7 +250,7 @@ void SfHwcSurface::initEgl()
 	logi << " - Depth / Stencil .: " << d << " " << s << std::endl;
 }
 
-void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
+inline void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
 	// logw << "buffer=" << (void *) buffer << std::endl;
 

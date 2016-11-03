@@ -47,17 +47,17 @@ class SfHwcTouchDevice;
 class SfHwcSurface : public SurfaceBackendImpl, public HWComposerNativeWindow
 {
 public:
-	SfHwcSurface(Surface *iface, SfHwcBackend *backend, vec2 size);
+    SfHwcSurface(Surface *iface, SfHwcBackend *backend, vec2 size);
 
     void initHwc();
-	void initEgl();
+    void initEgl();
 
     void hide() override;
     void show() override;
     bool beginRender() override;
     bool commitRender() override;
-	vec2 size() const override;
-    void requestSize(vec2 size) override { logd << "resizing is not supported on this backend" << std::endl; }
+    vec2 size() const override;
+    void requestSize(vec2) override { logd << "resizing is not supported on this backend" << std::endl; }
 
     void requestRender() override;
 
@@ -67,7 +67,7 @@ public:
         return renderer;
     }
 
-   	void present(HWComposerNativeWindowBuffer *buffer) override;
+       void present(HWComposerNativeWindowBuffer *buffer) override;
 
     Surface *m_surface;
     SfHwcBackend *m_backend;
@@ -86,7 +86,7 @@ public:
 class SfHwcBackend : public Backend, public hwc_procs_t
 {
 public:
-	SfHwcBackend();
+    SfHwcBackend();
 
     void processEvents() override;
 
@@ -244,11 +244,11 @@ private:
 };
 
 
-#define RENGINE_BACKEND_DEFINE                               \
-    Backend *Backend::get() {                          		 \
-        static SfHwcBackend *singleton = new SfHwcBackend(); \
-        return singleton;                              		 \
-    }                                                  		 \
+#define RENGINE_BACKEND_DEFINE                                                 \
+    rengine::Backend *rengine::Backend::get() {                                \
+        static rengine::SfHwcBackend *singleton = new rengine::SfHwcBackend(); \
+        return singleton;                                                      \
+    }                                                                          \
 
 RENGINE_END_NAMESPACE
 

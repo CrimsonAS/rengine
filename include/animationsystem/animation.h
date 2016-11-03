@@ -114,7 +114,7 @@ public:
         Calling the default implementation will result in an error.
 
      */
-    virtual void tick(double time) { assert(false); };
+    virtual void tick(double /*time*/) { assert(false); };
 
     template <typename Target, typename TimingFunction>
     inline void tick(double time, Target *target, const KeyFrames<Target> *keyFrames, const TimingFunction &func);

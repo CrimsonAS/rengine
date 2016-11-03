@@ -28,7 +28,7 @@
 
 RENGINE_BEGIN_NAMESPACE
 
-SfHwcBuffer::SfHwcBuffer(SfHwcBackend *backend, int w, int h, int format, int usage)
+inline SfHwcBuffer::SfHwcBuffer(SfHwcBackend *backend, int w, int h, int format, int usage)
 	: m_backend(backend)
 	, m_handle(0)
 	, m_bits(0)
@@ -52,12 +52,12 @@ SfHwcBuffer::SfHwcBuffer(SfHwcBackend *backend, int w, int h, int format, int us
     logd << "created buffer, size=" << w << "x" << h << ", format=" << std::hex << format << ", usage=" << usage << std::dec << std::endl;
 }
 
-SfHwcBuffer::~SfHwcBuffer()
+inline SfHwcBuffer::~SfHwcBuffer()
 {
 	release();
 }
 
-void SfHwcBuffer::lock()
+inline void SfHwcBuffer::lock()
 {
 	if (!m_handle)
 		return;
@@ -67,7 +67,7 @@ void SfHwcBuffer::lock()
     }
 }
 
-void SfHwcBuffer::unlock()
+inline void SfHwcBuffer::unlock()
 {
 	if (!m_handle)
 		return;
@@ -76,7 +76,7 @@ void SfHwcBuffer::unlock()
     	logw << "failed..." << std::endl;
 }
 
-void SfHwcBuffer::release()
+inline void SfHwcBuffer::release()
 {
 	if (!m_handle)
 		return;
@@ -88,7 +88,7 @@ void SfHwcBuffer::release()
 	m_height = 0;
 }
 
-void SfHwcBuffer::fillWithCrap()
+inline void SfHwcBuffer::fillWithCrap()
 {
 	assert(isLocked());
 

@@ -72,7 +72,7 @@ public:
         The pixels will be 32 bit RGBA and tightly packed into \a width and \a
         height.
      */
-    virtual bool readPixels(int x, int y, int width, int height, unsigned *bytes) { return false; }
+    virtual bool readPixels(int x, int y, int width, int height, unsigned *bytes) = 0;
 
     /*!
         Called after the frame has been swapped. The renderer can use this
