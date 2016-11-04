@@ -41,7 +41,7 @@ inline void rengine_countFps()
     }
 }
 
-inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
+inline void rengine_fractalTexture(unsigned *bits, vec2 size)
 {
     unsigned r = rand() % 256;
     unsigned g = rand() % 256;
@@ -53,7 +53,6 @@ inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
 
     int w = size.x;
     int h = size.y;
-    unsigned *bits = new unsigned[w * h];
     unsigned stride = w;
 
     for (int iy=0; iy<h; ++iy) {
@@ -85,8 +84,15 @@ inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
             bits[ix + iy * stride] = (pa << 24) | (pb << 16) | (pg << 8) | (pr);
         }
     }
+}
 
-    Texture *texture = renderer->createTextureFromImageData(vec2(w, h), Texture::RGBA_32, bits);
+inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
+{
+    int w = size.x;
+    int h = size.y;
+    unsigned *bits = new unsigned[w * h];
+    rengine_fractalTexture(bits, size);
+    Texture *texture = renderer->createTextureFromImageData(size, Texture::RGBA_32, bits);
     delete [] bits;
     return texture;
 }

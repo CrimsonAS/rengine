@@ -30,6 +30,23 @@
 static int nodeCount = 4;
 static bool useTextures = false;
 
+class CreateFractalJob : public WorkQueue::Job
+{
+public:
+    void onExecute()
+    {
+        cout << "Creating texture: " << index << endl;
+        bits.resize(size.x * size.y);
+        rengine_fractalTexture(bits.data(), size);
+        cout << " -> texture all done..." << endl;
+    }
+
+    int index;
+    vec2 size;
+    std::vector<unsigned> bits;
+    TextureNode *node;
+};
+
 class BlendBenchWindow : public StandardSurface
 {
 public:
@@ -40,7 +57,29 @@ public:
 
         requestRender();
 
-        rengine_countFps();
+        // Check for completed jobs and perform the texture upload if so..
+        while (!m_pendingJobs.empty() && m_pendingJobs.front()->hasCompleted()) {
+            shared_ptr<WorkQueue::Job> job = m_pendingJobs.front();
+            m_pendingJobs.pop_front();
+
+            CreateFractalJob *fractalJob = static_cast<CreateFractalJob *>(job.get());
+            Texture *texture = renderer()->createTextureFromImageData(fractalJob->size, Texture::RGBA_32, fractalJob->bits.data());
+            fractalJob->node->setTexture(texture);
+
+            cout << " - updated texture for node" << fractalJob->index
+                 << ", node=" << fractalJob->node
+                 << ", size=" << fractalJob->node->geometry()
+                 << ", texture=" << fractalJob->node->texture()->textureId()
+                 << ", textureSize=" << fractalJob->node->texture()->size()
+                 << endl;
+
+            if (m_pendingJobs.empty())
+                cout << "All textures have been created, so FPS should now be stable-ish..." << endl;
+        }
+
+        // Only report FPS once all textures are created..
+        if (m_pendingJobs.empty())
+            rengine_countFps();
 
         if (old)
             return old;
@@ -56,6 +95,7 @@ public:
         else
             cout << "creating " << nodeCount << " solid-color layers.." << endl;
 
+        // Create the scene graph..
         Node *root = Node::create();
         for (int i=0; i<nodeCount; ++i) {
             TransformNode *rotation = TransformNode::create();
@@ -64,9 +104,16 @@ public:
                        << rotation
                       );
             if (useTextures) {
-                cout << "Creating texture: " << (i+1) << endl;
-                Texture *texture = rengine_fractalTexture(renderer(), vec2(dim, dim));
-                *rotation << TextureNode::create(geometry, texture);
+                CreateFractalJob *job = new CreateFractalJob();
+                job->node = TextureNode::create(geometry, nullptr);
+                job->size = geometry.size();
+                job->index = i + 1;
+                *rotation << job->node;
+
+                shared_ptr<WorkQueue::Job> sjob(job);
+                m_pendingJobs.push_back(sjob);
+                workQueue()->schedule(sjob);
+
             } else {
                 *rotation << RectangleNode::create(geometry, vec4(rnd(), rnd(), rnd(), 0.5));
             }
@@ -75,6 +122,9 @@ public:
 
         return root;
     }
+
+private:
+    list<shared_ptr<WorkQueue::Job>> m_pendingJobs;
 };
 
 RENGINE_DEFINE_GLOBALS
