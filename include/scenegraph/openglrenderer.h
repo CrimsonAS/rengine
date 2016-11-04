@@ -123,12 +123,8 @@ public:
 
     void ensureMatrixUpdated(ProgramUpdate bit, Program *p);
 
-    struct : public Program {
-        int matrix;
-    } prog_texture;
-    struct : public Program {
-        int matrix;
-    } prog_texture_bgr;
+    Program prog_texture;
+    Program prog_texture_bgr;
     struct : public Program {
         int alpha;
     } prog_alphaTexture;
@@ -925,6 +921,10 @@ inline bool OpenGLRenderer::render()
         return false;
     }
 
+    vec4 c = fillColor();
+    glClearColor(c.x, c.y, c.z, c.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     logd << std::endl;
 
     m_numLayeredNodes = 0;
@@ -949,7 +949,7 @@ inline bool OpenGLRenderer::render()
     unsigned elementCount = (m_numLayeredNodes + m_numTextureNodes + m_numRectangleNodes + m_numTransformNodesWith3d + m_numRenderNodes);
     m_elements = (Element *) alloca(elementCount * sizeof(Element));
     memset(m_elements, 0, elementCount * sizeof(Element));
-    // std::cout << "render: " << m_numTextureNodes << " layers, "
+    // std::cout << "render: " << m_numTextureNodes << " textures, "
     //                    << m_numRectangleNodes << " rects, "
     //                    << m_numTransformNodes << " xforms, "
     //                    << m_numTransformNodesWith3d << " xforms3D, "
@@ -977,9 +977,6 @@ inline bool OpenGLRenderer::render()
     glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(vec2), m_vertices, GL_STATIC_DRAW);
 
     m_surfaceSize = targetSurface()->size();
-    vec4 c = fillColor();
-    glClearColor(c.x, c.y, c.z, c.w);
-    glClear(GL_COLOR_BUFFER_BIT);
     m_proj = mat4::translate2D(-1.0, 1.0)
              * mat4::scale2D(2.0f / m_surfaceSize.x, -2.0f / m_surfaceSize.y);
 
