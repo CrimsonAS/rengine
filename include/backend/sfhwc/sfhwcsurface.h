@@ -179,6 +179,7 @@ inline vec2 SfHwcSurface::size() const
 inline void SfHwcSurface::requestRender()
 {
 	logd << std::endl;
+    m_backend->notifyPendingEvents();
 }
 
 inline void SfHwcSurface::initHwc()
@@ -274,12 +275,12 @@ inline void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 
 	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 
-    static auto lastFrame = std::chrono::steady_clock::now();
-    auto thisFrame = std::chrono::steady_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
-    if (delta > 20)
-        logw << "MISSED A FRAME: " << delta << std::endl;
-    lastFrame = thisFrame;
+    // static auto lastFrame = std::chrono::steady_clock::now();
+    // auto thisFrame = std::chrono::steady_clock::now();
+    // auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
+    // if (delta > 30)
+    //     logw << "MISSED A FRAME: " << delta << std::endl;
+    // lastFrame = thisFrame;
 
     int fd = getFenceBufferFd(buffer);
     setFenceBufferFd(buffer, -1);

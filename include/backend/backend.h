@@ -27,6 +27,12 @@
 
 RENGINE_BEGIN_NAMESPACE
 
+inline Backend::Backend()
+{
+    assert(!m_singleton);
+    m_singleton = this;
+}
+
 inline void Backend::quit()
 {
     m_running = false;
@@ -45,6 +51,11 @@ inline void Backend::run()
     }
 
     logd << "exited event loop" << std::endl;
+}
+
+inline Backend *Backend::get()
+{
+    return m_singleton;
 }
 
 RENGINE_END_NAMESPACE

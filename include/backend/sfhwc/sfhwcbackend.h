@@ -171,17 +171,10 @@ inline SfHwcBackend::SfHwcBackend()
 
 inline void SfHwcBackend::processEvents()
 {
-    timeval halfAFrame;
-    halfAFrame.tv_sec = 0;
-    halfAFrame.tv_usec = 8 * 1000;
-
     if (hwcSurface && hwcSurface->m_surface) {
         hwcSurface->m_surface->onRender();
 
         updateTouch();
-
-        // Upon reaching end of a frame, enter dormancy for a while..
-        select(0, 0, 0, 0, &halfAFrame);
     }
 }
 

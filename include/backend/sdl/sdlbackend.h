@@ -267,13 +267,7 @@ inline void SDLBackend::requestSize(vec2 size)
     SDL_SetWindowSize(m_window, size.x, size.y);
 }
 
-
-
-#define RENGINE_BACKEND_DEFINE                                             \
-    rengine::Backend *rengine::Backend::get() {                            \
-        static rengine::SDLBackend *singleton = new rengine::SDLBackend(); \
-        return singleton;                                                  \
-    }
+#define RENGINE_BACKEND rengine::SDLBackend
 
 
 RENGINE_END_NAMESPACE
