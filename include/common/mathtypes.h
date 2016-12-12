@@ -519,7 +519,7 @@ struct mat4 {
         return mat4(sx,  0,  0, 0,
                      0, sy,  0, 0,
                      0,  0, sz, 0,
-                     0   ,   0, 1, Generic);
+                     0,  0,  0, 1, Generic);
     }
 
     bool isIdentity() const { return type == Identity; }
