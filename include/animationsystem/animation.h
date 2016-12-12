@@ -82,7 +82,7 @@ public:
     linear curve.
 
  */
-class Animation
+class Animation : public SignalEmitter
 {
 public:
     virtual ~Animation() {}
@@ -101,6 +101,9 @@ public:
       , m_direction(Normal)
     {
     }
+
+    static Signal<> onStarted;
+    static Signal<> onCompleted;
 
     /*!
 
@@ -456,6 +459,7 @@ public:
                 // Make sure we start at t=0
                 si->when = now;
                 si->animation->setRunning(true);
+                Animation::onStarted.emit(si->animation);
                 m_runningAnimations.push_back(*si);
                 si = m_scheduledAnimations.erase(si);
             } else {
@@ -469,6 +473,7 @@ public:
             std::chrono::duration<double> animTime = now - ri->when;
             ri->animation->tick(animTime.count());
             if (!ri->animation->isRunning()) {
+                Animation::onCompleted.emit(ri->animation);
                 ri = m_runningAnimations.erase(ri);
             } else {
                 ++ri;
@@ -528,5 +533,8 @@ private:
     std::list<TimedAnimation> m_scheduledAnimations;
 };
 
+#define RENGINE_DEFINE_ANIMATION_SIGNALS                \
+    rengine::Signal<> rengine::Animation::onStarted;    \
+    rengine::Signal<> rengine::Animation::onCompleted;  \
 
 RENGINE_END_NAMESPACE

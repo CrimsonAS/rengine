@@ -22,7 +22,7 @@ RENGINE_END_NAMESPACE
     RENGINE_NODE_DEFINE_SIGNALS                                                                        \
     RENGINE_LAYOUTNODE_DEFINE_SIGNALS                                                                  \
     RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS                                                         \
-                                                                                                       \
+    RENGINE_DEFINE_ANIMATION_SIGNALS                                                                   \
 
 
 #define RENGINE_MAIN(InterfaceName)                                                                    \
