@@ -81,6 +81,11 @@ public:
      */
     virtual Renderer *createRenderer() = 0;
 
+    /*!
+        Returns the horizontal and vertical dpi of the surface.
+     */
+    virtual vec2 dpi() const = 0;
+
 };
 
 class Surface
@@ -111,6 +116,8 @@ public:
     void requestRender() { m_impl->requestRender(); }
 
     Renderer *createRenderer() { return m_impl->createRenderer(); }
+
+    vec2 dpi() const { return m_impl->dpi(); }
 
     /*!
         Reimplement this function get notified when it is time to

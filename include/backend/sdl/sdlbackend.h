@@ -76,6 +76,8 @@ public:
 
     void requestRender() override;
 
+    vec2 dpi() const override;
+
 
 private:
     Surface *m_surface = nullptr;
@@ -267,7 +269,16 @@ inline void SDLBackend::requestSize(vec2 size)
     SDL_SetWindowSize(m_window, size.x, size.y);
 }
 
-#define RENGINE_BACKEND rengine::SDLBackend
+inline vec2 SDLBackend::dpi() const
+{
+    assert(m_window);
+    assert(m_surface);
+    int index = SDL_GetWindowDisplayIndex(m_window);
+    float d, h, v;
+    SDL_GetDisplayDPI(index, &d, &h, &v);
+    return vec2(h, v) * devicePixelRatio();
+}
 
+#define RENGINE_BACKEND rengine::SDLBackend
 
 RENGINE_END_NAMESPACE
