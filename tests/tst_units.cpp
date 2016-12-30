@@ -6,7 +6,7 @@ void tst_dpi()
 {
     Units units(surface);
 
-    cout << "Units::uiBase ....: " << units.uiBase() << endl;
+    cout << "Units::uiBase ....: " << units.base() << endl;
     cout << "Units::tinyFont ..: " << units.tinyFont() << endl;
     cout << "Units::smallFont .: " << units.smallFont() << endl;
     cout << "Units::font ......: " << units.font() << endl;
