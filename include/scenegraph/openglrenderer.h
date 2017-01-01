@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <alloca.h>
 #include <iomanip>
+#include <cstring>
 
 #include "openglrenderer_shaders.h"
 
@@ -174,6 +175,7 @@ public:
 
     bool m_render3d : 1;
     bool m_layered : 1;
+    bool m_srgb : 1;
 
 };
 
@@ -216,6 +218,7 @@ inline OpenGLRenderer::OpenGLRenderer()
     , m_matrixState(UpdateAllPrograms)
     , m_render3d(false)
     , m_layered(false)
+    , m_srgb(false)
 {
     initialize();
 }
@@ -305,6 +308,12 @@ inline void OpenGLRenderer::initialize()
     prog_shadow.step = prog_shadow.resolve("step");
     prog_shadow.color = prog_shadow.resolve("color");
 
+    const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
+    if (std::strstr(extensions, "GL_ARB_framebuffer_sRGB")) {
+        m_srgb = true;
+        glEnable(GL_FRAMEBUFFER_SRGB);
+    }
+
 #ifdef RENGINE_LOG_INFO
     static bool logged = false;
     if (!logged) {
@@ -326,6 +335,7 @@ inline void OpenGLRenderer::initialize()
         logi << " - Depth/Stencil ....: " << d << " " << s << std::endl;
         logi << " - Samples ..........: " << samples << std::endl;
         logi << " - Max Texture Size .: " << maxTexSize << std::endl;
+        logi << " - SRGB Rendering ...: " << (m_srgb ? "yes" : "no") << std::endl;
         logi << " - Extensions .......: " << glGetString(GL_EXTENSIONS) << std::endl;
     }
 #endif

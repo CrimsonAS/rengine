@@ -1,5 +1,8 @@
 #include "rengine.h"
 
+#define  STB_TRUETYPE_IMPLEMENTATION
+#include <stb_truetype.h>
+
 using namespace rengine;
 using namespace std;
 
