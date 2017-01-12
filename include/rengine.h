@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    Copyright (c) 2017, Gunnar Sletta <gunnar@sletta.org>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -100,9 +100,6 @@ RENGINE_END_NAMESPACE
 
 #include "backend/backend.h"
 
-#include "util/standardsurface.h"
-#include "util/maindefine.h"
-#include "util/workqueue.h"
 
 #if defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
@@ -112,4 +109,7 @@ RENGINE_END_NAMESPACE
 #error "Please define which backend you want: RENGINE_BACKEND_SDL or RENGNE_BACKEND_SFHWC."
 #endif
 
+#include "util/standardsurface.h"
+#include "util/workqueue.h"
+#include "util/maindefine.h"
 

@@ -39,7 +39,7 @@ inline std::string log_timestring()
 	unsigned us = std::chrono::duration_cast<std::chrono::microseconds>(time).count() % 1000;
 	// ssss:mmm.uuu
 	char buffer[16];
-	snprintf(buffer, sizeof(buffer), "%4d:%03d.%03d", s, ms, us);
+	snprintf(buffer, sizeof(buffer), "%4d.%03d %03d", s, ms, us);
 	return buffer;
 }
 

@@ -30,8 +30,7 @@ RENGINE_BEGIN_NAMESPACE
 class Backend
 {
 public:
-    Backend() : m_running(true) { }
-
+    Backend();
     virtual ~Backend() { }
 
     static Backend *get();
@@ -44,7 +43,12 @@ public:
     virtual SurfaceBackendImpl *createSurface(Surface *) = 0;
     virtual void destroySurface(Surface *, SurfaceBackendImpl *) = 0;
 
-    bool m_running;
+protected:
+    bool m_running = true;
+
+    static Backend *m_singleton;
 };
+
+#define RENGINE_BACKEND_DEFINE rengine::Backend *rengine::Backend::m_singleton = nullptr;
 
 RENGINE_END_NAMESPACE

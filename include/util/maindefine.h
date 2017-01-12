@@ -6,10 +6,10 @@ RENGINE_BEGIN_NAMESPACE
 
 template <typename SurfaceName>
 int rengine_main(int argc, char **argv) {
-    std::unique_ptr<rengine::Backend> backend(rengine::Backend::get());
+    RENGINE_BACKEND backend;
     SurfaceName surface;
     surface.show();
-    backend->run();
+    backend.run();
     return 0;
 }
 
@@ -22,7 +22,7 @@ RENGINE_END_NAMESPACE
     RENGINE_NODE_DEFINE_SIGNALS                                                                        \
     RENGINE_LAYOUTNODE_DEFINE_SIGNALS                                                                  \
     RENGINE_LAYOUTNODE_DEFINE_ALLOCATION_POOLS                                                         \
-                                                                                                       \
+    RENGINE_DEFINE_ANIMATION_SIGNALS                                                                   \
 
 
 #define RENGINE_MAIN(InterfaceName)                                                                    \

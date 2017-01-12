@@ -6,6 +6,10 @@ file(MAKE_DIRECTORY lib)
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+
 
 ################################################################################
 #
@@ -80,6 +84,9 @@ else() # (RENGINE_USE_SDL)
     include(FindPkgConfig)
     pkg_search_module(SDL2 REQUIRED sdl2)
     include_directories(${SDL2_INCLUDE_DIRS})
+    if (LINUX)
+        set(RENGINE_LIBS ${RENGINE_LIBS} -lpthread)
+    endif()
     set(RENGINE_LIBS ${RENGINE_LIBS} -L/usr/local/lib ${SDL2_LIBRARIES})
     add_definitions(-DRENGINE_BACKEND_SDL)
 

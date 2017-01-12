@@ -99,6 +99,8 @@ public:
     void cb_vsync(int display, int64_t timestamp);
     void cb_hotplug(int display, int connected) const { logw << "display=" << display << ", connected=" << connected << std::endl; }
 
+    virtual void notifyPendingEvents() { }
+
     SfHwcSurface *hwcSurface = nullptr;
     gralloc_module_t *grallocModule = 0;
     alloc_device_t *allocDevice = 0;
@@ -244,11 +246,7 @@ private:
 };
 
 
-#define RENGINE_BACKEND_DEFINE                                                 \
-    rengine::Backend *rengine::Backend::get() {                                \
-        static rengine::SfHwcBackend *singleton = new rengine::SfHwcBackend(); \
-        return singleton;                                                      \
-    }                                                                          \
+#define RENGINE_BACKEND rengine::SfHwcBackend
 
 RENGINE_END_NAMESPACE
 
