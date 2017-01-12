@@ -100,7 +100,6 @@ RENGINE_END_NAMESPACE
 
 #include "backend/backend.h"
 
-
 #if defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
 #elif defined RENGINE_BACKEND_SFHWC
@@ -109,7 +108,9 @@ RENGINE_END_NAMESPACE
 #error "Please define which backend you want: RENGINE_BACKEND_SDL or RENGNE_BACKEND_SFHWC."
 #endif
 
-#include "util/standardsurface.h"
 #include "util/workqueue.h"
+#include "util/standardsurface.h"
+#include "util/units.h"
+#include "util/glyphs.h"
 #include "util/maindefine.h"
 

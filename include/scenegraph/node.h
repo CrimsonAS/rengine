@@ -81,8 +81,8 @@ public:
      * Searches this node's list of children and returns true if \a child is a
      * child of this node.
      */
-    bool hasChild(Node *child) {
-        Node *n = m_child;
+    bool hasChild(const Node *child) const {
+        const Node *n = m_child;
         while (n && n != child)
             n = n->sibling();
         return n;

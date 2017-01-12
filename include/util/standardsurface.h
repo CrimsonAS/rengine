@@ -92,6 +92,7 @@ public:
 
     Renderer *renderer() const { return m_renderer.get(); }
     AnimationManager *animationManager() { return &m_animationManager; }
+    WorkQueue *workQueue() { return &m_workQueue; }
 
     /*!
         Set the pointer event receiver to node to indicate that onPointerEvent() should
@@ -107,6 +108,8 @@ protected:
     AnimationManager m_animationManager;
 
     Node *m_pointerEventReceiver = nullptr;
+
+    WorkQueue m_workQueue;
 };
 
 inline void StandardSurface::onEvent(Event *e)
