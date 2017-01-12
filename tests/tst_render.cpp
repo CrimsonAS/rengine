@@ -211,7 +211,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-    std::unique_ptr<Backend> backend(Backend::get());
+    RENGINE_BACKEND backend;
 
     TestBase testBase;
 // testBase.leaveRunning = true;
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
     testBase.addTest(new OpacityTextures());
     testBase.show();
 
-    backend->run();
+    backend.run();
 
     return 0;
 }
