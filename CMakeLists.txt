@@ -17,21 +17,25 @@ endif()
 #
 option(RENGINE_LOG_INFO "LogInfo" ON)
 if (RENGINE_LOG_INFO)
+    message("LogInfo: enabled")
     add_definitions(-DRENGINE_LOG_INFO)
 endif()
 
-option(RENGINE_LOG_DEBUG "LogDebug" OFF)
+option(RENGINE_LOG_DEBUG "LogDebug" ON)
 if (RENGINE_LOG_DEBUG)
+    message("LogDebug: enabled")
     add_definitions(-DRENGINE_LOG_DEBUG)
 endif()
 
 option(RENGINE_LOG_WARNING "LogWarning" ON)
 if (RENGINE_LOG_WARNING)
+    message("LogWarning: enabled")
     add_definitions(-DRENGINE_LOG_WARNING)
 endif()
 
 option(RENGINE_LOG_ERROR "LogError" ON)
 if (RENGINE_LOG_ERROR)
+    message("LogError: enabled")
     add_definitions(-DRENGINE_LOG_ERROR)
 endif()
 
@@ -121,15 +125,21 @@ enable_testing()
 #
 # Tests and Examples
 #
-add_rengine_example(rectangles)
-add_rengine_example(layeredopacity)
-add_rengine_example(benchmark_rectangles)
-add_rengine_example(filters)
-add_rengine_example(blur)
-add_rengine_example(shadow)
-add_rengine_example(benchmark_blend)
-add_rengine_example(touch)
-add_rengine_example(text)
+# add_rengine_example(rectangles)
+# add_rengine_example(layeredopacity)
+# add_rengine_example(benchmark_rectangles)
+# add_rengine_example(filters)
+# add_rengine_example(blur)
+# add_rengine_example(shadow)
+# add_rengine_example(benchmark_blend)
+# add_rengine_example(touch)
+# add_rengine_example(text)
+
+add_executable(demo "examples/rootwindow.cpp"
+                    "examples/button.cpp"
+                    "examples/main.cpp")
+target_link_libraries(demo ${RENGINE_LIBS})
+
 
 add_rengine_test(node)
 add_rengine_test(mathtypes)
