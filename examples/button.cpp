@@ -43,5 +43,12 @@ void Button::onPreprocess()
         m_textureNode->setTexture(m_texture);
         m_textureNode->setGeometry(rect2d::fromPosSize(-ts / 2.0f, ts));
     }
+}
 
+void Button::onPointerOverChanged()
+{
+    if (isPointerOver())
+        m_bgNode->setColor(BG_HOVER_COLOR);
+    else
+        m_bgNode->setColor(BG_BASE_COLOR);
 }

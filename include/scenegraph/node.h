@@ -276,10 +276,20 @@ public:
      * State variable used by the event dispatch.
      */
     bool isPointerTarget() const { return m_pointerTarget; }
-    void setPointerTarget(bool target) { m_pointerTarget = target;}
+    void setPointerTarget(bool target) { m_pointerTarget = target; }
+
+    bool isPointerOver() const { return m_pointerOver; }
+    void setPointerOver(bool over) {
+        if (m_pointerOver == over)
+            return;
+        m_pointerOver = over;
+        onPointerOverChanged();
+    }
 
 protected:
     virtual void onPreprocess() { }
+
+    virtual void onPointerOverChanged() { }
 
     /*!
      * Node constructor...
@@ -293,6 +303,7 @@ protected:
         , m_preprocess(false)
         , m_poolAllocated(false)
         , m_pointerTarget(false)
+        , m_pointerOver(false)
     {
     }
 
@@ -330,7 +341,7 @@ protected:
     unsigned m_preprocess : 1;
     unsigned m_poolAllocated : 1;
     unsigned m_pointerTarget : 1;
-    unsigned m_pointerDisabled : 1;
+    unsigned m_pointerOver : 1;
     unsigned m_reserved : 20; // 32 - 12
 };
 

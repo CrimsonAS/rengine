@@ -40,7 +40,6 @@ Node *RootWindow::build()
     assert(m_font->isValid());
 
     Units units(this);
-    vec2 s = size();
 
     Node *root = Node::create();
     // m_appLayer = Node::create();
@@ -51,8 +50,8 @@ Node *RootWindow::build()
     m_buttonGrid->setCellWidth(units.base() * 15.0f);
     m_buttonGrid->setCellHeight(units.base() * 3.0f);
     m_buttonGrid->setSpacing(units.base() * 1.0f);
-    m_buttonGrid->setWidth(s.x);
-    m_buttonGrid->setHeight(s.y);
+    // m_buttonGrid->setWidth(s.x);
+    // m_buttonGrid->setHeight(s.y);
     m_buttonGrid->setMargin(units.base() * 1.0f);
     m_buttonGrid->setColumnCount(1);
 
@@ -86,8 +85,40 @@ void RootWindow::add(const char *title, ExampleNode *example, const Units &units
     button->setTextTexture(t);
 }
 
+
+void RootWindow::onEvent(Event *e)
+{
+    switch (e->type()) {
+    case Event::PointerDown:
+    case Event::PointerUp:
+    case Event::PointerMove:
+        if (renderer() && renderer()->sceneRoot()) {
+            PointerEvent *pe = PointerEvent::from(e);
+            if (!deliverPointerEventInScene(m_renderer->sceneRoot(), pe)) {
+                updateHoverTarget(nullptr);
+            }
+        }
+        break;
+    default:
+        std::cerr << __PRETTY_FUNCTION__ << ": unknown event type=" << e->type() << std::endl;
+        break;
+    }
+}
+
 bool RootWindow::onPointerEvent(Node *node, PointerEvent *e)
 {
-    std::cout << "pointer event" << node << e << std::endl;
+    updateHoverTarget(node);
     return true;
+}
+
+void RootWindow::updateHoverTarget(Node *node)
+{
+    if (m_hoverTarget != node) {
+        if (m_hoverTarget)
+            m_hoverTarget->setPointerOver(false);
+        m_hoverTarget = node;
+        if (m_hoverTarget)
+            m_hoverTarget->setPointerOver(true);
+        requestRender();
+    }
 }

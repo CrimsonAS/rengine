@@ -21,7 +21,7 @@ if (RENGINE_LOG_INFO)
     add_definitions(-DRENGINE_LOG_INFO)
 endif()
 
-option(RENGINE_LOG_DEBUG "LogDebug" ON)
+option(RENGINE_LOG_DEBUG "LogDebug" OFF)
 if (RENGINE_LOG_DEBUG)
     message("LogDebug: enabled")
     add_definitions(-DRENGINE_LOG_DEBUG)

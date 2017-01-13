@@ -36,6 +36,7 @@ public:
 
 protected:
     void onPreprocess() override;
+    void onPointerOverChanged() override;
 
 private:
     std::string m_text;
