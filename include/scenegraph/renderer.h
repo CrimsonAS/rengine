@@ -27,6 +27,8 @@
 
 RENGINE_BEGIN_NAMESPACE
 
+#define RENGINE_RENDERER_ALPHA_THRESHOLD 0.001
+
 class Renderer
 {
 public:

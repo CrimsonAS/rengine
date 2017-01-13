@@ -469,7 +469,7 @@ inline void OpenGLRenderer::prepass(Node *n)
     }   break;
     case Node::RectangleNodeType: {
         RectangleNode *rn = static_cast<RectangleNode *>(n);
-        if (rn->width() != 0.0f && rn->height() != 0.0f)
+        if (rn->width() != 0.0f && rn->height() != 0.0f && !(rn->color().w < RENGINE_RENDERER_ALPHA_THRESHOLD))
             ++m_numRectangleNodes;
     }   break;
     case Node::TransformNodeType:
@@ -519,7 +519,9 @@ inline void OpenGLRenderer::build(Node *n)
         rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
 
         // Skip if empty..
-        if (geometry.width() == 0 || geometry.height() == 0 || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0))
+        if (geometry.width() == 0 || geometry.height() == 0
+            || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0)
+            || (n->type() == Node::RectangleNodeType && static_cast<RectangleNode *>(n)->color().w < RENGINE_RENDERER_ALPHA_THRESHOLD))
             break;
 
         Element *e = m_elements + m_elementIndex;
