@@ -59,7 +59,7 @@ private:
 
 
 
-GlyphContext::GlyphContext(const std::string &fontFile)
+inline GlyphContext::GlyphContext(const std::string &fontFile)
 {
     std::ifstream file(fontFile, std::ios::binary | std::ios::in | std::ios::ate);
     if (!file.is_open()) {
@@ -87,12 +87,12 @@ GlyphContext::GlyphContext(const std::string &fontFile)
     }
 }
 
-GlyphContext::~GlyphContext()
+inline GlyphContext::~GlyphContext()
 {
     free(m_fontData);
 }
 
-void GlyphTextureJob::onExecute()
+inline void GlyphTextureJob::onExecute()
 {
     auto start = std::chrono::system_clock::now();
 
@@ -188,7 +188,7 @@ void GlyphTextureJob::onExecute()
     std::cout << "generated glyph texture for '" << m_text << "' in " << diff.count() * 1000 << " ms" << std::endl;
 }
 
-void GlyphTextureJob::renderSingleGlyph(int x, int y,
+inline void GlyphTextureJob::renderSingleGlyph(int x, int y,
                                         unsigned int *t, int tw, int th,
                                         unsigned char *b, int bw, int bh,
                                         int cr, int cg, int cb, int ca)
