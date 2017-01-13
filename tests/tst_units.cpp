@@ -21,7 +21,7 @@ void tst_dpi()
 
 int main(int argc, char **argv)
 {
-    std::unique_ptr<rengine::Backend> backend(rengine::Backend::get());
+    RENGINE_BACKEND backend;
     surface = new Surface();
 
     tst_dpi();
