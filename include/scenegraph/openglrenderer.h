@@ -308,10 +308,12 @@ inline void OpenGLRenderer::initialize()
     prog_shadow.step = prog_shadow.resolve("step");
     prog_shadow.color = prog_shadow.resolve("color");
 
+    // Using srgb for everything needs a bit more thought as it results in
+    // really washed out colors for rectangles and image textures.
     const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
     if (std::strstr(extensions, "GL_ARB_framebuffer_sRGB")) {
         m_srgb = true;
-        glEnable(GL_FRAMEBUFFER_SRGB);
+        // glEnable(GL_FRAMEBUFFER_SRGB);
     }
 
 #ifdef RENGINE_LOG_INFO
