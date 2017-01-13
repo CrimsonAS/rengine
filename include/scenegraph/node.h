@@ -72,9 +72,9 @@ public:
         ShadowNodeType        = 5,
 
         RectangleNodeBaseType = (1 << 6),
-        RectangleNodeType     = 0 | RectangleNodeBaseType,
-        TextureNodeType       = 1 | RectangleNodeBaseType,
-        RenderNodeType        = 2 | RectangleNodeBaseType,
+        RectangleNodeType     = 1 | RectangleNodeBaseType,
+        TextureNodeType       = 2 | RectangleNodeBaseType,
+        RenderNodeType        = 3 | RectangleNodeBaseType,
     };
 
     /*!
