@@ -42,7 +42,23 @@ public:
         }
     }
 
-    virtual Node *update(Node *oldRoot) = 0;
+    // This function is called once at the start of the application before it
+    // is rendered the very first time. The user should implement this function to
+    // build the initial scene state, create textures, set up animations etc.
+    //
+    // Later updates to the scene can be performed on a per frame basis using
+    // the update() function.
+    virtual Node *build()
+    {
+        return nullptr;
+    }
+
+    // This function is called just before a frame is rendered. The user can
+    // implement it to update the scene graph for the upcoming frame.
+    virtual Node *update(Node *root)
+    {
+        return root;
+    }
 
     virtual void onBeforeRender() { }
     virtual void onAfterRender() { }
@@ -54,10 +70,11 @@ public:
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {
             m_renderer.reset(createRenderer());
+            m_renderer->setSceneRoot(build());
             m_animationManager.start();
         }
 
-        // Create the scene graph; update if it already exists..
+        // Update the scene graph...
         m_renderer->setSceneRoot(update(m_renderer->sceneRoot()));
 
         if (!m_renderer->sceneRoot())

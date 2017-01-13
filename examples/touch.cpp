@@ -33,11 +33,8 @@ class TouchWindow : public StandardSurface
 {
 public:
 
-    Node *update(Node *root) override {
-        if (root)
-            return root;
-
-        root = Node::create();
+    Node *build() override {
+        Node *root = Node::create();
 
         vec2 surfaceSize = size();
 
@@ -71,7 +68,6 @@ public:
         anim->keyFrames.times() << 0 << 1;
         anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
         animationManager()->startAnimation(anim);
-
 
         return root;
     }

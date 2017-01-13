@@ -39,10 +39,8 @@ public:
         delete m_layer;
     }
 
-    Node *update(Node *old) {
-        if (old)
-            return old;
-
+    Node *build() override
+    {
         vec2 s = size();
 
         m_layer = rengine_loadImage(renderer(), "walker.png");

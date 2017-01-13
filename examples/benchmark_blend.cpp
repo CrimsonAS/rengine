@@ -35,10 +35,9 @@ class CreateFractalJob : public WorkQueue::Job
 public:
     void onExecute()
     {
-        cout << "Creating texture: " << index << endl;
         bits.resize(size.x * size.y);
         rengine_fractalTexture(bits.data(), size);
-        cout << " -> texture all done..." << endl;
+        cout << "job: texture #" << index << " generated..." << endl;
     }
 
     int index;
@@ -53,37 +52,8 @@ public:
 
     float rnd() { return (rand() % 100) / 100.0; }
 
-    Node *update(Node *old) {
-
-        requestRender();
-
-        // Check for completed jobs and perform the texture upload if so..
-        while (!m_pendingJobs.empty() && m_pendingJobs.front()->hasCompleted()) {
-            shared_ptr<WorkQueue::Job> job = m_pendingJobs.front();
-            m_pendingJobs.pop_front();
-
-            CreateFractalJob *fractalJob = static_cast<CreateFractalJob *>(job.get());
-            Texture *texture = renderer()->createTextureFromImageData(fractalJob->size, Texture::RGBA_32, fractalJob->bits.data());
-            fractalJob->node->setTexture(texture);
-
-            cout << " - updated texture for node" << fractalJob->index
-                 << ", node=" << fractalJob->node
-                 << ", size=" << fractalJob->node->geometry()
-                 << ", texture=" << fractalJob->node->texture()->textureId()
-                 << ", textureSize=" << fractalJob->node->texture()->size()
-                 << endl;
-
-            if (m_pendingJobs.empty())
-                cout << "All textures have been created, so FPS should now be stable-ish..." << endl;
-        }
-
-        // Only report FPS once all textures are created..
-        if (m_pendingJobs.empty())
-            rengine_countFps();
-
-        if (old)
-            return old;
-
+    Node *build() override
+    {
         vec2 s = size();
         vec2 s2 = s / 2.0f;
         float dim = std::max(s.x, s.y) * 0.9;
@@ -123,6 +93,37 @@ public:
         return root;
     }
 
+    Node *update(Node *root) override {
+
+        requestRender();
+
+        // Check for completed jobs and perform the texture upload if so..
+        while (!m_pendingJobs.empty() && m_pendingJobs.front()->hasCompleted()) {
+            shared_ptr<WorkQueue::Job> job = m_pendingJobs.front();
+            m_pendingJobs.pop_front();
+
+            CreateFractalJob *fractalJob = static_cast<CreateFractalJob *>(job.get());
+            Texture *texture = renderer()->createTextureFromImageData(fractalJob->size, Texture::RGBA_32, fractalJob->bits.data());
+            fractalJob->node->setTexture(texture);
+
+            cout << "update: texture for node" << fractalJob->index
+                 << ", node=" << fractalJob->node
+                 << ", size=" << fractalJob->node->geometry()
+                 << ", texture=" << fractalJob->node->texture()->textureId()
+                 << ", textureSize=" << fractalJob->node->texture()->size()
+                 << endl;
+
+            if (m_pendingJobs.empty())
+                cout << "All textures have been created, so FPS should now be stable-ish..." << endl;
+        }
+
+        // Only report FPS once all textures are created..
+        if (m_pendingJobs.empty())
+            rengine_countFps();
+
+        return root;
+    }
+
 private:
     list<shared_ptr<WorkQueue::Job>> m_pendingJobs;
 };
@@ -147,12 +148,12 @@ int main(int argc, char **argv) {
         }
     }
 
-    std::unique_ptr<Backend> backend(Backend::get());
+    RENGINE_BACKEND backend;
 
     BlendBenchWindow surface;
     surface.show();
 
-    backend->run();
+    backend.run();
 
     return 0;
 }
