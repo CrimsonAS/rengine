@@ -50,7 +50,7 @@ public:
     // the update() function.
     virtual Node *build()
     {
-        return nullptr;
+        return Node::create();
     }
 
     // This function is called just before a frame is rendered. The user can
