@@ -193,8 +193,6 @@ inline void GlyphTextureJob::renderSingleGlyph(int x, int y,
                                         unsigned char *b, int bw, int bh,
                                         int cr, int cg, int cb, int ca)
 {
-    std::cout << "color is " << ca << " " << cr << " " << cg << " " << cb << std::endl;
-
     for (int yy=0; yy<bh; ++yy) {
         int dy = yy + y;
 
