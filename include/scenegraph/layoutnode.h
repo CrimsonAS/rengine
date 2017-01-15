@@ -42,29 +42,23 @@ public:
     };
 
     LayoutEngine()
-        : margin(0.0f)
-        , spacing(0.0f)
-        , width(0.0f)
-        , height(0.0f)
-        , cellWidth(0.0f)
-        , cellHeight(0.0f)
-        , columnCount(0)
-        , rowCount(0)
-        , layoutType(Grid_Horizontal)
+        : layoutType(Grid_Horizontal)
         , reserved1b_1(0) // corresponds to LayoutNode::Automatic
     {
     }
 
     inline void updateLayout(Node *parentNode);
 
-    float margin;
-    float spacing;
-    float width;
-    float height;
-    float cellWidth;
-    float cellHeight;
-    int columnCount;
-    int rowCount;
+    float margin = 0.0f;
+    float spacing = 0.0f;
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
+    float cellWidth = 0.0f;
+    float cellHeight = 0.0f;
+    int columnCount = 0;
+    int rowCount = 0;
 
     unsigned layoutType : 2;
     unsigned reserved1b_1 : 1; // used by layout node to avoid having another 4 bytes to store activation mode..
@@ -98,6 +92,24 @@ public:
             return;
         m_engine.spacing = spacing;
         onSpacingChanged.emit(this);
+    }
+
+    static Signal<> onXChanged;
+    float x() const { return m_engine.x; }
+    void setX(float x) {
+        if (x == m_engine.x)
+            return;
+        m_engine.x = x;
+        onXChanged.emit(this);
+    }
+
+    static Signal<> onYChanged;
+    float y() const { return m_engine.y; }
+    void setY(float y) {
+        if (y == m_engine.y)
+            return;
+        m_engine.y = y;
+        onYChanged.emit(this);
     }
 
     static Signal<> onWidthChanged;
@@ -248,8 +260,8 @@ void LayoutEngine::updateLayout(Node *parentNode)
                     c = index / itemsPer;
                 }
 
-                rectNode->setGeometry(rect2d::fromXywh(xSign * (margin + c * cw + c * spacing),
-                                                       ySign * (margin + r * ch + r * spacing),
+                rectNode->setGeometry(rect2d::fromXywh(x + xSign * (margin + c * cw + c * spacing),
+                                                       y + ySign * (margin + r * ch + r * spacing),
                                                        xSign * cw,
                                                        ySign * ch).normalized());
                 ++index;
@@ -298,12 +310,12 @@ void LayoutEngine::updateLayout(Node *parentNode)
                 if (fitsOnLine || index == 0) {
                     if (layoutType == Flow_Horizontal) {
                         offsetIncrement = std::max(offsetIncrement, rectNode->height());
-                        rectNode->setPosition(posSign > 0 ? pos : pos - rectNode->width(),
-                                              offsetSign > 0 ? offset : offset - rectNode->height());
+                        rectNode->setPosition(x + posSign > 0 ? pos : pos - rectNode->width(),
+                                              y + offsetSign > 0 ? offset : offset - rectNode->height());
                     } else {
                         offsetIncrement = std::max(offsetIncrement, rectNode->width());
-                        rectNode->setPosition(offsetSign > 0 ? offset : offset - rectNode->width(),
-                                              posSign > 0 ? pos : pos - rectNode->height());
+                        rectNode->setPosition(x + offsetSign > 0 ? offset : offset - rectNode->width(),
+                                              y + posSign > 0 ? pos : pos - rectNode->height());
                     }
                     ++index;
                     pos = end + posSign * spacing;
@@ -324,6 +336,8 @@ void LayoutEngine::updateLayout(Node *parentNode)
 #define RENGINE_LAYOUTNODE_DEFINE_SIGNALS                              \
     rengine::Signal<> rengine::LayoutNode::onMarginChanged;            \
     rengine::Signal<> rengine::LayoutNode::onSpacingChanged;           \
+    rengine::Signal<> rengine::LayoutNode::onXChanged;                 \
+    rengine::Signal<> rengine::LayoutNode::onYChanged;                 \
     rengine::Signal<> rengine::LayoutNode::onWidthChanged;             \
     rengine::Signal<> rengine::LayoutNode::onHeightChanged;            \
     rengine::Signal<> rengine::LayoutNode::onCellWidthChanged;         \
