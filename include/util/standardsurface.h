@@ -101,10 +101,6 @@ public:
         }
     }
 
-    virtual bool onPointerEvent(Node * /*node*/, PointerEvent * /*event*/) {
-        return true;
-    }
-
     virtual void onEvent(Event *e) override;
 
     Renderer *renderer() const { return m_renderer.get(); }
@@ -131,6 +127,7 @@ protected:
 
 inline void StandardSurface::onEvent(Event *e)
 {
+
     switch (e->type()) {
     case Event::PointerDown:
     case Event::PointerUp:
@@ -144,7 +141,7 @@ inline void StandardSurface::onEvent(Event *e)
                     pe->setPosition(invNodeMatrix * pe->positionInSurface());
                 else
                     pe->setPosition(vec2());
-                onPointerEvent(m_pointerEventReceiver, pe);
+                m_pointerEventReceiver->onPointerEvent(pe);
             } else {
                 deliverPointerEventInScene(m_renderer->sceneRoot(), pe);
             }
@@ -184,7 +181,7 @@ inline bool StandardSurface::deliverPointerEventInScene(Node *node, PointerEvent
                 // 1. accept it and the value is correct
                 // 2. reject it and the value will be written next time we try..
                 e->setPosition(nodeInvMatrix * e->positionInSurface());
-                if (area.contains(e->position()) && onPointerEvent(node, e))
+                if (area.contains(e->position()) && node->onPointerEvent(e))
                     return true;
             }
         }

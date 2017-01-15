@@ -43,7 +43,6 @@ Node *RootWindow::build()
     vec2 windowSize = size();
 
     Node *root = Node::create();
-    // m_appLayer = Node::create();
 
     m_buttonGrid = LayoutNode::create();
     m_buttonGrid->setActivationMode(LayoutNode::Explicit);
@@ -61,8 +60,6 @@ Node *RootWindow::build()
     add("Color Filters", nullptr, units);
     add("Layered Opacity", nullptr, units);
     add("Fonts & Text", nullptr, units);
-    // add("Blurring", nullptr);
-    // add("Blending Benchmark", nullptr);
 
     m_buttonGrid->updateLayout();
 
@@ -86,42 +83,4 @@ void RootWindow::add(const char *title, ExampleNode *example, const Units &units
     button->scheduleRotation(M_PI / 2.0f, 0, 1.0, m_buttons.size() * 0.2);
 
     m_buttons.push_back(button);
-}
-
-
-void RootWindow::onEvent(Event *e)
-{
-    switch (e->type()) {
-    case Event::PointerDown:
-    case Event::PointerUp:
-    case Event::PointerMove:
-        if (renderer() && renderer()->sceneRoot()) {
-            PointerEvent *pe = PointerEvent::from(e);
-            if (!deliverPointerEventInScene(m_renderer->sceneRoot(), pe)) {
-                updateHoverTarget(nullptr);
-            }
-        }
-        break;
-    default:
-        std::cerr << __PRETTY_FUNCTION__ << ": unknown event type=" << e->type() << std::endl;
-        break;
-    }
-}
-
-bool RootWindow::onPointerEvent(Node *node, PointerEvent *e)
-{
-    updateHoverTarget(node);
-    return true;
-}
-
-void RootWindow::updateHoverTarget(Node *node)
-{
-    if (m_hoverTarget != node) {
-        if (m_hoverTarget)
-            m_hoverTarget->setPointerOver(false);
-        m_hoverTarget = node;
-        if (m_hoverTarget)
-            m_hoverTarget->setPointerOver(true);
-        requestRender();
-    }
 }

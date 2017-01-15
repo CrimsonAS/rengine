@@ -35,9 +35,6 @@ class RootWindow : public rengine::StandardSurface
 public:
     rengine::Node *build() override;
 
-    void onEvent(rengine::Event *event) override;
-    bool onPointerEvent(rengine::Node *node, rengine::PointerEvent *event) override;
-
 private:
     void updateHoverTarget(rengine::Node *node);
     void add(const char *title, ExampleNode *example, const rengine::Units &units);

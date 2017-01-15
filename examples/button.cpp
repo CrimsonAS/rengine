@@ -6,6 +6,8 @@ using namespace rengine;
 #define BG_HOVER_COLOR vec4(0.3, 0.3, 0.4, 1.0)
 #define BG_CLICK_COLOR vec4(0.4, 0.4, 0.5, 1.0)
 
+Signal<> Button::onClicked;
+
 Button::Button(StandardSurface *surface)
     : RectangleNodeBase(RectangleNodeBaseType)
     , m_surface(surface)
@@ -54,17 +56,24 @@ void Button::onPreprocess()
 
     if (m_texture) {
         vec2 ts = m_texture->size();
-        m_textureNode->setTexture(m_texture);
+        m_textureNode->setTexture(m_texture.get());
         m_textureNode->setGeometry(rect2d::fromPosSize(-ts / 2.0f, ts));
     }
-}
 
-void Button::onPointerOverChanged()
-{
-    if (isPointerOver())
+    if (m_state == PressedState)
+        m_bgNode->setColor(BG_CLICK_COLOR);
+    else if (m_state == HoveredState)
         m_bgNode->setColor(BG_HOVER_COLOR);
     else
         m_bgNode->setColor(BG_BASE_COLOR);
+}
+
+void Button::setTextTexture(Texture *tex)
+{
+    if (m_texture.get() == tex)
+        return;
+    m_texture.reset(tex);
+    requestPreprocess();
 }
 
 void Button::scheduleRotation(float from, float to, float time, float delay)
@@ -75,4 +84,35 @@ void Button::scheduleRotation(float from, float to, float time, float delay)
     m_animation.keyFrames.times() << 0 << 1;
     m_animation.keyFrames.addValues<double, TransformNode_rotateAroundY>() << from << to;
     m_surface->animationManager()->scheduleAnimation(delay, &m_animation);
+}
+
+bool Button::onPointerEvent(PointerEvent *e)
+{
+    if (e->type() == Event::PointerDown) {
+        setState(PressedState);
+    } else if (e->type() == Event::PointerUp) {
+        setState(HoveredState);
+        onClicked.emit(this);
+    } else if (e->type() == Event::PointerMove) {
+        if (geometry().contains(e->position())) {
+            m_surface->setPointerEventReceiver(this);
+            setState(HoveredState);
+        } else {
+            m_surface->setPointerEventReceiver(nullptr);
+            setState(DefaultState);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Button::setState(State state)
+{
+    if (state == m_state)
+        return;
+    m_state = state;
+    requestPreprocess();
+    m_surface->requestRender();
+
 }

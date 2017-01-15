@@ -30,25 +30,38 @@
 class Button : public rengine::RectangleNodeBase
 {
 public:
+    enum State {
+        DefaultState,
+        HoveredState,
+        PressedState
+    };
+
     Button(rengine::StandardSurface *surface);
     ~Button();
 
-    void setTextTexture(rengine::Texture *t) { m_texture = t; requestPreprocess(); }
+    void setTextTexture(rengine::Texture *t);
 
     void scheduleRotation(float from, float to, float time, float delay = 0.0f);
 
+    State state() const { return m_state; }
+    void setState(State state);
+
+    static rengine::Signal<> onClicked;
+
 protected:
     void onPreprocess() override;
-    void onPointerOverChanged() override;
+    bool onPointerEvent(rengine::PointerEvent *event) override;
 
 private:
     rengine::StandardSurface *m_surface;
 
-    rengine::Texture *m_texture = nullptr;
+    std::unique_ptr<rengine::Texture> m_texture;
     rengine::TransformNode *m_xformNode = nullptr;
     rengine::TransformNode *m_offsetNode = nullptr;
     rengine::RectangleNode *m_bgNode = nullptr;
     rengine::TextureNode *m_textureNode = nullptr;
 
     rengine::AnimationClosure<rengine::TransformNode, rengine::SmoothedTimingFunction> m_animation;
+
+    State m_state = DefaultState;
 };
