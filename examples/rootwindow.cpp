@@ -40,6 +40,7 @@ Node *RootWindow::build()
     assert(m_font->isValid());
 
     Units units(this);
+    vec2 windowSize = size();
 
     Node *root = Node::create();
     // m_appLayer = Node::create();
@@ -50,10 +51,9 @@ Node *RootWindow::build()
     m_buttonGrid->setCellWidth(units.base() * 15.0f);
     m_buttonGrid->setCellHeight(units.base() * 3.0f);
     m_buttonGrid->setSpacing(units.base() * 1.0f);
-    // m_buttonGrid->setWidth(s.x);
-    // m_buttonGrid->setHeight(s.y);
     m_buttonGrid->setMargin(units.base() * 1.0f);
     m_buttonGrid->setColumnCount(1);
+    m_buttonGrid->setX(windowSize.x / 2 - m_buttonGrid->cellWidth() / 2);
 
     add("Rectangles", nullptr, units);
     add("Blur", nullptr, units);
