@@ -73,7 +73,7 @@ Node *RootWindow::build()
 
 void RootWindow::add(const char *title, ExampleNode *example, const Units &units)
 {
-    Button *button = new Button();
+    Button *button = new Button(this);
     m_buttonGrid->append(button);
 
     // Perform the job synchronously because this is part of the initial ui.
@@ -83,6 +83,9 @@ void RootWindow::add(const char *title, ExampleNode *example, const Units &units
     Texture *t = renderer()->createTextureFromImageData(job.textureSize(), Texture::RGBA_32, job.textureData());
 
     button->setTextTexture(t);
+    button->scheduleRotation(M_PI / 2.0f, 0, 1.0, m_buttons.size() * 0.2);
+
+    m_buttons.push_back(button);
 }
 
 

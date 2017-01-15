@@ -30,19 +30,25 @@
 class Button : public rengine::RectangleNodeBase
 {
 public:
-    Button();
+    Button(rengine::StandardSurface *surface);
+    ~Button();
 
     void setTextTexture(rengine::Texture *t) { m_texture = t; requestPreprocess(); }
+
+    void scheduleRotation(float from, float to, float time, float delay = 0.0f);
 
 protected:
     void onPreprocess() override;
     void onPointerOverChanged() override;
 
 private:
-    std::string m_text;
+    rengine::StandardSurface *m_surface;
 
     rengine::Texture *m_texture = nullptr;
     rengine::TransformNode *m_xformNode = nullptr;
+    rengine::TransformNode *m_offsetNode = nullptr;
     rengine::RectangleNode *m_bgNode = nullptr;
     rengine::TextureNode *m_textureNode = nullptr;
+
+    rengine::AnimationClosure<rengine::TransformNode, rengine::SmoothedTimingFunction> m_animation;
 };
