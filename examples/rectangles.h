@@ -90,16 +90,17 @@ public:
 
         append(root);
 
-        m_animation.reset(new AnimationClosure<TransformNode, SmoothedTimingFunction>(rotationNode));
-        m_animation->setDuration(4);
-        m_animation->setIterations(-1);
-        m_animation->keyFrames.times() << 0 << 1;
-        m_animation->keyFrames.addValues<double, TransformNode_rotateAroundY>() << 0 << M_PI * 2.0;
-        animationManager()->startAnimation(m_animation.get());
+        auto a = std::make_shared<Animation_TransformNode_rotateAroundY>(rotationNode);
+        a->setDuration(4);
+        a->setIterations(-1);
+        a->keyFrames().push_back(KeyFrame<float>(0, 0));
+        a->keyFrames().push_back(KeyFrame<float>(1, M_PI * 2.0));
+        animationManager()->start(a);
+        m_animation = a;
     }
 
     void invalidate() override {
-        animationManager()->stopAnimation(m_animation.get());
+        animationManager()->stop(m_animation);
         while (child())
             child()->destroy();
         m_texture.reset();
@@ -108,5 +109,5 @@ public:
 
 private:
     std::unique_ptr<Texture> m_texture;
-    std::unique_ptr<AnimationClosure<TransformNode, SmoothedTimingFunction>> m_animation;
+    AnimationPtr m_animation;
 };

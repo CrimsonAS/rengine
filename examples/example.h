@@ -30,7 +30,7 @@
 
 class RootWindow;
 
-class Example : public rengine::OpacityNode
+class Example : public rengine::Node
 {
 public:
     virtual void initialize() = 0;
@@ -47,51 +47,6 @@ public:
     rengine::Renderer *renderer() { return m_window->renderer(); }
     rengine::AnimationManager *animationManager() { return m_window->animationManager(); }
 
-    void start();
-    void stop();
-
-    void onStopped();
-
 private:
-    void scheduleAnimation(float from, float to, float time, float delay);
-
     RootWindow *m_window = nullptr;
-    rengine::AnimationClosure<rengine::OpacityNode, rengine::SmoothedTimingFunction> m_animation = this;
-    SignalHandler_Member<Example, &Example::onStopped> handler_onStopped = this;
 };
-
-inline void Example::scheduleAnimation(float from, float to, float time, float delay)
-{
-    std::cout << "Example::scheduleAnimation: " << name()
-              << ", from=" << from
-              << ", to=" << to
-              << ", time=" << time
-              << ", delay=" << std::endl;
-    m_animation.setDuration(time);
-    m_animation.keyFrames = rengine::KeyFrames<OpacityNode>();
-    m_animation.keyFrames.times() << 0 << 1;
-    m_animation.keyFrames.addValues<double, rengine::OpacityNode_setOpacity>() << from << to;
-    animationManager()->scheduleAnimation(delay, &m_animation);
-}
-
-inline void Example::start()
-{
-    std::cout << "Example::start: " << name() << std::endl;
-    setOpacity(0);
-    scheduleAnimation(0, 1, 0.5, 0.3);
-    initialize();
-}
-
-inline void Example::stop()
-{
-    std::cout << "Example::stop: " << name() << std::endl;
-    scheduleAnimation(1, 0, 0.5, 0);
-    rengine::Animation::onCompleted.connect(&m_animation, &handler_onStopped);
-}
-
-inline void Example::onStopped()
-{
-    std::cout << "Example::onStopped: " << name() << std::endl;
-    rengine::Animation::onCompleted.disconnect(&m_animation, &handler_onStopped);
-    invalidate();
-}

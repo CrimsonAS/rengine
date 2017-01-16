@@ -3,32 +3,10 @@
 RENGINE_BEGIN_NAMESPACE
 
 
-
-struct TransformNode_rotateAroundX {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundX(rotation));
-    }
-};
-
-struct TransformNode_rotateAroundY {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundY(rotation));
-    }
-};
-
-struct TransformNode_rotateAroundZ {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundZ(rotation));
-    }
-};
-
-struct TransformNode_rotate2D {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotate2D(rotation));
-    }
-};
-
-
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundX> Animation_TransformNode_rotateAroundX;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundY> Animation_TransformNode_rotateAroundY;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundZ> Animation_TransformNode_rotateAroundZ;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotate2D> Animation_TransformNode_rotate2D;
 
 typedef Animation<OpacityNode, float, &OpacityNode::setOpacity> Animation_OpacityNode_opacity;
 

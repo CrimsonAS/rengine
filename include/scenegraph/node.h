@@ -396,6 +396,11 @@ public:
 
     RENGINE_NODE_DEFINE_FROM_FUNCTION(TransformNode, TransformNodeType);
 
+    void setMatrix_rotateAroundX(float radians) { setMatrix(mat4::rotateAroundX(radians)); }
+    void setMatrix_rotateAroundY(float radians) { setMatrix(mat4::rotateAroundY(radians)); }
+    void setMatrix_rotateAroundZ(float radians) { setMatrix(mat4::rotateAroundZ(radians)); }
+    void setMatrix_rotate2D(float radians) { setMatrix(mat4::rotate2D(radians)); }
+
 protected:
     TransformNode()
         : Node(TransformNodeType)

@@ -160,6 +160,7 @@ protected:
     unsigned m_direction : 2;
 };
 
+typedef std::shared_ptr<AbstractAnimation> AnimationPtr;
 
 template <typename Target,
           typename Value,
@@ -234,10 +235,33 @@ public:
             setRunning(false);
     }
 
-
 private:
     Target *m_target;
     std::vector<KeyFrame<Value>> m_keyFrames;
+};
+
+template <typename Target, void(Target::*MemberFunction)()>
+class Animation_Callback : public AbstractAnimation
+{
+public:
+    Animation_Callback(Target *target)
+        : m_target(target)
+    {
+        setDuration(0);
+        setIterations(1);
+    }
+
+    void tick(double time) {
+        assert(isRunning());
+        assert(time == 0);
+        assert(duration() == 0);
+        assert(iterations() == 1);
+        (m_target->*MemberFunction)();
+        setRunning(false);
+    }
+
+private:
+    Target *m_target;
 };
 
 
@@ -254,8 +278,12 @@ public:
     static Signal<> onRunningChanged;
 
     void tick();
+
     void start(const std::shared_ptr<AbstractAnimation> &animation, double delay = 0.0);
+    void start(const std::vector<std::shared_ptr<AbstractAnimation>> &animations, double delay = 0.0);
+
     void stop(const std::shared_ptr<AbstractAnimation> &animation);
+    void stop(const std::vector<std::shared_ptr<AbstractAnimation>> &animations);
 
     bool animationsRunning() const { return !m_runningAnimations.empty(); }
     bool animationsScheduled() const { return !m_scheduledAnimations.empty(); }
@@ -281,14 +309,14 @@ private:
     bool m_running;
 };
 
-time_point AnimationManager::now()
+inline time_point AnimationManager::now()
 {
     if (!m_running)
         m_nextTick = clock::now();
     return m_nextTick;
 }
 
-void AnimationManager::setRunning(bool running)
+inline void AnimationManager::setRunning(bool running)
 {
     if (running == m_running)
         return;
@@ -296,7 +324,7 @@ void AnimationManager::setRunning(bool running)
     onRunningChanged.emit(this);
 }
 
-void AnimationManager::start(const std::shared_ptr<AbstractAnimation> &animation, double delay)
+inline void AnimationManager::start(const std::shared_ptr<AbstractAnimation> &animation, double delay)
 {
     setRunning(true);
     ManagedAnimation m;
@@ -305,7 +333,25 @@ void AnimationManager::start(const std::shared_ptr<AbstractAnimation> &animation
     m_scheduledAnimations.push_back(m);
 }
 
-void AnimationManager::stop(const std::shared_ptr<AbstractAnimation> &animation)
+inline void AnimationManager::start(const std::vector<std::shared_ptr<AbstractAnimation>> &animations, double delay)
+{
+    for (auto a : animations) {
+        start(a, delay);
+        // If it never ends, the others will never be reached and can thus be
+        // ignored..
+        if (a->iterations() < 0)
+            break;
+        delay += a->duration() * a->iterations();
+    }
+}
+
+inline void AnimationManager::stop(const std::vector<std::shared_ptr<AbstractAnimation>> &animations)
+{
+    for (auto a : animations)
+        stop(a);
+}
+
+inline void AnimationManager::stop(const std::shared_ptr<AbstractAnimation> &animation)
 {
     for (auto it = m_runningAnimations.begin(); it != m_runningAnimations.end(); ++it) {
         if (it->animation == animation) {
@@ -322,7 +368,7 @@ void AnimationManager::stop(const std::shared_ptr<AbstractAnimation> &animation)
     }
 }
 
-void AnimationManager::tick()
+inline void AnimationManager::tick()
 {
     // alternatively:
     // time_point now = clock::now();

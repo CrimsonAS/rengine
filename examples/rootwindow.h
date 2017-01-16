@@ -38,11 +38,13 @@ public:
 
     void startExample(Example *example);
     void closeExample();
+    void exampleClosed();
 
 private:
     void updateHoverTarget(rengine::Node *node);
     void add(Example *example, const rengine::Units &units);
     Button *createTextButton(const char *name, const rengine::Units &units);
+    void animateButtons(Example *example, float from, float to, float initialDelay);
 
     rengine::GlyphContext *m_font = nullptr;
 

@@ -61,7 +61,7 @@ private:
     rengine::RectangleNode *m_bgNode = nullptr;
     rengine::TextureNode *m_textureNode = nullptr;
 
-    rengine::AnimationClosure<rengine::TransformNode, rengine::SmoothedTimingFunction> m_animation;
+    rengine::AnimationPtr m_animation;
 
     State m_state = DefaultState;
 };
