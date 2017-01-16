@@ -27,13 +27,14 @@ public:
                      << RectangleNode::create(rect2d::fromPosSize(-s3/2, s3), color)
                      << RectangleNode::create(rect2d::fromPosSize(vec2(), s3), color);
 
-        AnimationClosure<OpacityNode> *anim = new AnimationClosure<OpacityNode>(opacityNode);
+        auto anim = std::make_shared<Animation_OpacityNode_opacity>(opacityNode);
         anim->setDuration(3);
-        anim->setDirection(Animation::Alternate);
+        anim->setDirection(AbstractAnimation::Alternate);
         anim->setIterations(-1);
-        anim->keyFrames.times() << 0 << 1;
-        anim->keyFrames.addValues<double, OpacityNode_setOpacity>() << 0 << 1;
-        animationManager()->startAnimation(anim);
+        anim->keyFrames().push_back(KeyFrame<float>(0, 0));
+        anim->keyFrames().push_back(KeyFrame<float>(1, 1));
+
+        animationManager()->start(anim);
 
         return root;
 

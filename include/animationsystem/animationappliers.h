@@ -30,11 +30,7 @@ struct TransformNode_rotate2D {
 
 
 
-struct OpacityNode_setOpacity {
-    void operator()(double opacity, OpacityNode *node) {
-        node->setOpacity(opacity);
-    }
-};
+typedef Animation<OpacityNode, float, &OpacityNode::setOpacity> Animation_OpacityNode_opacity;
 
 
 
