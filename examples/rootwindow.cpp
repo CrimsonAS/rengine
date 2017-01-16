@@ -26,16 +26,20 @@
 #include "rootwindow.h"
 #include "button.h"
 
+#include "example.h"
+#include "rectangles.h"
+
 using namespace rengine;
+using namespace std;
 
 Node *RootWindow::build()
 {
     const char *fontFile = "OpenSans-Regular.ttf";
     m_font = new GlyphContext(fontFile);
     if (!m_font->isValid()) {
-        std::cerr << "Failed to load '" << fontFile << "'..." << std::endl
-                  << "The font file needs to be downloaded separately and placed next" << std::endl
-                  << "to the 'demo' binary." << std::endl;
+        cerr << "Failed to load '" << fontFile << "'..." << endl
+             << "The font file needs to be downloaded separately and placed next" << endl
+             << "to the 'demo' binary." << endl;
     }
     assert(m_font->isValid());
 
@@ -44,6 +48,11 @@ Node *RootWindow::build()
 
     Node *root = Node::create();
 
+    // Prepare the app layer
+    m_appLayer = OpacityNode::create();
+
+
+    // Prepare the button grid
     m_buttonGrid = LayoutNode::create();
     m_buttonGrid->setActivationMode(LayoutNode::Explicit);
     m_buttonGrid->setLayoutType(LayoutEngine::Grid_Horizontal);
@@ -54,33 +63,105 @@ Node *RootWindow::build()
     m_buttonGrid->setColumnCount(1);
     m_buttonGrid->setX(windowSize.x / 2 - m_buttonGrid->cellWidth() / 2);
 
-    add("Rectangles", nullptr, units);
-    add("Blur", nullptr, units);
-    add("Shadow", nullptr, units);
-    add("Color Filters", nullptr, units);
-    add("Layered Opacity", nullptr, units);
-    add("Fonts & Text", nullptr, units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
+    add(new Rectangles(), units);
 
     m_buttonGrid->updateLayout();
 
     root->append(m_buttonGrid);
+    root->append(m_appLayer);
+
+    // The close button..
+    SignalHandler_Function<> *handler = new SignalHandler_Function<>([this] () { closeExample(); });
+    m_buttonSignalHandlers.push_back(handler);
+    m_closeButton = createTextButton("Close", units);
+    m_closeButton->setGeometry(rect2d::fromXywh(m_buttonGrid->margin(), m_buttonGrid->margin(),
+                                                m_buttonGrid->cellWidth(), m_buttonGrid->cellHeight()));
+
+    Button::onClicked.connect(m_closeButton, handler);
 
     return root;
 }
 
-void RootWindow::add(const char *title, ExampleNode *example, const Units &units)
+void RootWindow::startExample(Example *example)
 {
-    Button *button = new Button(this);
-    m_buttonGrid->append(button);
+    assert(example);
+    if (m_example) {
+        cout << "RootWindow::startExample: '" << m_example->name()
+        << "' is already running when asked to start '" << example->name() << "'" << endl;
+        return;
+    }
 
-    // Perform the job synchronously because this is part of the initial ui.
-    GlyphTextureJob job(m_font, title, units.font());
+    int pos = std::find(m_examples.begin(), m_examples.end(), example) - m_examples.begin();
+
+    Button *button = static_cast<Button *>(m_buttonGrid->child());
+    for (int i=0; i<m_examples.size(); ++i) {
+        assert(button);
+        int distance = abs(pos - i);
+        button->scheduleRotation(0, -M_PI / 2.0f, 0.3, distance * 0.05);
+        button = static_cast<Button *>(button->sibling());
+    }
+
+    m_example = example;
+    m_example->start();
+
+    assert(m_closeButton->parent() == nullptr);
+    m_example->append(m_closeButton);
+}
+
+void RootWindow::closeExample()
+{
+    assert(m_example);
+
+    int pos = std::find(m_examples.begin(), m_examples.end(), m_example) - m_examples.begin();
+
+    Button *button = static_cast<Button *>(m_buttonGrid->child());
+    for (int i=0; i<m_examples.size(); ++i) {
+        assert(button);
+        int distance = abs(pos - i);
+        button->scheduleRotation(M_PI / 2.0f, 0, 0.3, 0.3 + distance * 0.05);
+        button = static_cast<Button *>(button->sibling());
+    }
+    setPointerEventReceiver(nullptr);
+    m_example->remove(m_closeButton);
+    m_example->stop();
+    m_example = 0;
+}
+
+Button *RootWindow::createTextButton(const char *text, const Units &units)
+{
+   // Perform the job synchronously because this is part of the initial ui.
+    GlyphTextureJob job(m_font, text, units.font());
     job.onExecute();
     assert(job.textureSize().x > 0 && job.textureSize().y > 0);
     Texture *t = renderer()->createTextureFromImageData(job.textureSize(), Texture::RGBA_32, job.textureData());
 
+    Button *button = new Button(this);
     button->setTextTexture(t);
-    button->scheduleRotation(M_PI / 2.0f, 0, 1.0, m_buttons.size() * 0.2);
 
-    m_buttons.push_back(button);
+    return button;
 }
+
+void RootWindow::add(Example *example, const Units &units)
+{
+    example->setWindow(this);
+
+    SignalHandler_Function<> *handler = new SignalHandler_Function<>([this, example] () { startExample(example); });
+    m_buttonSignalHandlers.push_back(handler);
+
+    Button *button = createTextButton(example->name(), units);
+    button->scheduleRotation(M_PI / 2.0f, 0, 0.5, m_examples.size() * 0.1);
+    Button::onClicked.connect(button, handler);
+
+    m_buttonGrid->append(button);
+
+    m_appLayer->append(example);
+
+    m_examples.push_back(example);
+}
+

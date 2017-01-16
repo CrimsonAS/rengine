@@ -23,9 +23,16 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "rootwindow.h"
+#pragma once
 
-#define  STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
+#include "rengine.h"
 
-RENGINE_MAIN(RootWindow);
+class ImageUtils
+{
+public:
+    static rengine::Texture *fractalTexture(rengine::Renderer *renderer, rengine::vec2 size);
+    static rengine::Texture *load(rengine::Renderer *renderer, const char *file);
+
+private:
+    static void fractalTexture(unsigned *bits, rengine::vec2 size);
+};

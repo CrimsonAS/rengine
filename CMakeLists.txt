@@ -135,9 +135,12 @@ enable_testing()
 # add_rengine_example(touch)
 # add_rengine_example(text)
 
-add_executable(demo "examples/rootwindow.cpp"
+add_executable(demo
                     "examples/button.cpp"
-                    "examples/main.cpp")
+                    "examples/imageutils.cpp"
+                    "examples/main.cpp"
+                    "examples/rootwindow.cpp"
+                    )
 target_link_libraries(demo ${RENGINE_LIBS})
 
 

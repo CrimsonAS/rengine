@@ -26,25 +26,32 @@
 #pragma once
 
 #include "rengine.h"
+#include "membersignalhandler.h"
 
 class Button;
-class ExampleNode;
+class Example;
 
 class RootWindow : public rengine::StandardSurface
 {
 public:
     rengine::Node *build() override;
 
+    void startExample(Example *example);
+    void closeExample();
+
 private:
     void updateHoverTarget(rengine::Node *node);
-    void add(const char *title, ExampleNode *example, const rengine::Units &units);
+    void add(Example *example, const rengine::Units &units);
+    Button *createTextButton(const char *name, const rengine::Units &units);
 
-    std::vector<Button *> m_buttons;
+    rengine::GlyphContext *m_font = nullptr;
 
-    rengine::Node *m_appLayer = nullptr;
+    rengine::OpacityNode *m_appLayer = nullptr;
+    Button *m_closeButton = nullptr;
+
     rengine::LayoutNode *m_buttonGrid = nullptr;
+    std::vector<Example *> m_examples;
+    Example *m_example = nullptr;
 
-    rengine::GlyphContext *m_font;
-
-    rengine::Node *m_hoverTarget = nullptr;
+    std::vector<rengine::SignalHandler<> *> m_buttonSignalHandlers;
 };

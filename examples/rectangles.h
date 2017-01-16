@@ -24,26 +24,20 @@
 */
 
 #include "rengine.h"
-#include "examples.h"
+#include "imageutils.h"
 
-class MyWindow : public StandardSurface
+using namespace rengine;
+
+class Rectangles : public Example
 {
 public:
-    MyWindow()
-        : m_layer(0)
-    {
-    }
+    const char *name() override { return "Rectangles"; }
 
-    ~MyWindow()
-    {
-        delete m_layer;
-    }
-
-    Node *build() override
+    void initialize() override
     {
         vec2 s = size();
 
-        m_layer = rengine_loadImage(renderer(), "walker.png");
+        m_texture.reset(ImageUtils::load(renderer(), "walker.png"));
 
         renderer()->setFillColor(vec4(0.0, 0, 0, 0.0));
 
@@ -83,7 +77,7 @@ public:
             depthAdjustment->setMatrix(mat4::rotateAroundY(M_PI * 2.0 * (i / float(count)))
                                        * mat4::translate(s.x * 0.33 + 2, 0, 0)
                                        * mat4::rotateAroundY(M_PI/2.0));
-            *depthAdjustment << TextureNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), m_layer);
+            *depthAdjustment << TextureNode::create(rect2d::fromXywh(-w/2, -h/2, w, h), m_texture.get());
             rotationNode->append(depthAdjustment);
         }
 
@@ -94,18 +88,25 @@ public:
             root->append(xnode);
         }
 
-        AnimationClosure<TransformNode, SmoothedTimingFunction> *anim = new AnimationClosure<TransformNode, SmoothedTimingFunction>(rotationNode);
-        anim->setDuration(4);
-        anim->setIterations(-1);
-        anim->keyFrames.times() << 0 << 1;
-        anim->keyFrames.addValues<double, TransformNode_rotateAroundY>() << 0 << M_PI * 2.0;
-        animationManager()->startAnimation(anim);
+        append(root);
 
-        return root;
+        m_animation.reset(new AnimationClosure<TransformNode, SmoothedTimingFunction>(rotationNode));
+        m_animation->setDuration(4);
+        m_animation->setIterations(-1);
+        m_animation->keyFrames.times() << 0 << 1;
+        m_animation->keyFrames.addValues<double, TransformNode_rotateAroundY>() << 0 << M_PI * 2.0;
+        animationManager()->startAnimation(m_animation.get());
+    }
+
+    void invalidate() override {
+        animationManager()->stopAnimation(m_animation.get());
+        while (child())
+            child()->destroy();
+        m_texture.reset();
+        m_animation.reset();
     }
 
 private:
-    Texture *m_layer;
+    std::unique_ptr<Texture> m_texture;
+    std::unique_ptr<AnimationClosure<TransformNode, SmoothedTimingFunction>> m_animation;
 };
-
-RENGINE_MAIN(MyWindow)

@@ -23,9 +23,15 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "rootwindow.h"
+#pragma once
 
-#define  STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
+#include "rengine.h"
 
-RENGINE_MAIN(RootWindow);
+template <typename Self, void(Self::*MemberFunction)()>
+class SignalHandler_Member : public rengine::SignalHandler<>
+{
+    Self *m_self;
+public:
+    SignalHandler_Member(Self *s) : m_self(s) { }
+    void onSignal() override { (m_self->*MemberFunction)(); }
+};

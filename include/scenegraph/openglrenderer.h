@@ -717,6 +717,14 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
     // std::cout << space << "- doing layered rendering for: element=" << e << " node=" << e->node << std::endl;
     assert(e->layered);
 
+    // Create the FBO
+    rect2d devRect = boundingRectFor(e->vboOffset);
+
+    // Abort the render to layer pass if the dev rect happens to be zero..
+    if (devRect.width() <= 0 || devRect.height() <= 0) {
+        return;
+    }
+
     // Store current state...
     bool stored3d = m_render3d;
     bool storedTextureed = m_layered;
@@ -726,11 +734,6 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
 
     m_render3d |= e->projection;
     m_layered = true;
-
-    // Create the FBO
-    rect2d devRect = boundingRectFor(e->vboOffset);
-    assert(devRect.width() >= 0);
-    assert(devRect.height() >= 0);
 
     BlurNode *blurNode = BlurNode::from(e->node);
     ShadowNode *shadowNode = ShadowNode::from(e->node);

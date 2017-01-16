@@ -1,12 +1,4 @@
-#pragma once
-
-#include "rengine.h"
-#include <chrono>
-
-// ### Please note that the inclusion of STB_IMAGE_IMPLEMENTATION here forces
-// these symbols to be present in all translation units that include the
-// example.h header. This will lead to linker errors, so this limits
-// the examples to a single .cpp file.
+#include "imageutils.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -14,34 +6,7 @@
 using namespace rengine;
 using namespace std;
 
-RENGINE_BEGIN_NAMESPACE
-
-inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, float duration)
-{
-    AnimationClosure<TransformNode, LinearTimingFunction> *anim
-        = new AnimationClosure<TransformNode, LinearTimingFunction>(node);
-    anim->setDuration(duration);
-    anim->setIterations(-1);
-    anim->keyFrames.times() << 0 << 1;
-    anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
-    manager->startAnimation(anim);
-}
-
-inline void rengine_countFps()
-{
-    static int frameCounter = 0;
-    static std::chrono::steady_clock::time_point then;
-    ++frameCounter;
-    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-    if (now > then + std::chrono::milliseconds(int(1000))) {
-        double delta = std::chrono::duration<double>(now - then).count();
-        cout << "FPS: " << (frameCounter / delta) << endl;
-        frameCounter = 0;
-        then = now;
-    }
-}
-
-inline void rengine_fractalTexture(unsigned *bits, vec2 size)
+void ImageUtils::fractalTexture(unsigned *bits, vec2 size)
 {
     unsigned r = rand() % 256;
     unsigned g = rand() % 256;
@@ -86,18 +51,18 @@ inline void rengine_fractalTexture(unsigned *bits, vec2 size)
     }
 }
 
-inline Texture *rengine_fractalTexture(Renderer *renderer, vec2 size)
+Texture *ImageUtils::fractalTexture(Renderer *renderer, vec2 size)
 {
     int w = size.x;
     int h = size.y;
     unsigned *bits = new unsigned[w * h];
-    rengine_fractalTexture(bits, size);
+    fractalTexture(bits, size);
     Texture *texture = renderer->createTextureFromImageData(size, Texture::RGBA_32, bits);
     delete [] bits;
     return texture;
 }
 
-inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
+Texture *ImageUtils::load(Renderer *renderer, const char *file)
 {
     // read the image...
     int w, h, n;
@@ -133,5 +98,3 @@ inline Texture *rengine_loadImage(Renderer *renderer, const char *file)
     STBI_FREE(data);
     return layer;
 }
-
-RENGINE_END_NAMESPACE
