@@ -58,6 +58,7 @@ public:
         }
 
         void release(GLuint id) {
+            assert(id > 0);
             push_back(id);
         }
 
@@ -735,6 +736,7 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
     m_render3d |= e->projection;
     m_layered = true;
 
+
     BlurNode *blurNode = BlurNode::from(e->node);
     ShadowNode *shadowNode = ShadowNode::from(e->node);
 
@@ -864,15 +866,15 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
             // std::cout << space << "---> texture quad, vbo=" << e->vboOffset << std::endl;
             const Texture *texture = static_cast<TextureNode *>(e->node)->texture();
             drawTextureQuad(e->vboOffset, texture->textureId(), 1.0f, texture->format());
-        } else if (e->node->type() == Node::OpacityNodeType && e->layered) {
+        } else if (e->node->type() == Node::OpacityNodeType && e->layered && e->texture) {
             // std::cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             drawTextureQuad(e->vboOffset, e->texture, static_cast<OpacityNode *>(e->node)->opacity());
             m_texturePool.release(e->texture);
-        } else if (e->node->type() == Node::ColorFilterNodeType && e->layered) {
+        } else if (e->node->type() == Node::ColorFilterNodeType && e->layered && e->texture) {
             // std::cout << space << "---> layered texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             drawColorFilterQuad(e->vboOffset, e->texture, static_cast<ColorFilterNode *>(e->node)->colorMatrix());
             m_texturePool.release(e->texture);
-        } else if (e->node->type() == Node::BlurNodeType && e->layered) {
+        } else if (e->node->type() == Node::BlurNodeType && e->layered && e->texture) {
             // std::cout << space << "---> blur texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             BlurNode *blurNode = static_cast<BlurNode *>(e->node);
             vec2 textureSize = boundingRectFor(e->vboOffset + 4).size();
@@ -880,7 +882,7 @@ inline void OpenGLRenderer::render(Element *first, Element *last)
             // std::cout << " - radius: " << blurNode->radius() << " textureSize=" << textureSize << ", renderSize=" << renderSize << std::endl;
             drawBlurQuad(e->vboOffset + 8, e->texture, blurNode->radius(), renderSize, textureSize, vec2(0, 1/renderSize.y));
             m_texturePool.release(e->texture);
-        } else if (e->node->type() == Node::ShadowNodeType && e->layered) {
+        } else if (e->node->type() == Node::ShadowNodeType && e->layered && e->texture) {
             // std::cout << "---> shadow texture quad, vbo=" << e->vboOffset << " texture=" << e->texture << std::endl;
             ShadowNode *shadowNode = static_cast<ShadowNode *>(e->node);
             vec2 textureSize = boundingRectFor(e->vboOffset + 4).size();
