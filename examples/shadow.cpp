@@ -4,10 +4,7 @@ class BlurExample : public StandardSurface
 {
 public:
 
-    Node *update(Node *old) {
-        if (old)
-            return old;
-
+    Node *build() override {
         renderer()->setFillColor(vec4(1.0, 1.0, 1.0, 1));
 
         Texture *layer = rengine_loadImage(renderer(), "walker.png");

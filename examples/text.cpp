@@ -9,7 +9,7 @@ public:
 
     void initialize();
 
-    void onEvent(Event *event)
+    void onEvent(Event *event) override
     {
         std::cout << "event..." << std::endl;
 
@@ -25,18 +25,18 @@ public:
         }
     }
 
-    Node *update(Node *root) {
+    Node *build() override {
+        initialize();
+        renderer()->setFillColor(vec4(0.0, 0.0, 0.0, 1));
+        requestRender();
+        Node *root = Node::create();
+        // root->append(RectangleNode::create(rect2d::fromXywh(50, 0, 50, 1000), vec4(1, 1, 1, 1)));
+        return root;
+    }
+
+    Node *update(Node *root) override {
 
         cout << "running an update..." << endl;
-
-        if (!root) {
-            initialize();
-            renderer()->setFillColor(vec4(0.0, 0.0, 0.0, 1));
-            requestRender();
-            Node *root = Node::create();
-            // root->append(RectangleNode::create(rect2d::fromXywh(50, 0, 50, 1000), vec4(1, 1, 1, 1)));
-            return root;
-        }
 
         while (m_jobs.size() && m_jobs.front()->hasCompleted()) {
             std::cout << " - fetching one from the queue..." << endl;

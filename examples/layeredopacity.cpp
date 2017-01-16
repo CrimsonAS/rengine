@@ -9,10 +9,7 @@ using namespace std;
 class MyWindow : public StandardSurface
 {
 public:
-    Node *update(Node *old) {
-        if (old)
-            return old;
-
+    Node *build() override {
         vec2 s = size();
         vec2 s3 = s / 3;
 

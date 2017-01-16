@@ -308,10 +308,12 @@ inline void OpenGLRenderer::initialize()
     prog_shadow.step = prog_shadow.resolve("step");
     prog_shadow.color = prog_shadow.resolve("color");
 
+    // Using srgb for everything needs a bit more thought as it results in
+    // really washed out colors for rectangles and image textures.
     const char *extensions = (const char *) glGetString(GL_EXTENSIONS);
     if (std::strstr(extensions, "GL_ARB_framebuffer_sRGB")) {
         m_srgb = true;
-        glEnable(GL_FRAMEBUFFER_SRGB);
+        // glEnable(GL_FRAMEBUFFER_SRGB);
     }
 
 #ifdef RENGINE_LOG_INFO
@@ -467,7 +469,7 @@ inline void OpenGLRenderer::prepass(Node *n)
     }   break;
     case Node::RectangleNodeType: {
         RectangleNode *rn = static_cast<RectangleNode *>(n);
-        if (rn->width() != 0.0f && rn->height() != 0.0f)
+        if (rn->width() != 0.0f && rn->height() != 0.0f && !(rn->color().w < RENGINE_RENDERER_ALPHA_THRESHOLD))
             ++m_numRectangleNodes;
     }   break;
     case Node::TransformNodeType:
@@ -517,7 +519,9 @@ inline void OpenGLRenderer::build(Node *n)
         rect2d geometry = static_cast<RectangleNodeBase *>(n)->geometry();
 
         // Skip if empty..
-        if (geometry.width() == 0 || geometry.height() == 0 || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0))
+        if (geometry.width() == 0 || geometry.height() == 0
+            || (n->type() == Node::TextureNodeType && static_cast<TextureNode *>(n)->texture() == 0)
+            || (n->type() == Node::RectangleNodeType && static_cast<RectangleNode *>(n)->color().w < RENGINE_RENDERER_ALPHA_THRESHOLD))
             break;
 
         Element *e = m_elements + m_elementIndex;
@@ -713,6 +717,14 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
     // std::cout << space << "- doing layered rendering for: element=" << e << " node=" << e->node << std::endl;
     assert(e->layered);
 
+    // Create the FBO
+    rect2d devRect = boundingRectFor(e->vboOffset);
+
+    // Abort the render to layer pass if the dev rect happens to be zero..
+    if (devRect.width() <= 0 || devRect.height() <= 0) {
+        return;
+    }
+
     // Store current state...
     bool stored3d = m_render3d;
     bool storedTextureed = m_layered;
@@ -722,11 +734,6 @@ inline void OpenGLRenderer::renderToLayer(Element *e)
 
     m_render3d |= e->projection;
     m_layered = true;
-
-    // Create the FBO
-    rect2d devRect = boundingRectFor(e->vboOffset);
-    assert(devRect.width() >= 0);
-    assert(devRect.height() >= 0);
 
     BlurNode *blurNode = BlurNode::from(e->node);
     ShadowNode *shadowNode = ShadowNode::from(e->node);

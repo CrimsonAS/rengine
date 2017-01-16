@@ -433,6 +433,12 @@ typedef std::chrono::steady_clock::time_point time_point;
 class AnimationManager
 {
 public:
+    AnimationManager()
+    {
+        m_startTime = clock::now();
+        m_nextTick = m_startTime;
+    }
+
 
     /*!
         Advances the clock forward based on current time.

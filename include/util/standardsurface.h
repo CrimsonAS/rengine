@@ -42,7 +42,23 @@ public:
         }
     }
 
-    virtual Node *update(Node *oldRoot) = 0;
+    // This function is called once at the start of the application before it
+    // is rendered the very first time. The user should implement this function to
+    // build the initial scene state, create textures, set up animations etc.
+    //
+    // Later updates to the scene can be performed on a per frame basis using
+    // the update() function.
+    virtual Node *build()
+    {
+        return Node::create();
+    }
+
+    // This function is called just before a frame is rendered. The user can
+    // implement it to update the scene graph for the upcoming frame.
+    virtual Node *update(Node *root)
+    {
+        return root;
+    }
 
     virtual void onBeforeRender() { }
     virtual void onAfterRender() { }
@@ -54,10 +70,11 @@ public:
         // Initialize the renderer if this is the first time around
         if (!m_renderer) {
             m_renderer.reset(createRenderer());
+            m_renderer->setSceneRoot(build());
             m_animationManager.start();
         }
 
-        // Create the scene graph; update if it already exists..
+        // Update the scene graph...
         m_renderer->setSceneRoot(update(m_renderer->sceneRoot()));
 
         if (!m_renderer->sceneRoot())
@@ -82,10 +99,6 @@ public:
         if (m_animationManager.animationsRunning() || m_animationManager.animationsScheduled()) {
             requestRender();
         }
-    }
-
-    virtual bool onPointerEvent(Node * /*node*/, PointerEvent * /*event*/) {
-        return true;
     }
 
     virtual void onEvent(Event *e) override;
@@ -114,6 +127,7 @@ protected:
 
 inline void StandardSurface::onEvent(Event *e)
 {
+
     switch (e->type()) {
     case Event::PointerDown:
     case Event::PointerUp:
@@ -127,7 +141,7 @@ inline void StandardSurface::onEvent(Event *e)
                     pe->setPosition(invNodeMatrix * pe->positionInSurface());
                 else
                     pe->setPosition(vec2());
-                onPointerEvent(m_pointerEventReceiver, pe);
+                m_pointerEventReceiver->onPointerEvent(pe);
             } else {
                 deliverPointerEventInScene(m_renderer->sceneRoot(), pe);
             }
@@ -167,7 +181,7 @@ inline bool StandardSurface::deliverPointerEventInScene(Node *node, PointerEvent
                 // 1. accept it and the value is correct
                 // 2. reject it and the value will be written next time we try..
                 e->setPosition(nodeInvMatrix * e->positionInSurface());
-                if (area.contains(e->position()) && onPointerEvent(node, e))
+                if (area.contains(e->position()) && node->onPointerEvent(e))
                     return true;
             }
         }

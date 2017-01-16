@@ -72,9 +72,9 @@ public:
         ShadowNodeType        = 5,
 
         RectangleNodeBaseType = (1 << 6),
-        RectangleNodeType     = 0 | RectangleNodeBaseType,
-        TextureNodeType       = 1 | RectangleNodeBaseType,
-        RenderNodeType        = 2 | RectangleNodeBaseType,
+        RectangleNodeType     = 1 | RectangleNodeBaseType,
+        TextureNodeType       = 2 | RectangleNodeBaseType,
+        RenderNodeType        = 3 | RectangleNodeBaseType,
     };
 
     /*!
@@ -276,7 +276,9 @@ public:
      * State variable used by the event dispatch.
      */
     bool isPointerTarget() const { return m_pointerTarget; }
-    void setPointerTarget(bool target) { m_pointerTarget = target;}
+    void setPointerTarget(bool target) { m_pointerTarget = target; }
+
+    virtual bool onPointerEvent(PointerEvent *e) { return false; }
 
 protected:
     virtual void onPreprocess() { }
@@ -330,8 +332,7 @@ protected:
     unsigned m_preprocess : 1;
     unsigned m_poolAllocated : 1;
     unsigned m_pointerTarget : 1;
-    unsigned m_pointerDisabled : 1;
-    unsigned m_reserved : 20; // 32 - 12
+    unsigned m_reserved : 21; // 32 - 11
 };
 
 class OpacityNode : public Node {

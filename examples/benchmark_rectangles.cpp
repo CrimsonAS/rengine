@@ -33,7 +33,7 @@ static int nodeCount = 1000;
 class Rectangles : public StandardSurface
 {
 public:
-    Node *update(Node *root) {
+    Node *update(Node *root) override {
         if (root)
             root->destroy();
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
             nodeCount = atoi(argv[++i]);
         }
     }
-    std::cout << "Using " << nodeCount << " nodes...";
+    std::cout << "Using " << nodeCount << " nodes..." << std::endl;
 
     RENGINE_ALLOCATION_POOL(RectangleNode, rengine_RectangleNode, 1024);
     RENGINE_ALLOCATION_POOL(Node, rengine_Node, 64);

@@ -48,10 +48,7 @@ public:
              );
     }
 
-    Node *update(Node *old) {
-        if (old)
-            return old;
-
+    Node *build() override {
         m_layer = rengine_loadImage(renderer(), "walker.png");
 
         Node *root = Node::create();
