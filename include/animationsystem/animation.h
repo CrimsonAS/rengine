@@ -36,24 +36,16 @@
 RENGINE_BEGIN_NAMESPACE
 
 template <typename Value>
-class KeyFrame
+struct KeyFrame
 {
-public:
-    KeyFrame(double time, Value value)
-        : m_time(time)
-        , m_value(value)
+    KeyFrame(double t, Value v = Value())
+        : time(t)
+        , value(v)
     {
     }
 
-    double time() const { return m_time; }
-    void setTime(double t) { m_time = t; }
-
-    Value value() const { return m_value; }
-    void setValue(const Value &value) { m_value = value; }
-
-private:
-    double m_time;
-    Value m_value;
+    double time;
+    Value value;
 };
 
 
@@ -173,6 +165,11 @@ public:
 
     std::vector<KeyFrame<Value>> &keyFrames() { return m_keyFrames; }
 
+    Value &newKeyFrame(double time) {
+        m_keyFrames.push_back(KeyFrame<Value>(time));
+        return m_keyFrames.back().value;
+    }
+
     void tick(double time)
     {
         assert(isRunning());
@@ -203,10 +200,10 @@ public:
         size_t i0 = 0;
         size_t i1 = 1;
         // we're before the thing starts...
-        if (m_keyFrames.front().time() > scaledTime) {
+        if (m_keyFrames.front().time > scaledTime) {
             i0 = i1 = 0;
         } else {
-            while (i1 < m_keyFrames.size() && m_keyFrames.at(i1).time() < scaledTime)
+            while (i1 < m_keyFrames.size() && m_keyFrames.at(i1).time < scaledTime)
                 ++i1;
             // if (kft.at(i1) > scaledTime) // common case
             if (i1 >= m_keyFrames.size())
@@ -219,15 +216,15 @@ public:
 
         assert(i0 >= 0);
         assert(i1 < m_keyFrames.size());
-        double t0 = m_keyFrames.at(i0).time();
-        double t1 = m_keyFrames.at(i1).time();
+        double t0 = m_keyFrames.at(i0).time;
+        double t1 = m_keyFrames.at(i1).time;
         double t = (i0 < i1) ? (scaledTime - t0) / (t1 - t0) : t1;
         double et = Curve(t);
 
         // std::cout << " - time: [ " << t0 << " -> " << t1 << " ] t=" << t << "; eased=" << et << "; st=" << scaledTime << std::endl;
 
-        Value v0 = m_keyFrames.at(i0).value();
-        Value v1 = m_keyFrames.at(i1).value();
+        Value v0 = m_keyFrames.at(i0).value;
+        Value v1 = m_keyFrames.at(i1).value;
         Value value = v0 * (1.0 - et) + v1 * et;
         (m_target->*MemberFunction)(value);
 

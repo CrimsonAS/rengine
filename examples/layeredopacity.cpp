@@ -30,8 +30,8 @@ public:
         anim->setDuration(3);
         anim->setDirection(AbstractAnimation::Alternate);
         anim->setIterations(-1);
-        anim->keyFrames().push_back(KeyFrame<float>(0, 1));
-        anim->keyFrames().push_back(KeyFrame<float>(1, 0));
+        anim->newKeyFrame(0) = 1;
+        anim->newKeyFrame(1) = 0;
 
         animationManager()->start(anim);
 

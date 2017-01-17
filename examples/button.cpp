@@ -82,8 +82,8 @@ void Button::scheduleRotation(float from, float to, float time, float delay)
 
     auto a = make_shared<Animation_TransformNode_rotateAroundY>(m_xformNode);
     a->setDuration(time);
-    a->keyFrames().push_back(KeyFrame<float>(0, from));
-    a->keyFrames().push_back(KeyFrame<float>(1, to));
+    a->newKeyFrame(0) = from;
+    a->newKeyFrame(1) = to;
 
     m_surface->animationManager()->start(a, delay);
 

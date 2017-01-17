@@ -120,8 +120,8 @@ void RootWindow::startExample(Example *example)
 
     auto fade = std::make_shared<Animation_OpacityNode_opacity>(m_appLayer);
     fade->setDuration(0.5);
-    fade->keyFrames().push_back(KeyFrame<float>(0, 0));
-    fade->keyFrames().push_back(KeyFrame<float>(1, 1));
+    fade->newKeyFrame(0) = 0;
+    fade->newKeyFrame(1) = 1;
 
     animationManager()->start(fade, 0.5);
 }
@@ -136,8 +136,8 @@ void RootWindow::closeExample()
 
     auto fade = std::make_shared<Animation_OpacityNode_opacity>(m_appLayer);
     fade->setDuration(0.5);
-    fade->keyFrames().push_back(KeyFrame<float>(0, 1));
-    fade->keyFrames().push_back(KeyFrame<float>(1, 0));
+    fade->newKeyFrame(0) = 1;
+    fade->newKeyFrame(1) = 0;
 
     auto close = std::make_shared<Animation_Callback<RootWindow, &RootWindow::exampleClosed>>(this);
 
