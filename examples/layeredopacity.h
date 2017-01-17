@@ -26,32 +26,53 @@
 #pragma once
 
 #include "rengine.h"
-#include "membersignalhandler.h"
 
-class RootWindow;
+#include "example.h"
 
-class Example : public rengine::Node
+using namespace rengine;
+using namespace std;
+
+class LayeredOpacity : public Example
 {
 public:
-    virtual void initialize() = 0;
-    virtual void invalidate() = 0;
-    virtual const char *name() const = 0;
+    const char *name() const override { return "Layered Opacity"; }
 
-    // Our tie back to the rest of the application..
-    RootWindow *window() const { return m_window; }
-    void setWindow(RootWindow *window) { m_window = window; }
+    void initialize() override {
+        vec2 s = size();
+        vec2 s3 = s / 3;
 
-    // Some convenience
-    rengine::vec2 size() const { return m_window->size(); }
-    void requestRender() { m_window->requestRender(); }
-    rengine::Renderer *renderer() { return m_window->renderer(); }
-    rengine::AnimationManager *animationManager() { return m_window->animationManager(); }
+        // Root has origin in screen center
+        TransformNode *root = TransformNode::create();
+        root->setMatrix(mat4::translate2D(s.x * 0.5, s.y * 0.5));
 
-    void destroyAllChildren() {
-        while (child())
-            child()->destroy();
+        OpacityNode *opacityNode = OpacityNode::create();
+        root->append(opacityNode);
+
+        vec4 color(0.5, 0.5, 0.8, 1.0);
+
+        *opacityNode << RectangleNode::create(rect2d::fromPosSize(-s3, s3), color)
+                     << RectangleNode::create(rect2d::fromPosSize(-s3/2, s3), color)
+                     << RectangleNode::create(rect2d::fromPosSize(vec2(), s3), color);
+
+        auto anim = std::make_shared<Animation_OpacityNode_opacity>(opacityNode);
+        anim->setDuration(3);
+        anim->setDirection(AbstractAnimation::Alternate);
+        anim->setIterations(-1);
+        anim->newKeyFrame(0) = 1;
+        anim->newKeyFrame(1) = 0;
+
+        animationManager()->start(anim);
+
+        m_animation = anim;
+
+        append(root);
     }
 
-private:
-    RootWindow *m_window = nullptr;
+    void invalidate() override {
+        animationManager()->stop(m_animation);
+        m_animation.reset();
+        destroyAllChildren();
+    }
+
+    AnimationPtr m_animation;
 };

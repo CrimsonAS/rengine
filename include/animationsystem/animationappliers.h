@@ -10,6 +10,9 @@ typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotate2D> Anim
 
 typedef Animation<OpacityNode, float, &OpacityNode::setOpacity> Animation_OpacityNode_opacity;
 
+typedef Animation<BlurNode, unsigned int, &BlurNode::setRadius> Animation_BlurNode_radius;
+
+typedef Animation<ShadowNode, unsigned int, &ShadowNode::setRadius> Animation_ShadowNode_radius;
 
 
 struct ColorFilterNode_saturation {
@@ -48,20 +51,5 @@ struct ColorFilterNode_sepia {
     }
 };
 
-
-
-struct BlurNode_setRadius {
-    void operator()(float radius, BlurNode *node) {
-        node->setRadius(int(radius));
-    }
-};
-
-
-
-struct ShadowNode_setRadius {
-    void operator()(float radius, ShadowNode *node) {
-        node->setRadius(int(radius));
-    }
-};
 
 RENGINE_END_NAMESPACE

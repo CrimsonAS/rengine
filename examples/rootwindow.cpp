@@ -28,6 +28,9 @@
 
 #include "example.h"
 #include "rectangles.h"
+#include "layeredopacity.h"
+#include "blur.h"
+#include "shadow.h"
 
 using namespace rengine;
 using namespace std;
@@ -64,12 +67,9 @@ Node *RootWindow::build()
     m_buttonGrid->setX(windowSize.x / 2 - m_buttonGrid->cellWidth() / 2);
 
     add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
+    add(new LayeredOpacity(), units);
+    add(new BlurExample(), units);
+    add(new ShadowExample(), units);
 
     m_buttonGrid->updateLayout();
 

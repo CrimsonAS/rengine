@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2015, Gunnar Sletta <gunnar@sletta.org>
+    Copyright (c) 2017, Gunnar Sletta <gunnar@crimson.no>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -23,6 +23,8 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#pragma once
+
 #include "rengine.h"
 #include "imageutils.h"
 
@@ -31,7 +33,7 @@ using namespace rengine;
 class Rectangles : public Example
 {
 public:
-    const char *name() override { return "Rectangles"; }
+    const char *name() const override { return "Rectangles"; }
 
     void initialize() override
     {
@@ -101,10 +103,9 @@ public:
 
     void invalidate() override {
         animationManager()->stop(m_animation);
-        while (child())
-            child()->destroy();
-        m_texture.reset();
         m_animation.reset();
+        destroyAllChildren();
+        m_texture.reset();
     }
 
 private:
