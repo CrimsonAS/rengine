@@ -236,9 +236,8 @@ void tst_noderef()
 
 int main(int, char **)
 {
-    // tst_node_cast();
-    // tst_node_addRemoveParent();
-    // tst_rectanglenode_geometry();
+    tst_node_cast();
+    tst_node_addRemoveParent();
     // tst_node_injectEvict();
 
     // tst_node_allocator();
