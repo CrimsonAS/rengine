@@ -91,6 +91,7 @@ RENGINE_END_NAMESPACE
 
 #include "scenegraph/opengl.h"
 #include "scenegraph/node.h"
+#include "scenegraph/noderef.h"
 #include "scenegraph/texture.h"
 #include "scenegraph/renderer.h"
 #include "scenegraph/openglshaderprogram.h"
