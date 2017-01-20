@@ -158,7 +158,7 @@ inline void GlyphTextureJob::onExecute()
 
     float x = 0;
     float y = ascent * scale;
-    for (int i=0; i<glyphs.size(); ++i) {
+    for (unsigned i=0; i<glyphs.size(); ++i) {
         int glyph = glyphs[i];
 
         int x0, y0, x1, y1;

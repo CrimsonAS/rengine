@@ -92,7 +92,7 @@ void RootWindow::animateButtons(Example *example, float from, float to, float de
 {
     int pos = std::find(m_examples.begin(), m_examples.end(), example) - m_examples.begin();
     Button *button = static_cast<Button *>(m_buttonGrid->child());
-    for (int i=0; i<m_examples.size(); ++i) {
+    for (unsigned i=0; i<m_examples.size(); ++i) {
         assert(button);
         int distance = abs(pos - i);
         button->scheduleRotation(from, to, 0.3, delay + distance * 0.05);

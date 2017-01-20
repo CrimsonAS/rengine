@@ -52,9 +52,11 @@ void Button::onPreprocess()
     m_bgNode->setGeometry(lg);
 
     if (m_texture) {
-        vec2 ts = m_texture->size();
+        vec2 s = m_texture->size();
+        vec2 p = round(-s / 2.0f);
+
         m_textureNode->setTexture(m_texture.get());
-        m_textureNode->setGeometry(rect2d::fromPosSize(-ts / 2.0f, ts));
+        m_textureNode->setGeometry(rect2d::fromPosSize(p, s));
     }
 
     if (m_state == PressedState)
