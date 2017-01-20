@@ -146,7 +146,7 @@ target_link_libraries(demo ${RENGINE_LIBS})
 
 add_rengine_test(node)
 add_rengine_test(mathtypes)
-add_rengine_test(keyframes)
+#add_rengine_test(keyframes)
 add_rengine_test(render)
 add_rengine_test(property)
 add_rengine_test(signal)
