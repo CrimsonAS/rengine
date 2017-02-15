@@ -1,6 +1,7 @@
 #include "button.h"
 
 using namespace rengine;
+using namespace std;
 
 #define BG_BASE_COLOR vec4(0.2, 0.2, 0.3, 1.0)
 #define BG_HOVER_COLOR vec4(0.3, 0.3, 0.4, 1.0)
@@ -15,7 +16,6 @@ Button::Button(StandardSurface *surface)
     , m_offsetNode(TransformNode::create())
     , m_bgNode(RectangleNode::create(rect2d(), BG_BASE_COLOR))
     , m_textureNode(TextureNode::create(rect2d(), nullptr))
-    , m_animation(m_xformNode)
 {
     setPointerTarget(true);
 
@@ -23,10 +23,6 @@ Button::Button(StandardSurface *surface)
     requestPreprocess();
 
     m_xformNode->setProjectionDepth(1000);
-
-    m_animation.setDuration(1);
-    m_animation.setIterations(1);
-    m_animation.keyFrames.times() << 0 << 1;
 
     *this
         << &(*m_offsetNode
@@ -39,7 +35,8 @@ Button::Button(StandardSurface *surface)
 
 Button::~Button()
 {
-    m_surface->animationManager()->stopAnimation(&m_animation);
+    if (m_animation)
+        m_surface->animationManager()->stop(m_animation);
 }
 
 void Button::onPreprocess()
@@ -55,9 +52,11 @@ void Button::onPreprocess()
     m_bgNode->setGeometry(lg);
 
     if (m_texture) {
-        vec2 ts = m_texture->size();
+        vec2 s = m_texture->size();
+        vec2 p = round(-s / 2.0f);
+
         m_textureNode->setTexture(m_texture.get());
-        m_textureNode->setGeometry(rect2d::fromPosSize(-ts / 2.0f, ts));
+        m_textureNode->setGeometry(rect2d::fromPosSize(p, s));
     }
 
     if (m_state == PressedState)
@@ -78,12 +77,19 @@ void Button::setTextTexture(Texture *tex)
 
 void Button::scheduleRotation(float from, float to, float time, float delay)
 {
+    if (m_animation)
+        m_surface->animationManager()->stop(m_animation);
+
     m_xformNode->setMatrix(mat4::rotateAroundY(from));
-    m_animation.setDuration(time);
-    m_animation.keyFrames = KeyFrames<TransformNode>();
-    m_animation.keyFrames.times() << 0 << 1;
-    m_animation.keyFrames.addValues<double, TransformNode_rotateAroundY>() << from << to;
-    m_surface->animationManager()->scheduleAnimation(delay, &m_animation);
+
+    auto a = make_shared<Animation_TransformNode_rotateAroundY>(m_xformNode);
+    a->setDuration(time);
+    a->newKeyFrame(0) = from;
+    a->newKeyFrame(1) = to;
+
+    m_surface->animationManager()->start(a, delay);
+
+    m_animation = a;
 }
 
 bool Button::onPointerEvent(PointerEvent *e)

@@ -28,6 +28,9 @@
 
 #include "example.h"
 #include "rectangles.h"
+#include "layeredopacity.h"
+#include "blur.h"
+#include "shadow.h"
 
 using namespace rengine;
 using namespace std;
@@ -64,12 +67,9 @@ Node *RootWindow::build()
     m_buttonGrid->setX(windowSize.x / 2 - m_buttonGrid->cellWidth() / 2);
 
     add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
-    add(new Rectangles(), units);
+    add(new LayeredOpacity(), units);
+    add(new BlurExample(), units);
+    add(new ShadowExample(), units);
 
     m_buttonGrid->updateLayout();
 
@@ -88,6 +88,18 @@ Node *RootWindow::build()
     return root;
 }
 
+void RootWindow::animateButtons(Example *example, float from, float to, float delay)
+{
+    int pos = std::find(m_examples.begin(), m_examples.end(), example) - m_examples.begin();
+    Button *button = static_cast<Button *>(m_buttonGrid->child());
+    for (unsigned i=0; i<m_examples.size(); ++i) {
+        assert(button);
+        int distance = abs(pos - i);
+        button->scheduleRotation(from, to, 0.3, delay + distance * 0.05);
+        button = static_cast<Button *>(button->sibling());
+    }
+}
+
 void RootWindow::startExample(Example *example)
 {
     assert(example);
@@ -97,41 +109,55 @@ void RootWindow::startExample(Example *example)
         return;
     }
 
-    int pos = std::find(m_examples.begin(), m_examples.end(), example) - m_examples.begin();
-
-    Button *button = static_cast<Button *>(m_buttonGrid->child());
-    for (int i=0; i<m_examples.size(); ++i) {
-        assert(button);
-        int distance = abs(pos - i);
-        button->scheduleRotation(0, -M_PI / 2.0f, 0.3, distance * 0.05);
-        button = static_cast<Button *>(button->sibling());
-    }
+    animateButtons(example, 0, -M_PI / 2.0f, 0.0f);
 
     m_example = example;
-    m_example->start();
+    m_example->initialize();
 
-    assert(m_closeButton->parent() == nullptr);
-    m_example->append(m_closeButton);
+    m_appLayer->setOpacity(0);
+    m_appLayer->append(example);
+    m_appLayer->append(m_closeButton);
+
+    auto fade = std::make_shared<Animation_OpacityNode_opacity>(m_appLayer);
+    fade->setDuration(0.5);
+    fade->newKeyFrame(0) = 0;
+    fade->newKeyFrame(1) = 1;
+
+    animationManager()->start(fade, 0.5);
 }
 
 void RootWindow::closeExample()
 {
     assert(m_example);
 
-    int pos = std::find(m_examples.begin(), m_examples.end(), m_example) - m_examples.begin();
+    animateButtons(m_example, M_PI / 2.0f, 0, 0.3);
 
-    Button *button = static_cast<Button *>(m_buttonGrid->child());
-    for (int i=0; i<m_examples.size(); ++i) {
-        assert(button);
-        int distance = abs(pos - i);
-        button->scheduleRotation(M_PI / 2.0f, 0, 0.3, 0.3 + distance * 0.05);
-        button = static_cast<Button *>(button->sibling());
-    }
+    std::vector<std::shared_ptr<AbstractAnimation>> sequence;
+
+    auto fade = std::make_shared<Animation_OpacityNode_opacity>(m_appLayer);
+    fade->setDuration(0.5);
+    fade->newKeyFrame(0) = 1;
+    fade->newKeyFrame(1) = 0;
+
+    auto close = std::make_shared<Animation_Callback<RootWindow, &RootWindow::exampleClosed>>(this);
+
+    sequence.push_back(fade);
+    sequence.push_back(close);
+
+    animationManager()->start(sequence, 0);
+}
+
+void RootWindow::exampleClosed()
+{
+    assert(m_example);
     setPointerEventReceiver(nullptr);
-    m_example->remove(m_closeButton);
-    m_example->stop();
+    m_appLayer->remove(m_example);
+    m_appLayer->remove(m_closeButton);
+    m_appLayer->setOpacity(0);
+    m_example->invalidate();
     m_example = 0;
 }
+
 
 Button *RootWindow::createTextButton(const char *text, const Units &units)
 {
@@ -155,12 +181,10 @@ void RootWindow::add(Example *example, const Units &units)
     m_buttonSignalHandlers.push_back(handler);
 
     Button *button = createTextButton(example->name(), units);
-    button->scheduleRotation(M_PI / 2.0f, 0, 0.5, m_examples.size() * 0.1);
+    button->scheduleRotation(M_PI / 2.0f, 0, 0.8, m_examples.size() * 0.1);
     Button::onClicked.connect(button, handler);
 
     m_buttonGrid->append(button);
-
-    m_appLayer->append(example);
 
     m_examples.push_back(example);
 }

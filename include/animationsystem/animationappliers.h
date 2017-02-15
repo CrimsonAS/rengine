@@ -3,39 +3,16 @@
 RENGINE_BEGIN_NAMESPACE
 
 
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundX> Animation_TransformNode_rotateAroundX;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundY> Animation_TransformNode_rotateAroundY;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundZ> Animation_TransformNode_rotateAroundZ;
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotate2D> Animation_TransformNode_rotate2D;
 
-struct TransformNode_rotateAroundX {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundX(rotation));
-    }
-};
+typedef Animation<OpacityNode, float, &OpacityNode::setOpacity> Animation_OpacityNode_opacity;
 
-struct TransformNode_rotateAroundY {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundY(rotation));
-    }
-};
+typedef Animation<BlurNode, unsigned int, &BlurNode::setRadius> Animation_BlurNode_radius;
 
-struct TransformNode_rotateAroundZ {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotateAroundZ(rotation));
-    }
-};
-
-struct TransformNode_rotate2D {
-    void operator()(double rotation, TransformNode *node) {
-        node->setMatrix(mat4::rotate2D(rotation));
-    }
-};
-
-
-
-struct OpacityNode_setOpacity {
-    void operator()(double opacity, OpacityNode *node) {
-        node->setOpacity(opacity);
-    }
-};
-
+typedef Animation<ShadowNode, unsigned int, &ShadowNode::setRadius> Animation_ShadowNode_radius;
 
 
 struct ColorFilterNode_saturation {
@@ -74,20 +51,5 @@ struct ColorFilterNode_sepia {
     }
 };
 
-
-
-struct BlurNode_setRadius {
-    void operator()(float radius, BlurNode *node) {
-        node->setRadius(int(radius));
-    }
-};
-
-
-
-struct ShadowNode_setRadius {
-    void operator()(float radius, ShadowNode *node) {
-        node->setRadius(int(radius));
-    }
-};
 
 RENGINE_END_NAMESPACE

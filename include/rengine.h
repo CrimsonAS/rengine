@@ -25,7 +25,10 @@
 
 #pragma once
 
+#include <chrono>
+#include <list>
 #include <memory>
+#include <vector>
 
 #define RENGINE_NAMESPACE_PREFIX rengine::
 #define RENGINE_BEGIN_NAMESPACE namespace rengine {
@@ -88,6 +91,7 @@ RENGINE_END_NAMESPACE
 
 #include "scenegraph/opengl.h"
 #include "scenegraph/node.h"
+#include "scenegraph/noderef.h"
 #include "scenegraph/texture.h"
 #include "scenegraph/renderer.h"
 #include "scenegraph/openglshaderprogram.h"
@@ -99,7 +103,6 @@ RENGINE_END_NAMESPACE
 #include "animationsystem/animationappliers.h"
 
 #include "backend/backend.h"
-
 #if defined RENGINE_BACKEND_SDL
 #include "backend/sdl/sdlbackend.h"
 #elif defined RENGINE_BACKEND_SFHWC

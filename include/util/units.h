@@ -53,7 +53,7 @@ public:
         It should be used as a base unit when writing for resolution
         independence.
      */
-    float base() const { return std::round(std::max(8.0f, mm() * 2.0f)); }
+    float base() const { return std::round(std::max(10.0f, mm() * 2.0f)); }
 
     float tinyFont() const  { return base(); }
     float smallFont() const { return std::round(base() * 1.25f); }

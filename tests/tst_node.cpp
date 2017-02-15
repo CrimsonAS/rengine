@@ -203,15 +203,46 @@ void tst_node_allocator()
 //     cout << __FUNCTION__ << ": ok" << endl;
 // }
 
+void tst_noderef()
+{
+    // Node *node = Node::create();
+    // NodeRef<Node> n(node);
+    // check_true(!n.expired());
+    // check_equal(n.get(), node);
+    // check_equal(n->type(), Node::BasicNodeType);
+    // check_equal(n->childCount(), 0);
+    // node->destroy();
+    // check_true(n.expired());
+    // check_true(n.get() == nullptr);
+
+    RectangleNode *rectNode = RectangleNode::create(rect2d(1, 2, 3, 4), vec4(0.1, 0.2, 0.3, 0.4));
+    NodeRef<RectangleNode> r1, r2;
+    r1 = NodeRef<RectangleNode>(rectNode);
+    r2 = r1;
+    check_equal(r1.get(), rectNode);
+    check_equal(r2.get(), rectNode);
+    check_true(!r1.expired());
+    check_true(!r2.expired());
+    check_equal(r1->geometry(), rect2d(1, 2, 3, 4));
+    check_equal(r2->color(), vec4(0.1, 0.2, 0.3, 0.4));
+    rectNode->destroy();
+    check_true(r1.get() == nullptr);
+    check_true(r2.get() == nullptr);
+    check_true(r1.expired());
+    check_true(r2.expired());
+
+    cout << __FUNCTION__ << ": ok!" << endl;
+}
 
 int main(int, char **)
 {
     tst_node_cast();
     tst_node_addRemoveParent();
-    // tst_rectanglenode_geometry();
     // tst_node_injectEvict();
 
-    tst_node_allocator();
+    // tst_node_allocator();
+
+    tst_noderef();
 
     return 0;
 }

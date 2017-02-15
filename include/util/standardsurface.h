@@ -32,6 +32,10 @@ class StandardSurface : public Surface
 public:
     StandardSurface()
     {
+        AnimationManager::onRunningChanged.connect(&m_animationManager, new SignalHandler_Function<>([this] {
+            printf("running changed...\n");
+            requestRender();
+        }));
     }
 
     ~StandardSurface()
@@ -71,7 +75,6 @@ public:
         if (!m_renderer) {
             m_renderer.reset(createRenderer());
             m_renderer->setSceneRoot(build());
-            m_animationManager.start();
         }
 
         // Update the scene graph...
