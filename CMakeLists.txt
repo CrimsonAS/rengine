@@ -127,7 +127,7 @@ enable_testing()
 #
 # add_rengine_example(rectangles)
 # add_rengine_example(layeredopacity)
-# add_rengine_example(benchmark_rectangles)
+add_rengine_example(benchmark_rectangles)
 # add_rengine_example(filters)
 # add_rengine_example(blur)
 # add_rengine_example(shadow)

@@ -16,16 +16,16 @@ using namespace std;
 
 RENGINE_BEGIN_NAMESPACE
 
-inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, float duration)
-{
-    AnimationClosure<TransformNode, LinearTimingFunction> *anim
-        = new AnimationClosure<TransformNode, LinearTimingFunction>(node);
-    anim->setDuration(duration);
-    anim->setIterations(-1);
-    anim->keyFrames.times() << 0 << 1;
-    anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
-    manager->startAnimation(anim);
-}
+// inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, float duration)
+// {
+//     AnimationClosure<TransformNode, LinearTimingFunction> *anim
+//         = new AnimationClosure<TransformNode, LinearTimingFunction>(node);
+//     anim->setDuration(duration);
+//     anim->setIterations(-1);
+//     anim->keyFrames.times() << 0 << 1;
+//     anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
+//     manager->startAnimation(anim);
+// }
 
 inline void rengine_countFps()
 {

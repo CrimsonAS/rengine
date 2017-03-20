@@ -26,14 +26,35 @@
 #include "rengine.h"
 #include "examples.h"
 
+#define  STB_TRUETYPE_IMPLEMENTATION
+#include <stb_truetype.h>
+
 RENGINE_DEFINE_GLOBALS
 
 static int nodeCount = 1000;
+static bool interleaved = false;
+static bool textured = false;
+static std::vector<Texture *> texturePool;
 
 class Rectangles : public StandardSurface
 {
 public:
+    Rectangles()
+    {
+    }
+
     Node *update(Node *root) override {
+
+        // if --textures, we have nodeCount textures (all the nodes)
+        // if --interleaved, we have half of them.
+        const unsigned int textureCount = interleaved ? nodeCount / 2 : (textured ? nodeCount : 0);
+
+        if (texturePool.size() != textureCount) {
+            for (unsigned int i=0; i<textureCount; ++i) {
+                texturePool.push_back(rengine_fractalTexture(renderer(), vec2(100, 20)));
+            }
+        }
+
         if (root)
             root->destroy();
 
@@ -50,17 +71,25 @@ public:
 
         int count = nodeCount;
 
-        static int c = 1;
-        c = (c + 1) % 2;
         for (int i=0; i<count; ++i) {
-            vec4 color((rand() % 100)/100.0,
-                       (rand() % 100)/100.0,
-                       (rand() % 100)/100.0,
-                       0.9);
-            RectangleNode *rect = RectangleNode::create();
-            rect->setGeometry(rect2d::fromXywh(rand() % w, rand() % h, rw, rh));
-            rect->setColor(color);
-            *root << rect;
+
+            rect2d geometry = rect2d::fromXywh(rand() % w, rand() % h, rw, rh);
+
+            if (textured || (interleaved && (i % 2) == 1)) {
+                TextureNode *tn = TextureNode::create();
+                tn->setGeometry(geometry);
+                tn->setTexture(texturePool[i / 2]);
+                *root << tn;
+            } else {
+                vec4 color((rand() % 100)/100.0,
+                           (rand() % 100)/100.0,
+                           (rand() % 100)/100.0,
+                           0.9);
+                RectangleNode *rect = RectangleNode::create();
+                rect->setGeometry(geometry);
+                rect->setColor(color);
+                *root << rect;
+            }
         }
 
         requestRender();
@@ -71,15 +100,27 @@ public:
 
 
 int main(int argc, char **argv) {
+
     for (int i=0; i<argc; ++i) {
         std::string arg(argv[i]);
         if (i + 1 < argc && arg == "--count") {
             nodeCount = atoi(argv[++i]);
+        } else if (i < argc && arg == "--interleaved") {
+            interleaved = true;
+        } else if (i < argc && arg == "--textured") {
+            textured = true;
         }
     }
+
+    if (interleaved)
+        textured = false;
+
     std::cout << "Using " << nodeCount << " nodes..." << std::endl;
+    std::cout << "  --interleaved ....: " << (interleaved ? "yes" : "no") << std::endl;
+    std::cout << "  --textured .......: " << (textured ? "yes" : "no") << std::endl;
 
     RENGINE_ALLOCATION_POOL(RectangleNode, rengine_RectangleNode, 1024);
+    RENGINE_ALLOCATION_POOL(TextureNode, rengine_TextureNode, 1024);
     RENGINE_ALLOCATION_POOL(Node, rengine_Node, 64);
     rengine_main<Rectangles>(argc, argv);
     return 0;
