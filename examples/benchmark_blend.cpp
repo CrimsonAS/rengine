@@ -27,6 +27,10 @@
 #include "rengine.h"
 #include "examples.h"
 
+
+#define  STB_TRUETYPE_IMPLEMENTATION
+#include <stb_truetype.h>
+
 static int nodeCount = 4;
 static bool useTextures = false;
 

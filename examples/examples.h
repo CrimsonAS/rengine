@@ -41,16 +41,18 @@ using namespace std;
 
 RENGINE_BEGIN_NAMESPACE
 
-// inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, float duration)
-// {
-//     AnimationClosure<TransformNode, LinearTimingFunction> *anim
-//         = new AnimationClosure<TransformNode, LinearTimingFunction>(node);
-//     anim->setDuration(duration);
-//     anim->setIterations(-1);
-//     anim->keyFrames.times() << 0 << 1;
-//     anim->keyFrames.addValues<double, TransformNode_rotateAroundZ>() << 0 << M_PI * 2.0;
-//     manager->startAnimation(anim);
-// }
+typedef Animation<TransformNode, float, &TransformNode::setMatrix_rotateAroundZ, &AnimationCurves::linear> Animation_aroundZ_linear;
+
+
+inline void animation_rotateZ(AnimationManager *manager, TransformNode *node, float duration)
+{
+    auto anim = std::make_shared<Animation_aroundZ_linear>(node);
+    anim->setDuration(duration);
+    anim->setIterations(-1);
+    anim->newKeyFrame(0) = 0;
+    anim->newKeyFrame(1) = M_PI * 2;
+    manager->start(anim);
+}
 
 inline void rengine_countFps()
 {

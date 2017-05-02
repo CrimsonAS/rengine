@@ -131,7 +131,7 @@ add_rengine_example(benchmark_rectangles)
 # add_rengine_example(filters)
 # add_rengine_example(blur)
 # add_rengine_example(shadow)
-# add_rengine_example(benchmark_blend)
+add_rengine_example(benchmark_blend)
 # add_rengine_example(touch)
 # add_rengine_example(text)
 
