@@ -70,14 +70,20 @@ public:
         return renderer;
     }
 
-       void present(HWComposerNativeWindowBuffer *buffer) override;
+    void present(HWComposerNativeWindowBuffer *buffer) override;
+    void presentAsOverlay(HWComposerNativeWindowBuffer *buffer);
+    void presentAsFramebufferTarget(HWComposerNativeWindowBuffer *buffer);
 
     Surface *m_surface;
     SfHwcBackend *m_backend;
 
+    std::list<SfHwcBuffer *> m_frameBuffers;
+
     double m_vsyncDelta;
     vec2 m_size;
     vec2 m_dpi;
+
+    bool m_useOverlay;
 
     hwc_display_contents_1_t *m_hwcList;
 
@@ -151,6 +157,9 @@ public:
 
     void fillWithCrap();
 
+    int fence() const { return m_fence; }
+    void setFence(int fd) { m_fence = fd; }
+
 private:
     gralloc_module_t *grallocModule() const { return m_backend->grallocModule; }
     alloc_device_t *allocDevice() const { return m_backend->allocDevice; }
@@ -161,6 +170,7 @@ private:
     int m_stride;
     int m_width;
     int m_height;
+    int m_fence;
 };
 
 #ifndef RENGINE_MAX_TOUCH_POINTS

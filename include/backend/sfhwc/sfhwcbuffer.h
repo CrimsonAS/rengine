@@ -35,6 +35,7 @@ inline SfHwcBuffer::SfHwcBuffer(SfHwcBackend *backend, int w, int h, int format,
 	, m_stride(0)
 	, m_width(w)
 	, m_height(w)
+    , m_fence(-1)
 {
 	if (w == 0 || h == 0)
 		return;

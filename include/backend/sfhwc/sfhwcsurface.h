@@ -120,7 +120,14 @@ inline SfHwcSurface::SfHwcSurface(Surface *surface, SfHwcBackend *backend, vec2 
 	, m_backend(backend)
 	, m_vsyncDelta(0)
 	, m_size(size)
+    , m_useOverlay(false)
 {
+    char *overlay = getenv("RENGINE_SURFACE_USE_OVERLAY");
+    if (overlay && atoi(overlay) != 0) {
+        logi << "Using HWC_OVERLAY code path in HWC" << std::endl;
+        m_useOverlay = true;
+    }
+
     int bufferCount = 3;
     char *overrideBufferCount = getenv("RENGINE_SURFACE_BUFFER_COUNT");
     if (overrideBufferCount) {
@@ -189,15 +196,34 @@ inline void SfHwcSurface::initHwc()
     memset(m_hwcList, 0, size);
 
     m_hwcList->retireFenceFd = -1;
+    m_hwcList->outbufAcquireFenceFd = -1;
     m_hwcList->flags = HWC_GEOMETRY_CHANGED;
     m_hwcList->numHwLayers = 2;
 
     sfhwc_initialize_layer(&m_hwcList->hwLayers[0], HWC_FRAMEBUFFER, 0, 0, m_size.x, m_size.y);
-    m_hwcList->hwLayers[0].planeAlpha = 1;
+
+    // The Qualcomm HWC doesn't support planar alpha, so by setting 1 we force
+    // it  to take the GLES composited path, in which case, the
+    // HWC_FRAMEBUFFER_TARGET is used for direct presentation rather than
+    // composition.
+    if (m_useOverlay)
+        m_hwcList->hwLayers[0].planeAlpha = 255;
+    else
+        m_hwcList->hwLayers[0].planeAlpha = 1;
 
     sfhwc_initialize_layer(&m_hwcList->hwLayers[1], HWC_FRAMEBUFFER_TARGET, 0, 0, m_size.x, m_size.y);
     sfhwc_dump_display_contents(m_hwcList);
 
+    int bufferCount = 3;
+    char *overrideBufferCount = getenv("RENGINE_SURFACE_TARGETBUFFER_COUNT");
+    if (overrideBufferCount) {
+        bufferCount = std::max(1, std::min(atoi(overrideBufferCount), 10));
+    }
+    logi << "using " << bufferCount << " HWC_FRAMEBUFFER_TARGET buffers";
+    for (int i=0; i<bufferCount; ++i) {
+        SfHwcBuffer *buffer = new SfHwcBuffer(m_backend, 720, 1280, HAL_PIXEL_FORMAT_BGRA_8888, GRALLOC_USAGE_HW_COMPOSER);
+        m_frameBuffers.push_back(buffer);
+    }
 }
 
 inline void SfHwcSurface::initEgl()
@@ -253,115 +279,104 @@ inline void SfHwcSurface::initEgl()
 
 inline void SfHwcSurface::present(HWComposerNativeWindowBuffer *buffer)
 {
-	// logw << "buffer=" << (void *) buffer << std::endl;
+    static auto lastFrame = std::chrono::steady_clock::now();
+    auto thisFrame = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
+    if (delta > 30)
+        logw << "MISSED A FRAME: " << delta << std::endl;
+    lastFrame = thisFrame;
+
+    if (m_useOverlay)
+        presentAsOverlay(buffer);
+    else
+        presentAsFramebufferTarget(buffer);
+}
+
+inline void SfHwcSurface::presentAsOverlay(HWComposerNativeWindowBuffer *buffer)
+{
+    logw << "buffer=" << (void *) buffer << std::endl;
 
     int status = 0; (void) status;
 
-    static SfHwcBuffer *staticBuffer = 0;
-    if (!staticBuffer) {
-        staticBuffer = new SfHwcBuffer(m_backend, 720, 1280);
-        staticBuffer->lock();
-        staticBuffer->fillWithCrap();
-        staticBuffer->unlock();
-    }
-
-    static SfHwcBuffer *staticBuffer2 = 0;
-    if (!staticBuffer2) {
-        staticBuffer2 = new SfHwcBuffer(m_backend, 720, 1280);
-        staticBuffer2->lock();
-        staticBuffer2->fillWithCrap();
-        staticBuffer2->unlock();
-    }
-
-	hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
-
-    // static auto lastFrame = std::chrono::steady_clock::now();
-    // auto thisFrame = std::chrono::steady_clock::now();
-    // auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(thisFrame - lastFrame).count();
-    // if (delta > 30)
-    //     logw << "MISSED A FRAME: " << delta << std::endl;
-    // lastFrame = thisFrame;
+    hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
 
     int fd = getFenceBufferFd(buffer);
     setFenceBufferFd(buffer, -1);
-#if 0
-    if (fd != -1) {
-        auto start = std::chrono::steady_clock::now();
-        sync_wait(fd, -1);
-        close(fd);
-        auto end = std::chrono::steady_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-        logw << " - sync waited on libhybris buffer: "  << delta << ", buffer=" << buffer << std::endl;
-        fd = -1;
-    }
-#endif
 
-	hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
-	fb->handle = staticBuffer->handle();
-	fb->acquireFenceFd = -1;
-	fb->releaseFenceFd = -1;
-    fb->blending = 1;
-
-    static int counter = 0;
-    counter = counter == 1 ? 0 : 1;
+    hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
+    fb->handle = buffer->handle;
+    fb->acquireFenceFd = fd;
+    fb->releaseFenceFd = -1;
 
 	hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
-	fbt->handle = buffer->handle;
-	fbt->acquireFenceFd = fd;
+	fbt->handle = m_frameBuffers.front()->handle();
+	fbt->acquireFenceFd = m_frameBuffers.front()->fence();
 	fbt->releaseFenceFd = -1;
 
-    // sfhwc_dump_display_contents(m_hwcList);
-    // sfhwc_dump_hwc_device(hwc);
+    // advance the framebuffers..
+    m_frameBuffers.push_back(m_frameBuffers.front());
+    m_frameBuffers.pop_front();
 
-	status = hwc->prepare(hwc, 1, &m_hwcList);
-	assert(status == 0);
-    // sfhwc_dump_display_contents(m_hwcList);
-    // sfhwc_dump_hwc_device(hwc);
+	status = hwc->prepare(hwc, 1, &m_hwcList); assert(status == 0);
+	status = hwc->set(hwc, 1, &m_hwcList); assert(status == 0);
 
-    // auto start = std::chrono::steady_clock::now();
-
-    // logi << " --> calling set" << std::endl;
-
-	status = hwc->set(hwc, 1, &m_hwcList);
-
-    // logi << " <-- set completed" << std::endl;
-
-	assert(status == 0);
-    // sfhwc_dump_hwc_device(hwc);
-
-    // auto end = std::chrono::steady_clock::now();
-    // auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-
-    // logw << " - set completed in " << delta << std::endl;
+    sfhwc_dump_hwc_device(hwc);
 
     if (fb->releaseFenceFd != -1) {
-#if 1
         setFenceBufferFd(buffer, fb->releaseFenceFd);
         fb->releaseFenceFd = -1;
-#else
-        auto start = std::chrono::steady_clock::now();
-        sync_wait(fb->releaseFenceFd, -1);
-        close(fb->releaseFenceFd);
-        fb->releaseFenceFd = -1;
-        auto end = std::chrono::steady_clock::now();
-        auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-        logw << " - waited for fb release fd, " << delta << std::endl;
-#endif
     }
 
-    if (fbt->releaseFenceFd != -1) {
-        close(fbt->releaseFenceFd);
-        fbt->releaseFenceFd = -1;
-        // logw << " - closed fbt release fd" << std::endl;
-    }
+    // cycle the framebuffer target
+    m_frameBuffers.back()->setFence(fbt->releaseFenceFd);
 
 	if (m_hwcList->retireFenceFd != -1) {
 		close(m_hwcList->retireFenceFd);
-		m_hwcList->retireFenceFd = -1;
-        // logw << " - closed retire fence fd.." << std::endl;
+        m_hwcList->retireFenceFd = -1;
 	}
+}
 
-    // logd << " -> frame on screen" << std::endl;
+inline void SfHwcSurface::presentAsFramebufferTarget(HWComposerNativeWindowBuffer *buffer)
+{
+    logw << "buffer=" << (void *) buffer << std::endl;
+
+    int status = 0; (void) status;
+
+    hwc_composer_device_1_t *hwc = m_backend->hwcDevice;
+
+    int fd = getFenceBufferFd(buffer);
+    setFenceBufferFd(buffer, -1);
+
+    hwc_layer_1_t *fb = &m_hwcList->hwLayers[0];
+    // Just pass a dummy handle that we have, we're not using these anyway..
+    fb->handle = m_frameBuffers.front()->handle();
+    fb->acquireFenceFd = -1;
+    fb->releaseFenceFd = -1;
+
+    hwc_layer_1_t *fbt = &m_hwcList->hwLayers[1];
+    fbt->handle = buffer->handle;
+    fbt->acquireFenceFd = fd;
+    fbt->releaseFenceFd = -1;
+
+    status = hwc->prepare(hwc, 1, &m_hwcList); assert(status == 0);
+    status = hwc->set(hwc, 1, &m_hwcList); assert(status == 0);
+
+    if (fbt->releaseFenceFd != -1) {
+        setFenceBufferFd(buffer, fbt->releaseFenceFd);
+        fbt->releaseFenceFd = -1;
+    }
+
+    // Since we're taking the fb target code path, this buffer should be unused
+    // so this should in theory never happen...
+    if (fb->releaseFenceFd != -1) {
+        close(fb->releaseFenceFd);
+        fb->releaseFenceFd = -1;
+    }
+
+    if (m_hwcList->retireFenceFd != -1) {
+        close(m_hwcList->retireFenceFd);
+        m_hwcList->retireFenceFd = -1;
+    }
 }
 
 RENGINE_END_NAMESPACE
