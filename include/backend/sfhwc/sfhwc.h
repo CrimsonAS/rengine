@@ -61,6 +61,9 @@ public:
 
     void requestRender() override;
 
+    // ### Dummy values to make to make it compile!!!
+    vec2 dpi() const override { return vec2(200, 200); }
+
     Renderer *createRenderer() override {
         OpenGLRenderer *renderer = new OpenGLRenderer();
         renderer->setTargetSurface(m_surface);
