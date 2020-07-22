@@ -94,7 +94,7 @@ void RootWindow::animateButtons(Example *example, float from, float to, float de
     Button *button = static_cast<Button *>(m_buttonGrid->child());
     for (unsigned i=0; i<m_examples.size(); ++i) {
         assert(button);
-        int distance = abs(pos - i);
+        int distance = abs(pos - (int)i);
         button->scheduleRotation(from, to, 0.3, delay + distance * 0.05);
         button = static_cast<Button *>(button->sibling());
     }
